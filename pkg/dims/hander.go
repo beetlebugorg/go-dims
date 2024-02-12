@@ -53,7 +53,9 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	// Verify signature.
 	if !dev {
 		if err := request.verifySignature(); err != nil {
-			w.WriteHeader(403)
+			request.SourceImage = SourceImage{
+				status: 500,
+			}
 			request.sendPlaceholderImage(w)
 
 			return
@@ -64,7 +66,6 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	if err := request.fetchImage(); err != nil {
 		slog.Error("downloadImage failed.", "error", err)
 
-		w.WriteHeader(request.SourceImage.status)
 		request.sendPlaceholderImage(w)
 
 		return
@@ -75,7 +76,6 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	if err != nil {
 		slog.Error("executeImagemagick failed.", "error", err)
 
-		w.WriteHeader(request.SourceImage.status)
 		request.sendPlaceholderImage(w)
 
 		return

@@ -17,7 +17,7 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-type Request struct {
+type request struct {
 	config Config // The global configuration.
 
 	clientId               string      // The client ID of this request.
@@ -29,10 +29,10 @@ type Request struct {
 	commands               string      // The unparsed commands (resize, crop, etc).
 	requestHash            string      // The hash of the request.
 	sampleFactor           float64     // The sample factor for optimizing resizing.
-	SourceImage            SourceImage // The source image.
+	sourceImage            sourceImage // The source image.
 }
 
-type SourceImage struct {
+type sourceImage struct {
 	originalImage       []byte // The downloaded image.
 	originalImageSize   int    // The original image size in bytes.
 	originalImageFormat string // The original image format.
@@ -42,6 +42,74 @@ type SourceImage struct {
 	lastModified        string // The last modified header from the downloaded image.
 	etag                string // The etag header from the downloaded image.
 	placeholder         bool   // The image is a placeholder.
+}
+
+func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
+	slog.Info("handleDims5()",
+		"url", r.URL,
+		"clientId", r.PathValue("clientId"),
+		"signature", r.PathValue("signature"),
+		"timestamp", r.PathValue("timestamp"),
+		"commands", r.PathValue("commands"))
+
+	var timestamp int32
+	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
+
+	hash := md5.New()
+	io.WriteString(hash, r.PathValue("clientId"))
+	io.WriteString(hash, r.PathValue("commands"))
+	io.WriteString(hash, r.URL.Query().Get("url"))
+
+	request := request{
+		clientId:               r.PathValue("clientId"),
+		imageUrl:               r.URL.Query().Get("url"),
+		timestamp:              timestamp,
+		placeholderImageUrl:    config.PlaceholderImageUrl,
+		commands:               r.PathValue("commands"),
+		config:                 config,
+		requestHash:            fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:              r.PathValue("signature"),
+		sendContentDisposition: r.URL.Query().Get("download") == "1" || config.IncludeDisposition,
+	}
+
+	// Verify signature.
+	if !dev {
+		if err := request.verifySignature(); err != nil {
+			request.sourceImage = sourceImage{
+				status: 500,
+			}
+			request.sendPlaceholderImage(w)
+
+			return
+		}
+	}
+
+	// Download image.
+	if err := request.fetchImage(); err != nil {
+		slog.Error("downloadImage failed.", "error", err)
+
+		request.sendPlaceholderImage(w)
+
+		return
+	}
+
+	// Execute Imagemagick commands.
+	imageType, imageBlob, err := request.processImage()
+	if err != nil {
+		slog.Error("executeImagemagick failed.", "error", err)
+
+		request.sendPlaceholderImage(w)
+
+		return
+	}
+
+	// Serve the image.
+	if err := request.sendImage(w, imageType, imageBlob); err != nil {
+		slog.Error("serveImage failed.", "error", err)
+
+		http.Error(w, "Failed to serve image", http.StatusInternalServerError)
+		return
+	}
 }
 
 /*
@@ -75,7 +143,7 @@ func Sign(timestamp string, secret string, commands string, imageUrl string) str
 	return fmt.Sprintf("%x", md5.Sum(nil))[0:7]
 }
 
-func (r *Request) verifySignature() error {
+func (r *request) verifySignature() error {
 	slog.Info("verifySignature", "url", r.imageUrl)
 
 	hash := Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
@@ -89,15 +157,15 @@ func (r *Request) verifySignature() error {
 	return nil
 }
 
-func _fetchImage(url string) SourceImage {
+func _fetchImage(url string) sourceImage {
 	image, err := http.Get(url)
 	if err != nil || image.StatusCode != 200 {
-		return SourceImage{
+		return sourceImage{
 			status: image.StatusCode,
 		}
 	}
 
-	sourceImage := SourceImage{
+	sourceImage := sourceImage{
 		status:              image.StatusCode,
 		edgeControl:         image.Header.Get("Edge-Control"),
 		cacheControl:        image.Header.Get("Cache-Control"),
@@ -113,26 +181,26 @@ func _fetchImage(url string) SourceImage {
 	return sourceImage
 }
 
-func (r *Request) fetchImage() error {
+func (r *request) fetchImage() error {
 	slog.Info("downloadImage", "url", r.imageUrl)
 
-	r.SourceImage = _fetchImage(r.imageUrl)
+	r.sourceImage = _fetchImage(r.imageUrl)
 
-	if r.SourceImage.status != 200 {
+	if r.sourceImage.status != 200 {
 		return fmt.Errorf("failed to download image")
 	}
 
 	return nil
 }
 
-func (r *Request) processImage() (string, []byte, error) {
+func (r *request) processImage() (string, []byte, error) {
 	slog.Debug("executeImagemagick", "commands", r.commands)
 
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 
 	// Read the image.
-	err := mw.ReadImageBlob(r.SourceImage.originalImage)
+	err := mw.ReadImageBlob(r.sourceImage.originalImage)
 	if err != nil {
 		return "", nil, err
 	}
@@ -177,7 +245,7 @@ func (r *Request) processImage() (string, []byte, error) {
 		}
 
 		// If the placeholder image is being used don't execute crop operations.
-		if r.SourceImage.placeholder && (command == "crop" || command == "thumbnail") {
+		if r.sourceImage.placeholder && (command == "crop" || command == "thumbnail") {
 			var rect imagick.RectangleInfo
 			imagick.ParseAbsoluteGeometry(args, &rect)
 
@@ -212,17 +280,17 @@ func (r *Request) processImage() (string, []byte, error) {
 	return mw.GetImageFormat(), mw.GetImageBlob(), nil
 }
 
-func (r *Request) sendPlaceholderImage(w http.ResponseWriter) {
+func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
 	slog.Info("sendPlaceHolderImage", "url", r.placeholderImageUrl)
 
-	r.SourceImage = _fetchImage(r.placeholderImageUrl)
-	r.SourceImage.placeholder = true
+	r.sourceImage = _fetchImage(r.placeholderImageUrl)
+	r.sourceImage.placeholder = true
 
 	imageType, imageBlob, _ := r.processImage()
 	r.sendImage(w, imageType, imageBlob)
 }
 
-func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
+func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
 	}
@@ -230,7 +298,7 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	cacheControlMaxAge := r.config.CacheControlMaxAge
 	edgeControlTtl := r.config.EdgeControlDownstreamTtl
 
-	sourceMaxAge := sourceMaxAge(r.SourceImage.cacheControl)
+	sourceMaxAge := sourceMaxAge(r.sourceImage.cacheControl)
 	trustSourceImage := false
 
 	// Do we trust the source image (i.e. we control the origin) and are we able to pull out
@@ -252,7 +320,7 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 		}
 	}
 
-	if r.SourceImage.placeholder {
+	if r.sourceImage.placeholder {
 		cacheControlMaxAge = r.config.PlaceholderImageExpire
 	}
 
@@ -291,14 +359,14 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	}
 
 	// Set etag header.
-	if r.SourceImage.etag != "" || r.SourceImage.lastModified != "" {
+	if r.sourceImage.etag != "" || r.sourceImage.lastModified != "" {
 		md5 := md5.New()
 		io.WriteString(md5, r.requestHash)
 
-		if r.SourceImage.etag != "" {
-			io.WriteString(md5, r.SourceImage.etag)
-		} else if r.SourceImage.lastModified != "" {
-			io.WriteString(md5, r.SourceImage.lastModified)
+		if r.sourceImage.etag != "" {
+			io.WriteString(md5, r.sourceImage.etag)
+		} else if r.sourceImage.lastModified != "" {
+			io.WriteString(md5, r.sourceImage.lastModified)
 		}
 
 		etag := fmt.Sprintf("%x", md5.Sum(nil))
@@ -309,7 +377,7 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	// Set content length
 	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
 
-	w.WriteHeader(r.SourceImage.status)
+	w.WriteHeader(r.sourceImage.status)
 
 	// Write the image.
 	w.Write(imageBlob)

@@ -23,7 +23,7 @@ type Config struct {
 	CacheControlMaxAge       int     `env:"DIMS_CACHE_CONTROL_MAX_AGE" envDefault:"86400"`
 	EdgeControlDownstreamTtl int     `env:"DIMS_EDGE_CONTROL_DOWNSTREAM_TTL" envDefault:"-1"`
 	TrustSrc                 bool    `env:"DIMS_TRUST_SRC" envDefault:"false"`
-	MinSrcCacheControl       int     `env:"DIMS_MIN_SRC_CACHE_CONTROL envDefault:"-1`
+	MinSrcCacheControl       int     `env:"DIMS_MIN_SRC_CACHE_CONTROL envDefault:"-1"`
 	MaxSrcCacheControl       int     `env:"DIMS_MAX_SRC_CACHE_CONTROL envDefault:"-1"`
 	//MagickSizeType area_size
 	//MagickSizeType memory_size

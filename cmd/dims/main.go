@@ -11,11 +11,12 @@ import (
 
 type ServeCmd struct {
 	Bind  string `help:"Bind address to serve on." default:"127.0.0.1:8080"`
-	Debug bool   `help:"Enable debug mode."`
+	Debug bool   `optional:"" help:"Enable debug mode."`
+	Dev   bool   `optional:"" help:"Enable development mode."`
 }
 
 func (s *ServeCmd) Run() error {
-	err := http.ListenAndServe(s.Bind, dims.NewHandler())
+	err := http.ListenAndServe(s.Bind, dims.NewHandler(s.Debug, s.Dev))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)
 		return err

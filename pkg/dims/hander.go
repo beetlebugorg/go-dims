@@ -10,20 +10,20 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func NewHandler() http.Handler {
+func NewHandler(debug bool, dev bool) http.Handler {
 	imagick.Initialize()
 
 	config := ReadConfig()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}", func(w http.ResponseWriter, r *http.Request) {
-		handleDims4(config, w, r)
+		handleDims4(config, debug, dev, w, r)
 	})
 
 	return mux
 }
 
-func handleDims4(config Config, w http.ResponseWriter, r *http.Request) {
+func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
 		"url", r.URL,
 		"clientId", r.PathValue("clientId"),
@@ -51,9 +51,11 @@ func handleDims4(config Config, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify signature.
-	if err := request.verifySignature(); err != nil {
-		http.Error(w, "Invalid signature", http.StatusForbidden)
-		return
+	if !dev {
+		if err := request.verifySignature(); err != nil {
+			http.Error(w, "Invalid signature", http.StatusForbidden)
+			return
+		}
 	}
 
 	// Download image.

@@ -86,7 +86,6 @@ func (r *Request) fetchImage() error {
 	slog.Info("downloadImage", "url", r.imageUrl)
 
 	image, err := http.Get(r.imageUrl)
-	defer image.Body.Close()
 	if err != nil {
 		return err
 	}

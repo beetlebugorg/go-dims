@@ -210,6 +210,8 @@ func (r *Request) processImage() (string, []byte, error) {
 }
 
 func (r *Request) sendPlaceholderImage(w http.ResponseWriter) {
+	slog.Info("sendPlaceHolderImage", "url", r.placeholderImageUrl)
+
 	r.SourceImage = _fetchImage(r.placeholderImageUrl)
 	r.SourceImage.placeholder = true
 
@@ -247,11 +249,17 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 		}
 	}
 
+	if r.SourceImage.placeholder {
+		cacheControlMaxAge = r.config.PlaceholderImageExpire
+	}
+
 	// Set content type.
 	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", imageType))
 
 	// Set cache headers.
 	if cacheControlMaxAge > 0 {
+		slog.Info("sendImage", "cacheControlMaxAge", cacheControlMaxAge)
+
 		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", cacheControlMaxAge))
 		w.Header().Set("Expires",
 			fmt.Sprintf("%s", time.Now().

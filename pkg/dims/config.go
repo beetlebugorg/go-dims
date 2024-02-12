@@ -9,8 +9,8 @@ import (
 type Config struct {
 	DownloadTimeout          int     `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
 	ImagemagickTimeout       int     `env:"DIMS_IMAGEMAGICK_TIMEOUT" envDefault:"3000"`
-	NoImageUrl               string  `env:"DIMS_NO_IMAGE_URL"`
-	NoImageExpire            int     `env:"DIMS_NO_IMAGE_EXPIRE" envDefault:"60"`
+	PlaceholderImageUrl      string  `env:"DIMS_PLACEHOLDER_IMAGE_URL"`
+	PlaceholderImageExpire   int     `env:"DIMS_PLACEHOLDER_IMAGE_EXPIRE" envDefault:"60"`
 	DefaultExpire            int64   `env:"DIMS_DEFAULT_EXPIRE envDefault:"31536000"`
 	StripMetadata            bool    `env:"DIMS_STRIP_METADATA envDefault:"true"`
 	SampleFactor             float32 `env:"DIMS_SAMPLE_FACTOR"`

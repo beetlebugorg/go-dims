@@ -40,14 +40,14 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	io.WriteString(hash, r.URL.Query().Get("url"))
 
 	request := Request{
-		clientId:    r.PathValue("clientId"),
-		imageUrl:    r.URL.Query().Get("url"),
-		timestamp:   timestamp,
-		noImageUrl:  config.NoImageUrl,
-		commands:    r.PathValue("commands"),
-		config:      config,
-		requestHash: fmt.Sprintf("%x", hash.Sum(nil)),
-		signature:   r.PathValue("signature"),
+		clientId:            r.PathValue("clientId"),
+		imageUrl:            r.URL.Query().Get("url"),
+		timestamp:           timestamp,
+		placeholderImageUrl: config.PlaceholderImageUrl,
+		commands:            r.PathValue("commands"),
+		config:              config,
+		requestHash:         fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:           r.PathValue("signature"),
 	}
 
 	// Verify signature.
@@ -62,7 +62,7 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	if err := request.fetchImage(); err != nil {
 		slog.Error("downloadImage failed.", "error", err)
 
-		http.Error(w, "Failed to download image", request.status)
+		http.Error(w, "Failed to download image", request.SourceImage.status)
 		return
 	}
 

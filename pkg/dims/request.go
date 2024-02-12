@@ -17,17 +17,18 @@ import (
 type Request struct {
 	config Config // The global configuration.
 
-	clientId     string  // The client ID of this request.
-	signature    string  // The signature of the request.
-	timestamp    int32   // The timestamp of the request.
-	imageUrl     string  // The image URL that is being manipulated.
-	noImageUrl   string  // The URL to the image in case of failures.
-	useNoImage   bool    // Whether to use the no image URL.
-	commands     string  // The unparsed commands (resize, crop, etc).
-	requestHash  string  // The hash of the request.
-	sampleFactor float64 // The sample factor for optimizing resizing.
+	clientId            string      // The client ID of this request.
+	signature           string      // The signature of the request.
+	timestamp           int32       // The timestamp of the request.
+	imageUrl            string      // The image URL that is being manipulated.
+	placeholderImageUrl string      // The URL to the image in case of failures.
+	commands            string      // The unparsed commands (resize, crop, etc).
+	requestHash         string      // The hash of the request.
+	sampleFactor        float64     // The sample factor for optimizing resizing.
+	SourceImage         SourceImage // The source image.
+}
 
-	// The following fields are populated after the image is downloaded.
+type SourceImage struct {
 	originalImage     []byte // The downloaded image.
 	originalImageSize int    // The original image size in bytes.
 	status            int    // The HTTP status code of the downloaded image.
@@ -90,19 +91,20 @@ func (r *Request) fetchImage() error {
 		return err
 	}
 
-	r.status = image.StatusCode
-	r.cacheControl = image.Header.Get("Cache-Control")
-	r.edgeControl = image.Header.Get("Edge-Control")
-	r.lastModified = image.Header.Get("Last-Modified")
-	r.etag = image.Header.Get("Etag")
+	r.SourceImage = SourceImage{
+		status:       image.StatusCode,
+		edgeControl:  image.Header.Get("Edge-Control"),
+		cacheControl: image.Header.Get("Cache-Control"),
+		lastModified: image.Header.Get("Last-Modified"),
+		etag:         image.Header.Get("Etag"),
+	}
 
 	if image.StatusCode != 200 {
 		return fmt.Errorf("HTTP status code: %d", image.StatusCode)
 	}
 
-	r.originalImageSize = int(image.ContentLength)
-
-	r.originalImage, err = io.ReadAll(image.Body)
+	r.SourceImage.originalImageSize = int(image.ContentLength)
+	r.SourceImage.originalImage, err = io.ReadAll(image.Body)
 	if err != nil {
 		return err
 	}
@@ -117,7 +119,7 @@ func (r *Request) processImage() (string, []byte, error) {
 	defer mw.Destroy()
 
 	// Read the image.
-	err := mw.ReadImageBlob(r.originalImage)
+	err := mw.ReadImageBlob(r.SourceImage.originalImage)
 	if err != nil {
 		return "", nil, err
 	}
@@ -180,6 +182,10 @@ func (r *Request) processImage() (string, []byte, error) {
 	return mw.GetImageFormat(), mw.GetImageBlob(), nil
 }
 
+func (r *Request) sendNoImage(w http.ResponseWriter) {
+
+}
+
 func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
@@ -188,7 +194,7 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	cacheControlMaxAge := r.config.CacheControlMaxAge
 	edgeControlTtl := r.config.EdgeControlDownstreamTtl
 
-	sourceMaxAge := sourceMaxAge(r.cacheControl)
+	sourceMaxAge := sourceMaxAge(r.SourceImage.cacheControl)
 	trustSourceImage := false
 
 	// Do we trust the source image (i.e. we control the origin) and are we able to pull out
@@ -228,14 +234,14 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	}
 
 	// Set etag header.
-	if r.etag != "" || r.lastModified != "" {
+	if r.SourceImage.etag != "" || r.SourceImage.lastModified != "" {
 		md5 := md5.New()
 		io.WriteString(md5, r.requestHash)
 
-		if r.etag != "" {
-			io.WriteString(md5, r.etag)
-		} else if r.lastModified != "" {
-			io.WriteString(md5, r.lastModified)
+		if r.SourceImage.etag != "" {
+			io.WriteString(md5, r.SourceImage.etag)
+		} else if r.SourceImage.lastModified != "" {
+			io.WriteString(md5, r.SourceImage.lastModified)
 		}
 
 		etag := fmt.Sprintf("%x", md5.Sum(nil))

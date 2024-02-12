@@ -2,6 +2,7 @@ package dims
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,13 +30,15 @@ type Request struct {
 }
 
 type SourceImage struct {
-	originalImage     []byte // The downloaded image.
-	originalImageSize int    // The original image size in bytes.
-	status            int    // The HTTP status code of the downloaded image.
-	cacheControl      string // The cache headers from the downloaded image.
-	edgeControl       string // The edge control headers from the downloaded image.
-	lastModified      string // The last modified header from the downloaded image.
-	etag              string // The etag header from the downloaded image.
+	originalImage       []byte // The downloaded image.
+	originalImageSize   int    // The original image size in bytes.
+	originalImageFormat string // The original image format.
+	status              int    // The HTTP status code of the downloaded image.
+	cacheControl        string // The cache headers from the downloaded image.
+	edgeControl         string // The edge control headers from the downloaded image.
+	lastModified        string // The last modified header from the downloaded image.
+	etag                string // The etag header from the downloaded image.
+	placeholder         bool   // The image is a placeholder.
 }
 
 /*
@@ -83,30 +86,37 @@ func (r *Request) verifySignature() error {
 	return nil
 }
 
+func _fetchImage(url string) SourceImage {
+	image, err := http.Get(url)
+	if err != nil || image.StatusCode != 200 {
+		return SourceImage{
+			status: image.StatusCode,
+		}
+	}
+
+	sourceImage := SourceImage{
+		status:              image.StatusCode,
+		edgeControl:         image.Header.Get("Edge-Control"),
+		cacheControl:        image.Header.Get("Cache-Control"),
+		lastModified:        image.Header.Get("Last-Modified"),
+		etag:                image.Header.Get("Etag"),
+		originalImageFormat: image.Header.Get("Content-Type"),
+	}
+
+	sourceImage.originalImageSize = int(image.ContentLength)
+	sourceImage.originalImage, _ = io.ReadAll(image.Body)
+	sourceImage.placeholder = false
+
+	return sourceImage
+}
+
 func (r *Request) fetchImage() error {
 	slog.Info("downloadImage", "url", r.imageUrl)
 
-	image, err := http.Get(r.imageUrl)
-	if err != nil {
-		return err
-	}
+	r.SourceImage = _fetchImage(r.imageUrl)
 
-	r.SourceImage = SourceImage{
-		status:       image.StatusCode,
-		edgeControl:  image.Header.Get("Edge-Control"),
-		cacheControl: image.Header.Get("Cache-Control"),
-		lastModified: image.Header.Get("Last-Modified"),
-		etag:         image.Header.Get("Etag"),
-	}
-
-	if image.StatusCode != 200 {
-		return fmt.Errorf("HTTP status code: %d", image.StatusCode)
-	}
-
-	r.SourceImage.originalImageSize = int(image.ContentLength)
-	r.SourceImage.originalImage, err = io.ReadAll(image.Body)
-	if err != nil {
-		return err
+	if r.SourceImage.status != 200 {
+		return fmt.Errorf("failed to download image")
 	}
 
 	return nil
@@ -126,7 +136,6 @@ func (r *Request) processImage() (string, []byte, error) {
 
 	// Convert image to RGB from CMYK.
 	if mw.GetImageColorspace() == imagick.COLORSPACE_CMYK {
-
 		profiles := mw.GetImageProfiles("icc")
 		if profiles != nil {
 			mw.ProfileImage("ICC", CmykIccProfile)
@@ -164,6 +173,24 @@ func (r *Request) processImage() (string, []byte, error) {
 			stripMetadata = false
 		}
 
+		// If the placeholder image is being used don't execute crop operations.
+		if r.SourceImage.placeholder && (command == "crop" || command == "thumbnail") {
+			var rect imagick.RectangleInfo
+			imagick.ParseAbsoluteGeometry(args, &rect)
+
+			if rect.Width > 0 && rect.Height == 0 {
+				args = fmt.Sprintf("%d", rect.Height)
+			} else if rect.Height > 0 && rect.Width == 0 {
+				args = fmt.Sprintf("x%d", rect.Width)
+			} else if rect.Width > 0 && rect.Height > 0 {
+				args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
+			} else {
+				return "", nil, errors.New("Bad arguments")
+			}
+
+			command = "resize"
+		}
+
 		// Lookup command, call it.
 		if operation, ok := Operations[command]; ok {
 			slog.Info("executeCommand", "command", command, "args", args)
@@ -182,8 +209,12 @@ func (r *Request) processImage() (string, []byte, error) {
 	return mw.GetImageFormat(), mw.GetImageBlob(), nil
 }
 
-func (r *Request) sendNoImage(w http.ResponseWriter) {
+func (r *Request) sendPlaceholderImage(w http.ResponseWriter) {
+	r.SourceImage = _fetchImage(r.placeholderImageUrl)
+	r.SourceImage.placeholder = true
 
+	imageType, imageBlob, _ := r.processImage()
+	r.sendImage(w, imageType, imageBlob)
 }
 
 func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {

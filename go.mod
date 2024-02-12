@@ -5,7 +5,7 @@ go 1.22.0
 require github.com/spf13/viper v1.18.2
 
 require gopkg.in/gographics/imagick.v3 v3.5.1 // indirect
-replace gopkg.in/gographics/imagick.v3 => /Users/jcollins/Documents/Github/imagick
+replace gopkg.in/gographics/imagick.v3 => ./override/imagick
 
 require (
 	github.com/caarlos0/env/v10 v10.0.0

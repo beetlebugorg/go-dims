@@ -7,18 +7,18 @@ import (
 )
 
 type Config struct {
-	DownloadTimeout    int `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
-	ImagemagickTimeout int `env:"DIMS_IMAGEMAGICK_TIMEOUT" envDefault:"3000"`
+	DownloadTimeout    int `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"60000"`
+	ImagemagickTimeout int `env:"DIMS_IMAGEMAGICK_TIMEOUT" envDefault:"20000"`
 
 	//apr_hash_t  *clients
 	//apr_table_t *ignore_default_output_format
 
 	NoImageUrl          string  `env:"DIMS_NO_IMAGE_URL"`
 	NoImageExpire       int     `env:"DIMS_NO_IMAGE_EXPIRE"`
-	DefaultExpire       int64   `env:"DIMS_DEFAULT_EXPIRE"`
-	StripMetadata       bool    `env:"DIMS_STRIP_METADATA"`
+	DefaultExpire       int64   `env:"DIMS_DEFAULT_EXPIRE envDefault:"31536000"`
+	StripMetadata       bool    `env:"DIMS_STRIP_METADATA envDefault:"true"`
 	SampleFactor        float64 `env:"DIMS_SAMPLE_FACTOR"`
-	IncludeDisposition  bool    `env:"DIMS_INCLUDE_DISPOSITION"`
+	IncludeDisposition  bool    `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
 	DisableEncodedFetch bool    `env:"DIMS_DISABLE_ENCODED_FETCH"`
 	DefaultOutputFormat string  `env:"DIMS_DEFAULT_OUTPUT_FORMAT"`
 
@@ -33,7 +33,7 @@ type Config struct {
 
 	CacheControlMaxAge       int64 `env:"DIMS_CACHE_CONTROL_MAX_AGE"`
 	EdgeControlDownstreamTtl int64 `env:"DIMS_EDGE_CONTROL_DOWNSTREAM_TTL"`
-	TrustSrc                 int64 `env:"DIMS_TRUST_SRC"`
+	TrustSrc                 int64 `env:"DIMS_TRUST_SOURCE"`
 	MinSrcCacheControl       int64 `env:"DIMS_MIN_SRC_CACHE_CONTROL"`
 	MaxSrcCacheControl       int64 `env:"DIMS_MAX_SRC_CACHE_CONTROL"`
 }

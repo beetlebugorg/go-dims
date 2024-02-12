@@ -1,7 +1,9 @@
 package dims
 
 import (
+	"crypto/md5"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -40,13 +42,19 @@ func handleDims5(config Config, w http.ResponseWriter, r *http.Request) {
 	var timestamp int32
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
+	hash := md5.New()
+	io.WriteString(hash, r.PathValue("clientId"))
+	io.WriteString(hash, r.PathValue("commands"))
+	io.WriteString(hash, r.URL.Query().Get("url"))
+
 	request := Request{
-		clientId:   r.PathValue("clientId"),
-		imageUrl:   r.URL.Query().Get("url"),
-		timestamp:  timestamp,
-		noImageUrl: config.NoImageUrl,
-		commands:   r.PathValue("commands"),
-		config:     config,
+		clientId:    r.PathValue("clientId"),
+		imageUrl:    r.URL.Query().Get("url"),
+		timestamp:   timestamp,
+		noImageUrl:  config.NoImageUrl,
+		commands:    r.PathValue("commands"),
+		config:      config,
+		requestHash: fmt.Sprintf("%x", hash.Sum(nil)),
 	}
 
 	// Verify signature.
@@ -61,7 +69,7 @@ func handleDims5(config Config, w http.ResponseWriter, r *http.Request) {
 	if err := request.fetchImage(); err != nil {
 		slog.Error("downloadImage failed.", "error", err)
 
-		http.Error(w, "Failed to download image", http.StatusInternalServerError)
+		http.Error(w, "Failed to download image", request.status)
 		return
 	}
 

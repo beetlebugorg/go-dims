@@ -1,11 +1,15 @@
 package dims
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
@@ -20,11 +24,13 @@ type Request struct {
 	noImageUrl   string  // The URL to the image in case of failures.
 	useNoImage   bool    // Whether to use the no image URL.
 	commands     string  // The unparsed commands (resize, crop, etc).
+	requestHash  string  // The hash of the request.
 	sampleFactor float64 // The sample factor for optimizing resizing.
 
 	// The following fields are populated after the image is downloaded.
 	originalImage     []byte // The downloaded image.
-	originalImageSize int64  // The original image size in bytes.
+	originalImageSize int    // The original image size in bytes.
+	status            int    // The HTTP status code of the downloaded image.
 	cacheControl      string // The cache headers from the downloaded image.
 	edgeControl       string // The edge control headers from the downloaded image.
 	lastModified      string // The last modified header from the downloaded image.
@@ -64,14 +70,17 @@ func (r *Request) fetchImage() error {
 		return err
 	}
 
-	if image.StatusCode != 200 {
-		return fmt.Errorf("HTTP status code: %d", image.StatusCode)
-	}
-
+	r.status = image.StatusCode
 	r.cacheControl = image.Header.Get("Cache-Control")
 	r.edgeControl = image.Header.Get("Edge-Control")
 	r.lastModified = image.Header.Get("Last-Modified")
 	r.etag = image.Header.Get("Etag")
+
+	if image.StatusCode != 200 {
+		return fmt.Errorf("HTTP status code: %d", image.StatusCode)
+	}
+
+	r.originalImageSize = int(image.ContentLength)
 
 	r.originalImage, err = io.ReadAll(image.Body)
 	if err != nil {
@@ -152,13 +161,92 @@ func (r *Request) processImage() (string, []byte, error) {
 }
 
 func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
-	// Set headers.
+	if imageBlob == nil {
+		return fmt.Errorf("image is empty")
+	}
+
+	cacheControlMaxAge := r.config.CacheControlMaxAge
+	edgeControlTtl := r.config.EdgeControlDownstreamTtl
+
+	sourceMaxAge := sourceMaxAge(r.cacheControl)
+	trustSourceImage := false
+
+	// Do we trust the source image (i.e. we control the origin) and are we able to pull out
+	// the max-age from its Cache-Control header?
+	if r.config.TrustSrc && sourceMaxAge > 0 {
+
+		// Do we have valid min and max cache control values?
+		if r.config.MinSrcCacheControl >= -1 && r.config.MaxSrcCacheControl >= -1 {
+
+			// Is the max-age value between the min and max? Use the source image value.
+			if (sourceMaxAge >= r.config.MinSrcCacheControl || r.config.MinSrcCacheControl == -1) &&
+				(sourceMaxAge <= r.config.MaxSrcCacheControl || r.config.MaxSrcCacheControl == -1) {
+				trustSourceImage = true
+			}
+		}
+
+		if trustSourceImage {
+			cacheControlMaxAge = sourceMaxAge
+		}
+	}
 
 	// Set content type.
 	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", imageType))
+
+	// Set cache headers.
+	if cacheControlMaxAge > 0 {
+		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", cacheControlMaxAge))
+		w.Header().Set("Expires",
+			fmt.Sprintf("%s", time.Now().
+				Add(time.Duration(cacheControlMaxAge)*time.Second).
+				UTC().
+				Format(http.TimeFormat)))
+	}
+
+	if edgeControlTtl > 0 {
+		w.Header().Set("Edge-Control", fmt.Sprintf("downstream-ttl=%d, public", edgeControlTtl))
+	}
+
+	// Set etag header.
+	if r.etag != "" || r.lastModified != "" {
+		md5 := md5.New()
+		io.WriteString(md5, r.requestHash)
+
+		if r.etag != "" {
+			io.WriteString(md5, r.etag)
+		} else if r.lastModified != "" {
+			io.WriteString(md5, r.lastModified)
+		}
+
+		etag := fmt.Sprintf("%x", md5.Sum(nil))
+
+		w.Header().Set("Etag", etag)
+	}
+
+	// Set content length
+	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
 
 	// Write the image.
 	w.Write(imageBlob)
 
 	return nil
+}
+
+func sourceMaxAge(header string) int {
+	if header == "" {
+		return 0
+	}
+
+	regex, _ := regexp.Compile("max-age=([\\d]+)")
+	match := regex.FindStringSubmatch(header)
+	if len(match) == 1 {
+		sourceMaxAge, err := strconv.Atoi(match[0])
+		if err != nil {
+			return 0
+		}
+
+		return sourceMaxAge
+	}
+
+	return 0
 }

@@ -254,7 +254,7 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	}
 
 	// Set content type.
-	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", imageType))
+	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageType)))
 
 	// Set cache headers.
 	if cacheControlMaxAge > 0 {
@@ -290,6 +290,8 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 	// Set content length
 	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
+
+	w.WriteHeader(r.SourceImage.status)
 
 	// Write the image.
 	w.Write(imageBlob)

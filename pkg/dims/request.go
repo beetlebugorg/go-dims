@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,15 +20,16 @@ import (
 type Request struct {
 	config Config // The global configuration.
 
-	clientId            string      // The client ID of this request.
-	signature           string      // The signature of the request.
-	timestamp           int32       // The timestamp of the request.
-	imageUrl            string      // The image URL that is being manipulated.
-	placeholderImageUrl string      // The URL to the image in case of failures.
-	commands            string      // The unparsed commands (resize, crop, etc).
-	requestHash         string      // The hash of the request.
-	sampleFactor        float64     // The sample factor for optimizing resizing.
-	SourceImage         SourceImage // The source image.
+	clientId               string      // The client ID of this request.
+	signature              string      // The signature of the request.
+	timestamp              int32       // The timestamp of the request.
+	imageUrl               string      // The image URL that is being manipulated.
+	sendContentDisposition bool        // The content disposition of the request.
+	placeholderImageUrl    string      // The URL to the image in case of failures.
+	commands               string      // The unparsed commands (resize, crop, etc).
+	requestHash            string      // The hash of the request.
+	sampleFactor           float64     // The sample factor for optimizing resizing.
+	SourceImage            SourceImage // The source image.
 }
 
 type SourceImage struct {
@@ -270,6 +273,21 @@ func (r *Request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 	if edgeControlTtl > 0 {
 		w.Header().Set("Edge-Control", fmt.Sprintf("downstream-ttl=%d, public", edgeControlTtl))
+	}
+
+	// Set content disposition.
+	if r.sendContentDisposition {
+		// Grab filename from imageUrl
+		url, err := url.Parse(r.imageUrl)
+		if err != nil {
+			return err
+		}
+
+		filename := filepath.Base(url.Path)
+
+		slog.Info("sendImage", "sendContentDisposition", r.sendContentDisposition, "filename", filename)
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	}
 
 	// Set etag header.

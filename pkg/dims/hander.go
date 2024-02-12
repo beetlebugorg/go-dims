@@ -40,14 +40,15 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	io.WriteString(hash, r.URL.Query().Get("url"))
 
 	request := Request{
-		clientId:            r.PathValue("clientId"),
-		imageUrl:            r.URL.Query().Get("url"),
-		timestamp:           timestamp,
-		placeholderImageUrl: config.PlaceholderImageUrl,
-		commands:            r.PathValue("commands"),
-		config:              config,
-		requestHash:         fmt.Sprintf("%x", hash.Sum(nil)),
-		signature:           r.PathValue("signature"),
+		clientId:               r.PathValue("clientId"),
+		imageUrl:               r.URL.Query().Get("url"),
+		timestamp:              timestamp,
+		placeholderImageUrl:    config.PlaceholderImageUrl,
+		commands:               r.PathValue("commands"),
+		config:                 config,
+		requestHash:            fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:              r.PathValue("signature"),
+		sendContentDisposition: r.URL.Query().Get("download") == "1" || config.IncludeDisposition,
 	}
 
 	// Verify signature.

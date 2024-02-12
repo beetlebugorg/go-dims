@@ -4,7 +4,14 @@ go 1.22.0
 
 require github.com/spf13/viper v1.18.2
 
-require gopkg.in/gographics/imagick.v3 v3.5.1 // indirect
+require (
+	github.com/alecthomas/kong v0.8.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/integrii/flaggy v1.5.2 // indirect
+	github.com/spf13/cobra v1.8.0 // indirect
+	gopkg.in/gographics/imagick.v3 v3.5.1 // indirect
+)
+
 replace gopkg.in/gographics/imagick.v3 => ./override/imagick
 
 require (

@@ -56,18 +56,22 @@ verifySignature verifies the signature of the image resize is valid.
 *
 *   md5(1234567890secretresize/100x100crop/100x100http://example.com/image.jpg)
 */
+func Sign(timestamp string, secret string, commands string, imageUrl string) string {
+	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
+
+	md5 := md5.New()
+	io.WriteString(md5, timestamp)
+	io.WriteString(md5, secret)
+	io.WriteString(md5, sanitizedCommands)
+	io.WriteString(md5, imageUrl)
+
+	return fmt.Sprintf("%x", md5.Sum(nil))[0:7]
+}
+
 func (r *Request) verifySignature() error {
 	slog.Info("verifySignature", "url", r.imageUrl)
 
-	md5 := md5.New()
-	commands := strings.ReplaceAll(r.commands, " ", "+")
-
-	io.WriteString(md5, fmt.Sprintf("%d", r.timestamp))
-	io.WriteString(md5, r.config.SecretKey)
-	io.WriteString(md5, commands)
-	io.WriteString(md5, r.imageUrl)
-
-	hash := fmt.Sprintf("%x", md5.Sum(nil))[0:7]
+	hash := Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
 
 	if hash != r.signature {
 		slog.Error("verifySignature failed.", "expected", hash, "got", r.signature)

@@ -20,18 +20,10 @@ func NewHandler() http.Handler {
 		handleDims4(config, w, r)
 	})
 
-	mux.HandleFunc("/dims5/{signature}/{commands...}", func(w http.ResponseWriter, r *http.Request) {
-		handleDims5(config, w, r)
-	})
-
 	return mux
 }
 
 func handleDims4(config Config, w http.ResponseWriter, r *http.Request) {
-	handleDims5(config, w, r)
-}
-
-func handleDims5(config Config, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
 		"url", r.URL,
 		"clientId", r.PathValue("clientId"),
@@ -55,12 +47,11 @@ func handleDims5(config Config, w http.ResponseWriter, r *http.Request) {
 		commands:    r.PathValue("commands"),
 		config:      config,
 		requestHash: fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:   r.PathValue("signature"),
 	}
 
 	// Verify signature.
 	if err := request.verifySignature(); err != nil {
-		slog.Error("verifySignature failed.", "signature", request.signature, "error", err)
-
 		http.Error(w, "Invalid signature", http.StatusForbidden)
 		return
 	}

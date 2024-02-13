@@ -36,15 +36,23 @@ func (s *ServeCmd) Run() error {
 }
 
 type SignCmd struct {
-	Timestamp string `arg:"" name:"timestamp" help:"Expiration timestamp" type:"timestamp"`
-	Secret    string `arg:"" name:"secret" help:"Secret key."`
-	Commands  string `arg:"" name:"commands" help:"Commands to sign."`
-	ImageURL  string `arg:"" name:"image_url" help:"Image URL to sign."`
+	SigningAlgorithm string `help:"SigningAlgorithm to use." default:"hmac-sha256"`
+	Timestamp        string `arg:"" name:"timestamp" help:"Expiration timestamp" type:"timestamp"`
+	Secret           string `arg:"" name:"secret" help:"Secret key."`
+	Commands         string `arg:"" name:"commands" help:"Commands to sign."`
+	ImageURL         string `arg:"" name:"image_url" help:"Image URL to sign."`
 }
 
 func (s *SignCmd) Run() error {
-	hash := dims.Sign(s.Timestamp, s.Secret, s.Commands, s.ImageURL)
+	var hash string
+	if s.SigningAlgorithm == "md5" {
+		hash = dims.Sign(s.Timestamp, s.Secret, s.Commands, s.ImageURL)
+	} else if s.SigningAlgorithm == "hmac-sha256" {
+		hash = dims.SignHmacSha256(s.Timestamp, s.Secret, s.Commands, s.ImageURL)
+	}
+
 	fmt.Printf("%s\n", hash)
+
 	return nil
 }
 

@@ -22,6 +22,7 @@ type Config struct {
 	TrustSrc                   bool     `env:"DIMS_TRUST_SRC" envDefault:"false"`
 	MinSrcCacheControl         int      `env:"DIMS_MIN_SRC_CACHE_CONTROL" envDefault:"-1"`
 	MaxSrcCacheControl         int      `env:"DIMS_MAX_SRC_CACHE_CONTROL" envDefault:"-1"`
+	SigningAlgorithm           string   `env:"DIMS_SIGNING_ALGORITHM" envDefault:"hmac-sha256"`
 }
 
 func ReadConfig() Config {

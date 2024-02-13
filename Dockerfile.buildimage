@@ -47,4 +47,8 @@ RUN apt-get --no-install-recommends install -y apt-transport-https apt-utils \
             gcc g++ libc-ares-dev libc-ares2 libre2-dev \
             libssl-dev m4 make pkg-config tar wget zlib1g-dev
 
+RUN rm -rf \
+    /usr/local/imagemagick/share/doc \
+    /usr/local/imagemagick/share/man
+
 ENV PKG_CONFIG_PATH=/usr/local/imagemagick/lib/pkgconfig

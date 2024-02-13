@@ -13,7 +13,6 @@ type Config struct {
 	PlaceholderImageExpire     int      `env:"DIMS_PLACEHOLDER_IMAGE_EXPIRE" envDefault:"60"`
 	DefaultExpire              int      `env:"DIMS_DEFAULT_EXPIRE" envDefault:"31536000"`
 	StripMetadata              bool     `env:"DIMS_STRIP_METADATA" envDefault:"true"`
-	SampleFactor               float32  `env:"DIMS_SAMPLE_FACTOR"`
 	IncludeDisposition         bool     `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
 	DefaultOutputFormat        string   `env:"DIMS_DEFAULT_OUTPUT_FORMAT"`
 	IgnoreDefaultOutputFormats []string `env:"DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS"`

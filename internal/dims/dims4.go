@@ -43,7 +43,7 @@ type sourceImage struct {
 
 func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
-		"url", r.URL,
+		"imageUrl", r.URL.Query().Get("url"),
 		"clientId", r.PathValue("clientId"),
 		"signature", r.PathValue("signature"),
 		"timestamp", r.PathValue("timestamp"),
@@ -113,7 +113,7 @@ func newRequest(r *http.Request, config *Config) request {
 
 // verifySignature verifies the signature of the image resize is valid.
 func (r *request) verifySignature() error {
-	slog.Info("verifySignature", "url", r.imageUrl)
+	slog.Debug("verifySignature", "url", r.imageUrl)
 
 	hash := Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
 
@@ -222,8 +222,6 @@ func (r *request) processImage() (string, []byte, error) {
 
 		// Lookup command, call it.
 		if operation, ok := Operations[command]; ok {
-			slog.Info("executeCommand", "command", command, "args", args)
-
 			if err := operation(mw, args); err != nil {
 				return "", nil, err
 			}
@@ -327,7 +325,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 	// Set cache headers.
 	if cacheControlMaxAge > 0 {
-		slog.Info("sendImage", "cacheControlMaxAge", cacheControlMaxAge)
+		slog.Debug("sendImage", "cacheControlMaxAge", cacheControlMaxAge)
 
 		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", cacheControlMaxAge))
 		w.Header().Set("Expires",
@@ -351,7 +349,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 		filename := filepath.Base(u.Path)
 
-		slog.Info("sendImage", "sendContentDisposition", r.sendContentDisposition, "filename", filename)
+		slog.Debug("sendImage", "sendContentDisposition", r.sendContentDisposition, "filename", filename)
 
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	}

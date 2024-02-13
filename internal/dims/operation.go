@@ -28,20 +28,21 @@ import (
 type Operation func(mw *imagick.MagickWand, args string) error
 
 var Operations = map[string]Operation{
-	"crop":       CropOperation,
-	"resize":     ResizeOperation,
-	"strip":      StripMetadataOperation,
-	"format":     FormatOperation,
-	"quality":    QualityOperation,
-	"sharpen":    SharpenOperation,
-	"brightness": BrightnessOperation,
-	"flipflop":   FlipFlopOperation,
-	"sepia":      SepiaOperation,
-	"grayscale":  GrayScaleOperation,
-	"autolevel":  AutolevelOperation,
-	"invert":     InvertOperation,
-	"rotate":     RotateOperation,
-	"thumbnail":  ThumbnailOperation,
+	"crop":             CropOperation,
+	"resize":           ResizeOperation,
+	"strip":            StripMetadataOperation,
+	"format":           FormatOperation,
+	"quality":          QualityOperation,
+	"sharpen":          SharpenOperation,
+	"brightness":       BrightnessOperation,
+	"flipflop":         FlipFlopOperation,
+	"sepia":            SepiaOperation,
+	"grayscale":        GrayScaleOperation,
+	"autolevel":        AutolevelOperation,
+	"invert":           InvertOperation,
+	"rotate":           RotateOperation,
+	"thumbnail":        ThumbnailOperation,
+	"legacy_thumbnail": LegacyThumbnailOperation,
 }
 
 func ResizeOperation(mw *imagick.MagickWand, args string) error {
@@ -50,7 +51,8 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 	// Parse Geometry
 	var rect imagick.RectangleInfo
 
-	flags := imagick.ParseAbsoluteGeometry(args, &rect)
+	imagick.SetGeometry(mw.Image(), &rect)
+	flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("parsing thumbnail (resize) geometry failed")
 	}
@@ -77,7 +79,8 @@ func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 
 	slog.Info("ThumbnailOperation", "resizedArgs", resizedArgs)
 
-	flags := imagick.ParseAbsoluteGeometry(args, &rect)
+	imagick.SetGeometry(mw.Image(), &rect)
+	flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("parsing thumbnail (resize) geometry failed")
 	}
@@ -92,9 +95,9 @@ func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 
 	mw.ThumbnailImage(rect.Width, rect.Height)
 
-	if (flags & imagick.PERCENTVALUE) != 0 {
+	if (flags & imagick.PERCENTVALUE) == 0 {
 		flags = mw.ParseGravityGeometry(args, &rect, &exception)
-		if (flags & imagick.ALLVALUES) != 0 {
+		if (flags & imagick.ALLVALUES) == 0 {
 			return errors.New("parsing thumbnail (crop) geometry failed")
 		}
 
@@ -124,7 +127,7 @@ func CropOperation(mw *imagick.MagickWand, args string) error {
 	var rect imagick.RectangleInfo
 	var exception imagick.ExceptionInfo
 	flags := mw.ParseGravityGeometry(sanitizedArgs, &rect, &exception)
-	if (flags & imagick.ALLVALUES) != 0 {
+	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("invalid geometry")
 	}
 
@@ -243,4 +246,46 @@ func RotateOperation(mw *imagick.MagickWand, args string) error {
 	}
 
 	return mw.RotateImage(imagick.NewPixelWand(), degrees)
+}
+
+func LegacyThumbnailOperation(mw *imagick.MagickWand, args string) error {
+	slog.Debug("LegacyThumbnailOperation", "args", args)
+
+	resizedArgs := fmt.Sprintf("%s^", args)
+
+	// Parse Geometry
+	var rect imagick.RectangleInfo
+
+	imagick.SetGeometry(mw.Image(), &rect)
+	flags := imagick.ParseMetaGeometry(resizedArgs, &rect.X, &rect.Y, &rect.Width, &rect.Height)
+	if (flags & imagick.ALLVALUES) == 0 {
+		return errors.New("parsing thumbnail (resize) geometry failed")
+	}
+
+	format := mw.GetImageFormat()
+	if format == "JPG" {
+		factors := []float64{2.0, 1.0, 1.0}
+		mw.SetSamplingFactors(factors)
+	}
+
+	if rect.Width < 200 && rect.Height < 200 {
+		mw.ThumbnailImage(rect.Width, rect.Height)
+	} else {
+		mw.ScaleImage(rect.Width, rect.Height)
+	}
+
+	flags = imagick.ParseAbsoluteGeometry(args, &rect)
+	if (flags & imagick.ALLVALUES) == 0 {
+		return errors.New("parsing thumbnail (crop) geometry failed")
+	}
+
+	width := mw.GetImageWidth()
+	height := mw.GetImageHeight()
+	x := (width / 2) - (rect.Width / 2)
+	y := (height / 2) - (rect.Height / 2)
+
+	mw.CropImage(rect.Width, rect.Height, int(x), int(y))
+	mw.SetImagePage(rect.Width, rect.Height, int(x), int(y))
+
+	return nil
 }

@@ -43,6 +43,15 @@ func NewMagickWandFromImage(img *Image) *MagickWand {
 	return ret
 }
 
+// Returns an image from a wand
+func (mw *MagickWand) Image() *Image {
+	ret := &Image{
+		img: C.GetImageFromMagickWand(mw.mw),
+	}
+	runtime.KeepAlive(mw)
+	return ret
+}
+
 // Clear resources associated with the wand, leaving the wand blank, and ready to be used for a new set of images.
 func (mw *MagickWand) Clear() {
 	C.ClearMagickWand(mw.mw)

@@ -29,7 +29,7 @@ var Operations = map[string]Operation{
 }
 
 func ResizeOperation(mw *imagick.MagickWand, args string) error {
-	slog.Info("ResizeOperation", "args", args)
+	slog.Debug("ResizeOperation", "args", args)
 
 	// Parse Geometry
 	var x int
@@ -48,7 +48,7 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 		mw.SetSamplingFactors(factors)
 	}
 
-	slog.Info("ResizeOperation", "width", width, "height", height)
+	slog.Debug("ResizeOperation", "width", width, "height", height)
 
 	return mw.ScaleImage(width, height)
 }

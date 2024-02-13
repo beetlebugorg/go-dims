@@ -17,7 +17,14 @@ type ServeCmd struct {
 }
 
 func (s *ServeCmd) Run() error {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	var opts *slog.HandlerOptions
+	if s.Debug {
+		opts = &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
 	err := http.ListenAndServe(s.Bind, dims.NewHandler(s.Debug, s.Dev))

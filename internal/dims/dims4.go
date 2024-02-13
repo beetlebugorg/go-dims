@@ -126,7 +126,8 @@ func (r *request) verifySignature() error {
 	return nil
 }
 
-func _fetchImage(url string) sourceImage {
+func _fetchImage(url string, timeout time.Duration) sourceImage {
+	http.DefaultClient.Timeout = timeout
 	image, err := http.Get(url)
 	if err != nil || image.StatusCode != 200 {
 		return sourceImage{
@@ -152,7 +153,8 @@ func _fetchImage(url string) sourceImage {
 func (r *request) fetchImage() error {
 	slog.Info("downloadImage", "url", r.imageUrl)
 
-	r.sourceImage = _fetchImage(r.imageUrl)
+	timeout := time.Duration(r.config.DownloadTimeout) * time.Millisecond
+	r.sourceImage = _fetchImage(r.imageUrl, timeout)
 
 	if r.sourceImage.status != 200 {
 		return fmt.Errorf("failed to download image")

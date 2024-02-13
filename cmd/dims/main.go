@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
@@ -16,6 +17,9 @@ type ServeCmd struct {
 }
 
 func (s *ServeCmd) Run() error {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	err := http.ListenAndServe(s.Bind, dims.NewHandler(s.Debug, s.Dev))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)

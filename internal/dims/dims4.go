@@ -26,7 +26,7 @@ type request struct {
 	commands               string      // The unparsed commands (resize, crop, etc).
 	requestHash            string      // The hash of the request.
 	sampleFactor           float64     // The sample factor for optimizing resizing.
-	placeholder            bool        // Whether or not the placeholder image is being served.
+	placeholder            bool        // Whether the placeholder image is being served.
 	sourceImage            sourceImage // The source image.
 }
 
@@ -192,7 +192,7 @@ func (r *request) processImage() (string, []byte, error) {
 	// Flip image orientation, if needed.
 	mw.AutoOrientImage()
 
-	// Truncate images (i.e animated gif). This removes all but the first image.
+	// Truncate images (i.e. animated gif). This removes all but the first image.
 	images := mw.GetNumberImages()
 	if images > 1 {
 		for i := 1; i <= int(images); i++ {
@@ -257,7 +257,7 @@ func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
 
 	mw.NewImage(1, 1, pw)
 
-	// Execute the commands on the placeholder image so it has the same dimensions as the requested image.
+	// Execute the commands on the placeholder image, giving it the same dimensions as the requested image.
 	explodedCommands := strings.Split(r.commands, "/")
 	for i := 0; i < len(explodedCommands)-1; i += 2 {
 		command := explodedCommands[i]
@@ -344,12 +344,12 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	// Set content disposition.
 	if r.sendContentDisposition {
 		// Grab filename from imageUrl
-		url, err := url.Parse(r.imageUrl)
+		u, err := url.Parse(r.imageUrl)
 		if err != nil {
 			return err
 		}
 
-		filename := filepath.Base(url.Path)
+		filename := filepath.Base(u.Path)
 
 		slog.Info("sendImage", "sendContentDisposition", r.sendContentDisposition, "filename", filename)
 
@@ -358,13 +358,13 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 	// Set etag header.
 	if r.sourceImage.etag != "" || r.sourceImage.lastModified != "" {
-		md5 := md5.New()
-		io.WriteString(md5, r.requestHash)
+		hash := md5.New()
 
+		io.WriteString(hash, r.requestHash)
 		if r.sourceImage.etag != "" {
-			io.WriteString(md5, r.sourceImage.etag)
+			io.WriteString(hash, r.sourceImage.etag)
 		} else if r.sourceImage.lastModified != "" {
-			io.WriteString(md5, r.sourceImage.lastModified)
+			io.WriteString(hash, r.sourceImage.lastModified)
 		}
 
 		etag := fmt.Sprintf("%x", md5.Sum(nil))

@@ -1,6 +1,6 @@
 name: go-dims
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
     go-dims-docker:

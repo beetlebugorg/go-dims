@@ -27,5 +27,10 @@ func NewHandler(debug bool, dev bool) http.Handler {
 			handleDimsSizer(config, debug, dev, w, r)
 		})
 
+	mux.HandleFunc("/dims-status",
+		func(w http.ResponseWriter, r *http.Request) {
+			handleDimsStatus(config, debug, dev, w, r)
+		})
+
 	return mux
 }

@@ -1,7 +1,9 @@
 package dims
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"strings"
@@ -28,11 +30,22 @@ import (
 func Sign(timestamp string, secret string, commands string, imageUrl string) string {
 	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
 
-	md5 := md5.New()
-	io.WriteString(md5, timestamp)
-	io.WriteString(md5, secret)
-	io.WriteString(md5, sanitizedCommands)
-	io.WriteString(md5, imageUrl)
+	hash := md5.New()
+	io.WriteString(hash, timestamp)
+	io.WriteString(hash, secret)
+	io.WriteString(hash, sanitizedCommands)
+	io.WriteString(hash, imageUrl)
 
-	return fmt.Sprintf("%x", md5.Sum(nil))[0:7]
+	return fmt.Sprintf("%x", hash.Sum(nil))[0:7]
+}
+
+func SignHmacSha256(timestamp string, secret string, commands string, imageUrl string) string {
+	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(timestamp))
+	mac.Write([]byte(sanitizedCommands))
+	mac.Write([]byte(imageUrl))
+
+	return fmt.Sprintf("%x", mac.Sum(nil))[0:24]
 }

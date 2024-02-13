@@ -1,8 +1,11 @@
 package dims
 
 import (
+	"bytes"
 	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
+	"hash"
 	"io"
 	"log/slog"
 	"net/http"
@@ -95,10 +98,17 @@ func newRequest(r *http.Request, config *Config) request {
 	var timestamp int32
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
-	hash := md5.New()
-	io.WriteString(hash, r.PathValue("clientId"))
-	io.WriteString(hash, r.PathValue("commands"))
-	io.WriteString(hash, r.URL.Query().Get("url"))
+	var h hash.Hash
+	if config.SigningAlgorithm == "md5" {
+		h = md5.New()
+	} else {
+		h = sha256.New()
+	}
+
+	io.WriteString(h, r.PathValue("clientId"))
+	io.WriteString(h, r.PathValue("commands"))
+	io.WriteString(h, r.URL.Query().Get("url"))
+	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return request{
 		config:      config,
@@ -106,7 +116,7 @@ func newRequest(r *http.Request, config *Config) request {
 		imageUrl:    r.URL.Query().Get("url"),
 		timestamp:   timestamp,
 		commands:    r.PathValue("commands"),
-		requestHash: fmt.Sprintf("%x", hash.Sum(nil)),
+		requestHash: requestHash,
 		signature:   r.PathValue("signature"),
 	}
 }
@@ -115,10 +125,15 @@ func newRequest(r *http.Request, config *Config) request {
 func (r *request) verifySignature() error {
 	slog.Debug("verifySignature", "url", r.imageUrl)
 
-	hash := Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
+	var h string
+	if r.config.SigningAlgorithm == "md5" {
+		h = Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
+	} else {
+		h = SignHmacSha256(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
+	}
 
-	if hash != r.signature {
-		slog.Error("verifySignature failed.", "expected", hash, "got", r.signature)
+	if !bytes.Equal([]byte(h), []byte(r.signature)) {
+		slog.Error("verifySignature failed.", "expected", h, "got", r.signature)
 
 		return fmt.Errorf("invalid signature")
 	}
@@ -356,16 +371,21 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 	// Set etag header.
 	if r.sourceImage.etag != "" || r.sourceImage.lastModified != "" {
-		hash := md5.New()
-
-		io.WriteString(hash, r.requestHash)
-		if r.sourceImage.etag != "" {
-			io.WriteString(hash, r.sourceImage.etag)
-		} else if r.sourceImage.lastModified != "" {
-			io.WriteString(hash, r.sourceImage.lastModified)
+		var h hash.Hash
+		if r.config.SigningAlgorithm == "md5" {
+			h = md5.New()
+		} else {
+			h = sha256.New()
 		}
 
-		etag := fmt.Sprintf("%x", md5.Sum(nil))
+		io.WriteString(h, r.requestHash)
+		if r.sourceImage.etag != "" {
+			io.WriteString(h, r.sourceImage.etag)
+		} else if r.sourceImage.lastModified != "" {
+			io.WriteString(h, r.sourceImage.lastModified)
+		}
+
+		etag := fmt.Sprintf("%x", h.Sum(nil))
 
 		w.Header().Set("Etag", etag)
 	}
@@ -373,6 +393,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	// Set content length
 	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
 
+	// Set status code.
 	w.WriteHeader(r.sourceImage.status)
 
 	// Write the image.

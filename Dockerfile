@@ -12,11 +12,11 @@ FROM debian:bookworm-slim
 #
 
 # MAGIC_TIME_LIMIT is the maximum time in seconds that the ImageMagick operations will run
-MAGICK_TIME_LIMIT=1
+ENV MAGICK_TIME_LIMIT=1
 
 # MAGICK_MEMORY_LIMIT is the maximum amount of memory that the ImageMagick operations will use
 # before caching to disk.
-MAGICK_MEMORY_LIMIT=128MB
+ENV MAGICK_MEMORY_LIMIT=128MB
 
 #-- DIMS Settings
 #
@@ -36,6 +36,11 @@ ENV DIMS_TRUST_SRC=true
 ENV DIMS_MIN_SRC_CACHE_CONTROL=604800
 ENV DIMS_MAX_SRC_CACHE_CONTROL=604800
 ENV DIMS_CACHE_EXPIRE=604800
+
+# DIMS_SIGNING_ALGORITHM can be md5 or hmac-sha256
+# For compatibility with the original DIMS, set to md5.
+ENV DIMS_SIGNING_ALGORITHM=md5
+
 #ENV DIMS_DEFAULT_IMAGE_PREFIX=""
 #ENV DIMS_DEFAULT_OUTPUT_FORMAT=webp
 #ENV DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS=jpeg,png

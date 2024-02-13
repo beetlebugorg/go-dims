@@ -38,7 +38,7 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 	var height uint
 
 	flags := imagick.ParseMetaGeometry(args, &x, &y, &width, &height)
-	if flags&imagick.ALLVALUES == 0 {
+	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("invalid geometry")
 	}
 
@@ -143,12 +143,12 @@ func FlipFlopOperation(mw *imagick.MagickWand, args string) error {
 func SepiaOperation(mw *imagick.MagickWand, args string) error {
 	slog.Debug("SepiaOperation", "args", args)
 
-	threshhold, err := strconv.ParseFloat(args, 64)
+	threshold, err := strconv.ParseFloat(args, 64)
 	if err != nil {
 		return err
 	}
 
-	return mw.SepiaToneImage(threshhold * imagick.QUANTUM_RANGE)
+	return mw.SepiaToneImage(threshold * imagick.QUANTUM_RANGE)
 }
 
 func GrayScaleOperation(mw *imagick.MagickWand, args string) error {

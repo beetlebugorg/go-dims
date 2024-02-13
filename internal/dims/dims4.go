@@ -192,6 +192,22 @@ func (r *request) fetchImage() error {
 	return nil
 }
 
+/**
+ * This is the main code for processing images.  It will parse
+ * the command string into individual commands and execute them.
+ *
+ * When it's finished it will write the content type header and
+ * image data to connection and flush the connection.
+ *
+ * Commands should always come in pairs, the command name followed
+ * by the commands arguments delimited by '/'.  Example:
+ *
+ *      thumbnail/78x110/quality/70
+ *
+ * This will first execute the thumbnail command then it will
+ * set the quality of the image to 70 before writing the image
+ * to the connection.
+ */
 func (r *request) processImage() (string, []byte, error) {
 	slog.Debug("executeImagemagick", "commands", r.commands)
 
@@ -221,17 +237,6 @@ func (r *request) processImage() (string, []byte, error) {
 	// Flip image orientation, if needed.
 	mw.AutoOrientImage()
 
-	// Truncate images (i.e. animated gif). This removes all but the first image.
-	images := mw.GetNumberImages()
-	if images > 1 {
-		for i := 1; i <= int(images); i++ {
-			if i > 0 {
-				mw.SetIteratorIndex(i)
-				mw.RemoveImage()
-			}
-		}
-	}
-
 	// Execute the commands.
 	stripMetadata := true
 	formatProvided := false
@@ -254,6 +259,8 @@ func (r *request) processImage() (string, []byte, error) {
 			if err := operation(mw, args); err != nil {
 				return "", nil, err
 			}
+
+			mw.MergeImageLayers(imagick.IMAGE_LAYER_TRIM_BOUNDS)
 		}
 	}
 
@@ -270,7 +277,9 @@ func (r *request) processImage() (string, []byte, error) {
 		}
 	}
 
-	return mw.GetImageFormat(), mw.GetImageBlob(), nil
+	mw.ResetIterator()
+
+	return mw.GetImageFormat(), mw.GetImagesBlob(), nil
 }
 
 func (r *request) sendPlaceholderImage(w http.ResponseWriter) {

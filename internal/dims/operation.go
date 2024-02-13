@@ -16,6 +16,7 @@ package dims
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -40,6 +41,7 @@ var Operations = map[string]Operation{
 	"autolevel":  AutolevelOperation,
 	"invert":     InvertOperation,
 	"rotate":     RotateOperation,
+	"thumbnail":  ThumbnailOperation,
 }
 
 func ResizeOperation(mw *imagick.MagickWand, args string) error {
@@ -67,10 +69,50 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 	return mw.ScaleImage(width, height)
 }
 
+func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
+	slog.Debug("ThumbnailOperation", "args", args)
+
+	resizedArgs := fmt.Sprintf("%s^", args)
+
+	// Parse Geometry
+	var rect imagick.RectangleInfo
+	var exception imagick.ExceptionInfo
+
+	slog.Info("ThumbnailOperation", "resizedArgs", resizedArgs)
+
+	flags := imagick.ParseAbsoluteGeometry(args, &rect)
+	if (flags & imagick.ALLVALUES) == 0 {
+		return errors.New("parsing thumbnail (resize) geometry failed")
+	}
+
+	slog.Debug("ThumbnailOperation[resize]", "rect", rect)
+
+	format := mw.GetImageFormat()
+	if format == "JPG" {
+		factors := []float64{2.0, 1.0, 1.0}
+		mw.SetSamplingFactors(factors)
+	}
+
+	mw.ThumbnailImage(rect.Width, rect.Height)
+
+	if (flags & imagick.PERCENTVALUE) != 0 {
+		flags = mw.ParseGravityGeometry(args, &rect, &exception)
+		if (flags & imagick.ALLVALUES) != 0 {
+			return errors.New("parsing thumbnail (crop) geometry failed")
+		}
+
+		slog.Debug("ThumbnailOperation[crop]", "rect", rect)
+		mw.CropImage(rect.Width, rect.Height, rect.X, rect.Y)
+		return mw.SetImagePage(rect.Width, rect.Height, rect.X, rect.Y)
+	}
+
+	return nil
+}
+
 func CropOperation(mw *imagick.MagickWand, args string) error {
 	slog.Debug("CropOperation", "args", args)
 
-	/* Replace spaces with '+'. This happens when some user agents inadvertantly
+	/* Replace spaces with '+'. This happens when some user agents inadvertently
 	 * escape the '+' as %20 which gets converted to a space.
 	 *
 	 * Example:
@@ -85,7 +127,7 @@ func CropOperation(mw *imagick.MagickWand, args string) error {
 	var rect imagick.RectangleInfo
 	var exception imagick.ExceptionInfo
 	flags := mw.ParseGravityGeometry(sanitizedArgs, &rect, &exception)
-	if flags&imagick.ALLVALUES == 0 {
+	if (flags & imagick.ALLVALUES) != 0 {
 		return errors.New("invalid geometry")
 	}
 

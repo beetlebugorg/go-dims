@@ -1,6 +1,9 @@
-name: go-dims
+name: go-dims-build
 
-on: [push, pull_request]
+on: 
+  push:
+    paths:
+      - Dockerfile.buildimage
 
 jobs:
     go-dims-docker:
@@ -32,6 +35,7 @@ jobs:
               uses: docker/build-push-action@v5
               with:
                 context: .
+                file: Dockerfile.buildimage
                 push: true
                 platforms: linux/amd64,linux/arm64
-                tags: ghcr.io/beetlebugorg/go-dims:latest
+                tags: ghcr.io/beetlebugorg/go-dims:build-latest

@@ -2,7 +2,6 @@ package dims
 
 import (
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,6 +26,7 @@ type request struct {
 	commands               string      // The unparsed commands (resize, crop, etc).
 	requestHash            string      // The hash of the request.
 	sampleFactor           float64     // The sample factor for optimizing resizing.
+	placeholder            bool        // Whether or not the placeholder image is being served.
 	sourceImage            sourceImage // The source image.
 }
 
@@ -39,7 +39,6 @@ type sourceImage struct {
 	edgeControl         string // The edge control headers from the downloaded image.
 	lastModified        string // The last modified header from the downloaded image.
 	etag                string // The etag header from the downloaded image.
-	placeholder         bool   // The image is a placeholder.
 }
 
 func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
@@ -146,7 +145,6 @@ func _fetchImage(url string) sourceImage {
 
 	sourceImage.originalImageSize = int(image.ContentLength)
 	sourceImage.originalImage, _ = io.ReadAll(image.Body)
-	sourceImage.placeholder = false
 
 	return sourceImage
 }
@@ -220,24 +218,6 @@ func (r *request) processImage() (string, []byte, error) {
 			formatProvided = true
 		}
 
-		// If the placeholder image is being used don't execute crop operations.
-		if r.sourceImage.placeholder && (command == "crop" || command == "thumbnail") {
-			var rect imagick.RectangleInfo
-			imagick.ParseAbsoluteGeometry(args, &rect)
-
-			if rect.Width > 0 && rect.Height == 0 {
-				args = fmt.Sprintf("%d", rect.Height)
-			} else if rect.Height > 0 && rect.Width == 0 {
-				args = fmt.Sprintf("x%d", rect.Width)
-			} else if rect.Width > 0 && rect.Height > 0 {
-				args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
-			} else {
-				return "", nil, errors.New("Bad arguments")
-			}
-
-			command = "resize"
-		}
-
 		// Lookup command, call it.
 		if operation, ok := Operations[command]; ok {
 			slog.Info("executeCommand", "command", command, "args", args)
@@ -265,13 +245,45 @@ func (r *request) processImage() (string, []byte, error) {
 }
 
 func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
-	slog.Info("sendPlaceHolderImage", "url", r.config.PlaceholderImageUrl)
+	mw := imagick.NewMagickWand()
+	defer mw.Destroy()
 
-	r.sourceImage = _fetchImage(r.config.PlaceholderImageUrl)
-	r.sourceImage.placeholder = true
+	pw := imagick.NewPixelWand()
+	defer pw.Destroy()
 
-	imageType, imageBlob, _ := r.processImage()
-	r.sendImage(w, imageType, imageBlob)
+	pw.SetColor(r.config.PlaceholderBackground)
+
+	mw.NewImage(1, 1, pw)
+
+	// Execute the commands on the placeholder image so it has the same dimensions as the requested image.
+	explodedCommands := strings.Split(r.commands, "/")
+	for i := 0; i < len(explodedCommands)-1; i += 2 {
+		command := explodedCommands[i]
+		args := explodedCommands[i+1]
+
+		if command == "crop" || command == "thumbnail" {
+			var rect imagick.RectangleInfo
+			imagick.ParseAbsoluteGeometry(args, &rect)
+
+			if rect.Width > 0 && rect.Height == 0 {
+				args = fmt.Sprintf("%d", rect.Height)
+			} else if rect.Height > 0 && rect.Width == 0 {
+				args = fmt.Sprintf("x%d", rect.Width)
+			} else if rect.Width > 0 && rect.Height > 0 {
+				args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
+			}
+
+			command = "resize"
+		}
+
+		// Lookup command, call it.
+		if operation, ok := Operations[command]; ok {
+			operation(mw, args)
+		}
+	}
+
+	r.placeholder = true
+	r.sendImage(w, mw.GetImageFormat(), mw.GetImageBlob())
 }
 
 func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
@@ -304,7 +316,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 		}
 	}
 
-	if r.sourceImage.placeholder {
+	if r.placeholder {
 		cacheControlMaxAge = r.config.PlaceholderImageExpire
 	}
 

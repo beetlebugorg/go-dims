@@ -48,14 +48,11 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 	slog.Debug("ResizeOperation", "args", args)
 
 	// Parse Geometry
-	var x int
-	var y int
-	var width uint
-	var height uint
+	var rect imagick.RectangleInfo
 
-	flags := imagick.ParseMetaGeometry(args, &x, &y, &width, &height)
+	flags := imagick.ParseAbsoluteGeometry(args, &rect)
 	if (flags & imagick.ALLVALUES) == 0 {
-		return errors.New("invalid geometry")
+		return errors.New("parsing thumbnail (resize) geometry failed")
 	}
 
 	format := mw.GetImageFormat()
@@ -64,9 +61,9 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 		mw.SetSamplingFactors(factors)
 	}
 
-	slog.Debug("ResizeOperation", "width", width, "height", height)
+	slog.Debug("ResizeOperation", "width", rect.Width, "height", rect.Height)
 
-	return mw.ScaleImage(width, height)
+	return mw.ScaleImage(rect.Width, rect.Height)
 }
 
 func ThumbnailOperation(mw *imagick.MagickWand, args string) error {

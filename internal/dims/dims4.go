@@ -51,25 +51,7 @@ func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 		"timestamp", r.PathValue("timestamp"),
 		"commands", r.PathValue("commands"))
 
-	var timestamp int32
-	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
-
-	hash := md5.New()
-	io.WriteString(hash, r.PathValue("clientId"))
-	io.WriteString(hash, r.PathValue("commands"))
-	io.WriteString(hash, r.URL.Query().Get("url"))
-
-	request := request{
-		clientId:               r.PathValue("clientId"),
-		imageUrl:               r.URL.Query().Get("url"),
-		timestamp:              timestamp,
-		placeholderImageUrl:    config.PlaceholderImageUrl,
-		commands:               r.PathValue("commands"),
-		config:                 &config,
-		requestHash:            fmt.Sprintf("%x", hash.Sum(nil)),
-		signature:              r.PathValue("signature"),
-		sendContentDisposition: r.URL.Query().Get("download") == "1" || config.IncludeDisposition,
-	}
+	request := newRequest(r, &config)
 
 	// Verify signature.
 	if !dev {
@@ -108,6 +90,27 @@ func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 
 		http.Error(w, "Failed to serve image", http.StatusInternalServerError)
 		return
+	}
+}
+
+func newRequest(r *http.Request, config *Config) request {
+	var timestamp int32
+	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
+
+	hash := md5.New()
+	io.WriteString(hash, r.PathValue("clientId"))
+	io.WriteString(hash, r.PathValue("commands"))
+	io.WriteString(hash, r.URL.Query().Get("url"))
+
+	return request{
+		config:              config,
+		clientId:            r.PathValue("clientId"),
+		imageUrl:            r.URL.Query().Get("url"),
+		timestamp:           timestamp,
+		placeholderImageUrl: config.PlaceholderImageUrl,
+		commands:            r.PathValue("commands"),
+		requestHash:         fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:           r.PathValue("signature"),
 	}
 }
 

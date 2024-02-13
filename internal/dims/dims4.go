@@ -409,7 +409,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	}
 
 	if edgeControlTtl > 0 {
-		w.Header().Set("Edge-Control", fmt.Sprintf("downstream-ttl=%d, public", edgeControlTtl))
+		w.Header().Set("Edge-Control", fmt.Sprintf("downstream-ttl=%d", edgeControlTtl))
 	}
 
 	// Set content disposition.

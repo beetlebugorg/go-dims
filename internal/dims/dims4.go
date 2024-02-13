@@ -192,22 +192,56 @@ func (r *request) fetchImage() error {
 	return nil
 }
 
-/**
- * This is the main code for processing images.  It will parse
- * the command string into individual commands and execute them.
- *
- * When it's finished it will write the content type header and
- * image data to connection and flush the connection.
- *
- * Commands should always come in pairs, the command name followed
- * by the commands arguments delimited by '/'.  Example:
- *
- *      thumbnail/78x110/quality/70
- *
- * This will first execute the thumbnail command then it will
- * set the quality of the image to 70 before writing the image
- * to the connection.
- */
+/*
+Parse through the requested commands and set
+the optimal image size on the MagicWand.
+
+This is used while reading an image to improve
+performance when generating thumbnails from very
+large images.
+
+An example speed is taking 1817x3000 sized image and
+reducing it to a 78x110 thumbnail:
+
+	without MagickSetSize: 396ms
+	with MagickSetSize:    105ms
+*/
+func (r *request) setOptimalImageSize(mw *imagick.MagickWand) {
+	explodedCommands := strings.Split(r.commands, "/")
+	for i := 0; i < len(explodedCommands)-1; i += 2 {
+		command := explodedCommands[i]
+		args := explodedCommands[i+1]
+
+		if command == "thumbnail" || command == "resize" {
+			var rect imagick.RectangleInfo
+			flags := imagick.ParseAbsoluteGeometry(args, &rect)
+
+			if (flags&imagick.WIDTHVALUE != 0) &&
+				(flags&imagick.HEIGHTVALUE != 0) &&
+				(flags&imagick.PERCENTVALUE == 0) {
+				mw.SetSize(rect.Width, rect.Height)
+				return
+			}
+		}
+	}
+}
+
+/*
+This is the main code for processing images.  It will parse
+the command string into individual commands and execute them.
+
+When it's finished it will write the content type header and
+image data to connection and flush the connection.
+
+Commands should always come in pairs, the command name followed
+by the commands arguments delimited by '/'.  Example:
+
+	thumbnail/78x110/quality/70
+
+This will first execute the thumbnail command then it will
+set the quality of the image to 70 before writing the image
+to the connection.
+*/
 func (r *request) processImage() (string, []byte, error) {
 	slog.Debug("executeImagemagick", "commands", r.commands)
 
@@ -215,6 +249,7 @@ func (r *request) processImage() (string, []byte, error) {
 	defer mw.Destroy()
 
 	// Read the image.
+	r.setOptimalImageSize(mw)
 	err := mw.ReadImageBlob(r.sourceImage.originalImage)
 	if err != nil {
 		return "", nil, err

@@ -24,7 +24,7 @@ type sizerResponse struct {
 	Width  int `json:"width"`
 }
 
-func handleDimsSizer(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
+func HandleDimsSizer(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	request := sizerRequest{
 		imageUrl: r.PathValue("url"),
 	}

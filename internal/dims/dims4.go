@@ -43,7 +43,7 @@ type sourceImage struct {
 	placeholder         bool   // The image is a placeholder.
 }
 
-func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
+func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
 		"url", r.URL,
 		"clientId", r.PathValue("clientId"),
@@ -111,37 +111,7 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	}
 }
 
-/*
-verifySignature verifies the signature of the image resize is valid.
-*
-* The signature is the first 6 characters of an md5 hash of:
-*
-*   1. timestamp
-*   2. secret key (from the configuration)
-*   3. commands (as-is from the URL)
-*   4. image URL
-*
-* Example:
-
-*   1. timestamp: 1234567890
-*   2. secret
-*   3. commands: resize/100x100/crop/100x100
-*   4. image URL: http://example.com/image.jpg
-*
-*   md5(1234567890secretresize/100x100crop/100x100http://example.com/image.jpg)
-*/
-func Sign(timestamp string, secret string, commands string, imageUrl string) string {
-	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
-
-	md5 := md5.New()
-	io.WriteString(md5, timestamp)
-	io.WriteString(md5, secret)
-	io.WriteString(md5, sanitizedCommands)
-	io.WriteString(md5, imageUrl)
-
-	return fmt.Sprintf("%x", md5.Sum(nil))[0:7]
-}
-
+// verifySignature verifies the signature of the image resize is valid.
 func (r *request) verifySignature() error {
 	slog.Info("verifySignature", "url", r.imageUrl)
 

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
 	imagick.Initialize()
 
-	config := ReadConfig()
+	config := dims.ReadConfig()
 
 	if debug {
 		fmt.Printf("config: %+v\n", config)
@@ -19,17 +20,17 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			handleDims4(config, debug, dev, w, r)
+			dims.HandleDims4(config, debug, dev, w, r)
 		})
 
 	mux.HandleFunc("/dims-sizer/{url}",
 		func(w http.ResponseWriter, r *http.Request) {
-			handleDimsSizer(config, debug, dev, w, r)
+			dims.HandleDimsSizer(config, debug, dev, w, r)
 		})
 
 	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
-			handleDimsStatus(config, debug, dev, w, r)
+			dims.HandleDimsStatus(config, debug, dev, w, r)
 		})
 
 	return mux

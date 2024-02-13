@@ -76,7 +76,8 @@ RUN apt-get update && \
     apt-get -y install \
         libpangocairo-1.0-0 libgif7 libjpeg62-turbo libpng16-16 libgomp1 libjbig0 liblcms2-2 \
         libbz2-1.0 libfftw3-double3 libfontconfig1 libfreetype6 libheif1 \
-        liblqr-1-0 libltdl7 liblzma5 libopenjp2-7 libopenexr-3-1-30 ca-certificates
+        liblqr-1-0 libltdl7 liblzma5 libopenjp2-7 libopenexr-3-1-30 ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV LD_LIBRARY_PATH=/usr/local/imagemagick/lib
 

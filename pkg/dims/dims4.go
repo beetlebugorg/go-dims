@@ -18,8 +18,7 @@ import (
 )
 
 type request struct {
-	config Config // The global configuration.
-
+	config                 *Config     // The global configuration.
 	clientId               string      // The client ID of this request.
 	signature              string      // The signature of the request.
 	timestamp              int32       // The timestamp of the request.
@@ -66,7 +65,7 @@ func handleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 		timestamp:              timestamp,
 		placeholderImageUrl:    config.PlaceholderImageUrl,
 		commands:               r.PathValue("commands"),
-		config:                 config,
+		config:                 &config,
 		requestHash:            fmt.Sprintf("%x", hash.Sum(nil)),
 		signature:              r.PathValue("signature"),
 		sendContentDisposition: r.URL.Query().Get("download") == "1" || config.IncludeDisposition,
@@ -235,6 +234,8 @@ func (r *request) processImage() (string, []byte, error) {
 
 	// Execute the commands.
 	stripMetadata := true
+	formatProvided := false
+
 	explodedCommands := strings.Split(r.commands, "/")
 	for i := 0; i < len(explodedCommands)-1; i += 2 {
 		command := explodedCommands[i]
@@ -242,6 +243,10 @@ func (r *request) processImage() (string, []byte, error) {
 
 		if command == "strip" {
 			stripMetadata = false
+		}
+
+		if command == "format" {
+			formatProvided = true
 		}
 
 		// If the placeholder image is being used don't execute crop operations.
@@ -275,6 +280,14 @@ func (r *request) processImage() (string, []byte, error) {
 	// Strip metadata. (if not already stripped)
 	if stripMetadata && r.config.StripMetadata {
 		mw.StripImage()
+	}
+
+	// Set output format if not provided in the request.
+	if !formatProvided && r.config.DefaultOutputFormat != "" {
+		format := strings.ToLower(mw.GetImageFormat())
+		if !contains(r.config.IgnoreDefaultOutputFormats, format) {
+			mw.SetImageFormat(r.config.DefaultOutputFormat)
+		}
 	}
 
 	return mw.GetImageFormat(), mw.GetImageBlob(), nil
@@ -402,4 +415,13 @@ func sourceMaxAge(header string) int {
 	}
 
 	return 0
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

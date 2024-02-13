@@ -81,5 +81,7 @@ RUN apt-get update && \
 ENV LD_LIBRARY_PATH=/usr/local/imagemagick/lib
 
 ENTRYPOINT ["/usr/local/imagemagick/bin/dims"]
+CMD ["serve", "--bind", ":8080"]
+EXPOSE 8080
 
 USER 33

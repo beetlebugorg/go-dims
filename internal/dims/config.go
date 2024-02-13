@@ -15,7 +15,6 @@ type Config struct {
 	StripMetadata              bool     `env:"DIMS_STRIP_METADATA" envDefault:"true"`
 	SampleFactor               float32  `env:"DIMS_SAMPLE_FACTOR"`
 	IncludeDisposition         bool     `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
-	DisableEncodedFetch        bool     `env:"DIMS_DISABLE_ENCODED_FETCH" envDefault:"false"`
 	DefaultOutputFormat        string   `env:"DIMS_DEFAULT_OUTPUT_FORMAT"`
 	IgnoreDefaultOutputFormats []string `env:"DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS"`
 	SecretKey                  string   `env:"DIMS_SECRET_KEY"`

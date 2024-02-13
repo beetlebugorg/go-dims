@@ -11,8 +11,8 @@ import (
 
 type ServeCmd struct {
 	Bind  string `help:"Bind address to serve on." default:"127.0.0.1:8080"`
-	Debug bool   `optional:"" help:"Enable debug mode."`
-	Dev   bool   `optional:"" help:"Enable development mode."`
+	Debug bool   `help:"Enable debug mode." default:"false"`
+	Dev   bool   `help:"Enable development mode." default:"false"`
 }
 
 func (s *ServeCmd) Run() error {

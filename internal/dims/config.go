@@ -25,11 +25,6 @@ type Config struct {
 	TrustSrc                   bool     `env:"DIMS_TRUST_SRC" envDefault:"false"`
 	MinSrcCacheControl         int      `env:"DIMS_MIN_SRC_CACHE_CONTROL" envDefault:"-1"`
 	MaxSrcCacheControl         int      `env:"DIMS_MAX_SRC_CACHE_CONTROL" envDefault:"-1"`
-	//MagickSizeType area_size
-	//MagickSizeType memory_size
-	//MagickSizeType map_size
-	//MagickSizeType disk_size
-
 }
 
 func ReadConfig() Config {

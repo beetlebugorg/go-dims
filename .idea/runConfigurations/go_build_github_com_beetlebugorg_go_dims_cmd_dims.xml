@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go build github.com/beetlebugorg/go-dims/cmd/dims" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+    <module name="go-dims" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="serve --dev" />
+    <kind value="PACKAGE" />
+    <package value="github.com/beetlebugorg/go-dims/cmd/dims" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <output_directory value="$PROJECT_DIR$/build/bin" />
+    <method v="2" />
+  </configuration>
+</component>

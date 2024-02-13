@@ -24,7 +24,6 @@ type request struct {
 	timestamp              int32       // The timestamp of the request.
 	imageUrl               string      // The image URL that is being manipulated.
 	sendContentDisposition bool        // The content disposition of the request.
-	placeholderImageUrl    string      // The URL to the image in case of failures.
 	commands               string      // The unparsed commands (resize, crop, etc).
 	requestHash            string      // The hash of the request.
 	sampleFactor           float64     // The sample factor for optimizing resizing.
@@ -103,14 +102,13 @@ func newRequest(r *http.Request, config *Config) request {
 	io.WriteString(hash, r.URL.Query().Get("url"))
 
 	return request{
-		config:              config,
-		clientId:            r.PathValue("clientId"),
-		imageUrl:            r.URL.Query().Get("url"),
-		timestamp:           timestamp,
-		placeholderImageUrl: config.PlaceholderImageUrl,
-		commands:            r.PathValue("commands"),
-		requestHash:         fmt.Sprintf("%x", hash.Sum(nil)),
-		signature:           r.PathValue("signature"),
+		config:      config,
+		clientId:    r.PathValue("clientId"),
+		imageUrl:    r.URL.Query().Get("url"),
+		timestamp:   timestamp,
+		commands:    r.PathValue("commands"),
+		requestHash: fmt.Sprintf("%x", hash.Sum(nil)),
+		signature:   r.PathValue("signature"),
 	}
 }
 
@@ -267,9 +265,9 @@ func (r *request) processImage() (string, []byte, error) {
 }
 
 func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
-	slog.Info("sendPlaceHolderImage", "url", r.placeholderImageUrl)
+	slog.Info("sendPlaceHolderImage", "url", r.config.PlaceholderImageUrl)
 
-	r.sourceImage = _fetchImage(r.placeholderImageUrl)
+	r.sourceImage = _fetchImage(r.config.PlaceholderImageUrl)
 	r.sourceImage.placeholder = true
 
 	imageType, imageBlob, _ := r.processImage()

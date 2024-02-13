@@ -1,9 +1,11 @@
 name: go-dims-build
 
-on: []
-#  push:
-#    paths:
-#      - Dockerfile.buildimage
+on: 
+  push:
+    tags:
+      - 'buildimage.*'
+    paths:
+      - Dockerfile.buildimage
 
 jobs:
     go-dims-docker:

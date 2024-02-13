@@ -32,6 +32,15 @@ jobs:
               uses: docker/build-push-action@v5
               with:
                 context: .
+                file: Dockerfile.buildimage
+                push: true
+                platforms: linux/amd64,linux/arm64
+                tags: ghcr.io/beetlebugorg/go-dims:build-latest
+
+            - name: Build and push
+              uses: docker/build-push-action@v5
+              with:
+                context: .
                 push: true
                 platforms: linux/amd64,linux/arm64
                 tags: ghcr.io/beetlebugorg/go-dims:latest

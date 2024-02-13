@@ -11,9 +11,9 @@ This port:
     - aims to be backward compatible with the `/dims4/` version of mod-dims
     - uses Imagemagick 7.x
 
-Attributions:
+This software uses the following software:
 
-*imagick*
+    *imagick*
 
-Copyright (c) 2013-2014, The GoGraphics Team
-All rights reserved.
+    Copyright (c) 2013-2014, The GoGraphics Team
+    All rights reserved.

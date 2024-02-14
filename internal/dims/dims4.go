@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -113,7 +114,7 @@ func newRequest(r *http.Request, config *Config) request {
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
 	var h hash.Hash
-	if config.SigningAlgorithm == "md5" {
+	if config.Signing.SigningAlgorithm == "md5" {
 		h = md5.New()
 	} else {
 		h = sha256.New()
@@ -140,10 +141,10 @@ func (r *request) verifySignature() error {
 	slog.Debug("verifySignature", "url", r.imageUrl)
 
 	var h string
-	if r.config.SigningAlgorithm == "md5" {
-		h = Sign(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
+	if r.config.Signing.SigningAlgorithm == "md5" {
+		h = Sign(fmt.Sprintf("%d", r.timestamp), r.config.Signing.SigningKey, r.commands, r.imageUrl)
 	} else {
-		h = SignHmacSha256(fmt.Sprintf("%d", r.timestamp), r.config.SecretKey, r.commands, r.imageUrl)
+		h = SignHmacSha256(fmt.Sprintf("%d", r.timestamp), r.config.Signing.SigningKey, r.commands, r.imageUrl)
 	}
 
 	if !bytes.Equal([]byte(h), []byte(r.signature)) {
@@ -188,7 +189,7 @@ func _fetchImage(imageUrl string, timeout time.Duration) sourceImage {
 func (r *request) fetchImage() error {
 	slog.Info("downloadImage", "url", r.imageUrl)
 
-	timeout := time.Duration(r.config.DownloadTimeout) * time.Millisecond
+	timeout := time.Duration(r.config.Timeout.Download) * time.Millisecond
 	r.sourceImage = _fetchImage(r.imageUrl, timeout)
 
 	if r.sourceImage.status != 200 {
@@ -311,10 +312,10 @@ func (r *request) processImage() (string, []byte, error) {
 	}
 
 	// Set output format if not provided in the request.
-	if !formatProvided && r.config.DefaultOutputFormat != "" {
+	if !formatProvided && r.config.OutputFormat.OutputFormat != "" {
 		format := strings.ToLower(mw.GetImageFormat())
-		if !contains(r.config.IgnoreDefaultOutputFormats, format) {
-			mw.SetImageFormat(r.config.DefaultOutputFormat)
+		if !contains(r.config.OutputFormat.Exclude, format) {
+			mw.SetImageFormat(r.config.OutputFormat.OutputFormat)
 		}
 	}
 
@@ -330,7 +331,7 @@ func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
 	pw := imagick.NewPixelWand()
 	defer pw.Destroy()
 
-	pw.SetColor(r.config.PlaceholderBackground)
+	pw.SetColor(r.config.Error.Background)
 
 	mw.NewImage(1, 1, pw)
 
@@ -370,46 +371,43 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 		return fmt.Errorf("image is empty")
 	}
 
-	cacheControlMaxAge := r.config.CacheControlMaxAge
-	edgeControlTtl := r.config.EdgeControlDownstreamTtl
+	maxAge := r.config.OriginCacheControl.Default
+	edgeControlTtl := r.config.EdgeControl.DownstreamTtl
 
-	sourceMaxAge := sourceMaxAge(r.sourceImage.cacheControl)
-	trustSourceImage := false
+	if r.config.OriginCacheControl.UseOrigin {
+		originMaxAge, err := sourceMaxAge(r.sourceImage.cacheControl)
+		if err == nil {
+			maxAge = originMaxAge
 
-	// Do we trust the source image (i.e. we control the origin) and are we able to pull out
-	// the max-age from its Cache-Control header?
-	if r.config.TrustSrc && sourceMaxAge > 0 {
-
-		// Do we have valid min and max cache control values?
-		if r.config.MinSrcCacheControl >= -1 && r.config.MaxSrcCacheControl >= -1 {
-
-			// Is the max-age value between the min and max? Use the source image value.
-			if (sourceMaxAge >= r.config.MinSrcCacheControl || r.config.MinSrcCacheControl == -1) &&
-				(sourceMaxAge <= r.config.MaxSrcCacheControl || r.config.MaxSrcCacheControl == -1) {
-				trustSourceImage = true
+			// If below minimum, set to minimum.
+			min := r.config.OriginCacheControl.Min
+			if min != 0 && maxAge <= min {
+				maxAge = min
 			}
-		}
 
-		if trustSourceImage {
-			cacheControlMaxAge = sourceMaxAge
+			// If above maximum, set to maximum.
+			max := r.config.OriginCacheControl.Max
+			if max != 0 && maxAge >= max {
+				maxAge = max
+			}
 		}
 	}
 
 	if r.placeholder {
-		cacheControlMaxAge = r.config.PlaceholderImageExpire
+		maxAge = r.config.OriginCacheControl.Error
 	}
 
 	// Set content type.
 	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageType)))
 
 	// Set cache headers.
-	if cacheControlMaxAge > 0 {
-		slog.Debug("sendImage", "cacheControlMaxAge", cacheControlMaxAge)
+	if maxAge > 0 {
+		slog.Debug("sendImage", "maxAge", maxAge)
 
-		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", cacheControlMaxAge))
+		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
 		w.Header().Set("Expires",
 			fmt.Sprintf("%s", time.Now().
-				Add(time.Duration(cacheControlMaxAge)*time.Second).
+				Add(time.Duration(maxAge)*time.Second).
 				UTC().
 				Format(http.TimeFormat)))
 	}
@@ -436,7 +434,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	// Set etag header.
 	if r.sourceImage.etag != "" || r.sourceImage.lastModified != "" {
 		var h hash.Hash
-		if r.config.SigningAlgorithm == "md5" {
+		if r.config.Signing.SigningAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()
@@ -466,9 +464,9 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 	return nil
 }
 
-func sourceMaxAge(header string) int {
+func sourceMaxAge(header string) (int, error) {
 	if header == "" {
-		return 0
+		return 0, errors.New("empty header")
 	}
 
 	regex, _ := regexp.Compile("max-age=([\\d]+)")
@@ -476,13 +474,13 @@ func sourceMaxAge(header string) int {
 	if len(match) == 1 {
 		sourceMaxAge, err := strconv.Atoi(match[0])
 		if err != nil {
-			return 0
+			return 0, errors.New("unable to convert to int")
 		}
 
-		return sourceMaxAge
+		return sourceMaxAge, nil
 	}
 
-	return 0
+	return 0, errors.New("max-age not found in header")
 }
 
 func contains(s []string, e string) bool {

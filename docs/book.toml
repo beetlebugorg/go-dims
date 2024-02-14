@@ -1,0 +1,11 @@
+[book]
+title = "Dynamic Image Manipulation Service"
+authors = ["Jeremy Collins"]
+description = "lakdjfadjf"
+language = "en"
+multilingual = false
+src = "src"
+extra-watch-dirs = ["theme"]
+
+[output.html]
+additional-css = ["theme/css/custom.css"]

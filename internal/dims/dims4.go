@@ -155,9 +155,15 @@ func (r *request) verifySignature() error {
 	return nil
 }
 
-func _fetchImage(url string, timeout time.Duration) sourceImage {
+func _fetchImage(imageUrl string, timeout time.Duration) sourceImage {
+	if _, err := url.ParseRequestURI(imageUrl); err != nil {
+		return sourceImage{
+			status: 400,
+		}
+	}
+
 	http.DefaultClient.Timeout = timeout
-	image, err := http.Get(url)
+	image, err := http.Get(imageUrl)
 	if err != nil || image.StatusCode != 200 {
 		return sourceImage{
 			status: image.StatusCode,

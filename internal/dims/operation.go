@@ -16,7 +16,6 @@ package dims
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -43,6 +42,7 @@ var Operations = map[string]Operation{
 	"rotate":           RotateOperation,
 	"thumbnail":        ThumbnailOperation,
 	"legacy_thumbnail": LegacyThumbnailOperation,
+	"gravity":          GravityOperation,
 }
 
 func ResizeOperation(mw *imagick.MagickWand, args string) error {
@@ -71,7 +71,9 @@ func ResizeOperation(mw *imagick.MagickWand, args string) error {
 func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 	slog.Debug("ThumbnailOperation", "args", args)
 
-	resizedArgs := fmt.Sprintf("%s^", args)
+	// Remove any symbols and add a trailing '^' to the geometry. This ensures
+	// that the image will be at least as large as requested.
+	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
 	// Parse Geometry
 	var rect imagick.RectangleInfo
@@ -80,7 +82,7 @@ func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 	slog.Info("ThumbnailOperation", "resizedArgs", resizedArgs)
 
 	imagick.SetGeometry(mw.Image(), &rect)
-	flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
+	flags := imagick.ParseMetaGeometry(resizedArgs, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("parsing thumbnail (resize) geometry failed")
 	}
@@ -95,7 +97,7 @@ func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 
 	mw.ThumbnailImage(rect.Width, rect.Height)
 
-	if (flags & imagick.PERCENTVALUE) == 0 {
+	if (flags & imagick.PERCENTVALUE) != 0 {
 		flags = mw.ParseGravityGeometry(args, &rect, &exception)
 		if (flags & imagick.ALLVALUES) == 0 {
 			return errors.New("parsing thumbnail (crop) geometry failed")
@@ -172,7 +174,7 @@ func SharpenOperation(mw *imagick.MagickWand, args string) error {
 		geometry.Sigma = 1.0
 	}
 
-	return mw.SharpenImage(0, 1)
+	return mw.SharpenImage(geometry.Rho, geometry.Sigma)
 }
 
 func BrightnessOperation(mw *imagick.MagickWand, args string) error {
@@ -248,10 +250,35 @@ func RotateOperation(mw *imagick.MagickWand, args string) error {
 	return mw.RotateImage(imagick.NewPixelWand(), degrees)
 }
 
+func GravityOperation(mw *imagick.MagickWand, args string) error {
+	slog.Debug("GravityOperation", "args", args)
+
+	gravityMap := map[string]imagick.GravityType{
+		"northwest": imagick.GRAVITY_NORTH_WEST,
+		"north":     imagick.GRAVITY_NORTH,
+		"northeast": imagick.GRAVITY_NORTH_EAST,
+		"west":      imagick.GRAVITY_WEST,
+		"center":    imagick.GRAVITY_CENTER,
+		"east":      imagick.GRAVITY_EAST,
+		"southwest": imagick.GRAVITY_SOUTH_WEST,
+		"south":     imagick.GRAVITY_SOUTH,
+		"southeast": imagick.GRAVITY_SOUTH_EAST,
+	}
+
+	gravity, ok := gravityMap[strings.ToLower(args)]
+	if !ok {
+		return errors.New("unknown gravity")
+	}
+
+	return mw.SetImageGravity(gravity)
+}
+
 func LegacyThumbnailOperation(mw *imagick.MagickWand, args string) error {
 	slog.Debug("LegacyThumbnailOperation", "args", args)
 
-	resizedArgs := fmt.Sprintf("%s^", args)
+	// Remove any symbols and add a trailing '^' to the geometry. This ensures
+	// that the image will be at least as large as requested.
+	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
 	// Parse Geometry
 	var rect imagick.RectangleInfo

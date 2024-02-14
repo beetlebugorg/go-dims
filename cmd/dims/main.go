@@ -25,7 +25,7 @@ import (
 )
 
 type ServeCmd struct {
-	Bind  string `help:"Bind address to serve on." default:"127.0.0.1:8080"`
+	Bind  string `help:"Bind address to serve on." default:":8080"`
 	Debug bool   `help:"Enable debug mode." default:"false"`
 	Dev   bool   `help:"Enable development mode." default:"false"`
 }

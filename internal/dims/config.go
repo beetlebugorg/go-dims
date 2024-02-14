@@ -20,22 +20,50 @@ import (
 	"github.com/caarlos0/env/v10"
 )
 
+type OriginCacheControl struct {
+	UseOrigin bool `env:"DIMS_CACHE_CONTROL_USE_ORIGIN" envDefault:"false"`
+	Min       int  `env:"DIMS_CACHE_CONTROL_MIN" envDefault:"0"`
+	Max       int  `env:"DIMS_CACHE_CONTROL_MAX" envDefault:"0"`
+	Default   int  `env:"DIMS_CACHE_CONTROL_DEFAULT" envDefault:"31536000"`
+	Error     int  `env:"DIMS_CACHE_CONTROL_ERROR" envDefault:"60"`
+}
+
+type EdgeControl struct {
+	DownstreamTtl int `env:"DIMS_EDGE_CONTROL_DOWNSTREAM_TTL" envDefault:"0"`
+}
+
+type Error struct {
+	Image      string `env:"DIMS_ERROR_IMAGE" envDefault:""`
+	Background string `env:"DIMS_ERROR_BACKGROUND" envDefault:"#5ADAFD"`
+}
+
+type Signing struct {
+	SigningAlgorithm string `env:"DIMS_SIGNING_ALGORITHM" envDefault:"hmac-sha256"`
+	SigningKey       string `env:"DIMS_SIGNING_KEY,notEmpty"`
+}
+
+type OutputFormat struct {
+	OutputFormat string   `env:"DIMS_OUTPUT_FORMAT"`
+	Exclude      []string `env:"DIMS_OUTPUT_FORMAT_EXCLUDE"`
+}
+
+type Timeout struct {
+	Download int `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
+}
+
+type Options struct {
+	StripMetadata      bool `env:"DIMS_STRIP_METADATA" envDefault:"true"`
+	IncludeDisposition bool `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
+}
+
 type Config struct {
-	DownloadTimeout            int      `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
-	PlaceholderBackground      string   `env:"DIMS_PLACEHOLDER_BACKGROUND" envDefault:"#5ADAFD"`
-	PlaceholderImageExpire     int      `env:"DIMS_PLACEHOLDER_IMAGE_EXPIRE" envDefault:"60"`
-	StripMetadata              bool     `env:"DIMS_STRIP_METADATA" envDefault:"true"`
-	IncludeDisposition         bool     `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
-	DefaultOutputFormat        string   `env:"DIMS_DEFAULT_OUTPUT_FORMAT"`
-	IgnoreDefaultOutputFormats []string `env:"DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS"`
-	SecretKey                  string   `env:"DIMS_SECRET_KEY"`
-	DefaultImagePrefix         string   `env:"DIMS_DEFAULT_IMAGE_PREFIX"`
-	CacheControlMaxAge         int      `env:"DIMS_CACHE_CONTROL_MAX_AGE" envDefault:"31536000"`
-	EdgeControlDownstreamTtl   int      `env:"DIMS_EDGE_CONTROL_DOWNSTREAM_TTL" envDefault:"-1"`
-	TrustSrc                   bool     `env:"DIMS_TRUST_SRC" envDefault:"false"`
-	MinSrcCacheControl         int      `env:"DIMS_MIN_SRC_CACHE_CONTROL" envDefault:"-1"`
-	MaxSrcCacheControl         int      `env:"DIMS_MAX_SRC_CACHE_CONTROL" envDefault:"-1"`
-	SigningAlgorithm           string   `env:"DIMS_SIGNING_ALGORITHM" envDefault:"hmac-sha256"`
+	Timeout
+	EdgeControl
+	Signing
+	Error
+	OriginCacheControl
+	OutputFormat
+	Options
 }
 
 func ReadConfig() Config {

@@ -32,10 +32,13 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
-		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDims4(config, debug, dev, w, r)
-		})
+	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
+	v4 := func(w http.ResponseWriter, r *http.Request) {
+		dims.HandleDims4(config, debug, dev, w, r)
+	}
+
+	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
+	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)
 
 	mux.HandleFunc("/dims-sizer/{url}",
 		func(w http.ResponseWriter, r *http.Request) {

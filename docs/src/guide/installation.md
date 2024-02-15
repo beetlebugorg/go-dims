@@ -16,7 +16,7 @@ it's still required.
 
 You should have dims running now:
 
-```
+```shell
 ❯ curl http://127.0.0.1:8080/dims-status
 ALIVE
 ```
@@ -32,12 +32,8 @@ If you tried to compile mod-dims, go-dims' predecessor, circa 2009 or so it was 
 better over time with containers and autoconf improvements but it was never _easy_. The process got
 a lot easier with go-dims.
 
-Ok, even mod-dims was easy with containers we just never distributed them. With go-dims
-we now have pre-built container images. Our containers include custom builds of
-Imagemagick 7, libtiff, and libwebp.
-
-You may still need to compile Imagemagick or one of its dependencies but these days
-you can get almost everything you need to compile it on macOS using brew:
+You still need to install Imagemagick and its dependencies to compile go-dims but these days you can
+get everything you need to compile it on macOS using brew:
 
 ```shell
 $ brew install imagemagick

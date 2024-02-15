@@ -2,6 +2,8 @@ name: User Guide
 
 on:
   push:
+    paths:
+      - 'docs/**'
     branches:
       - main
   pull_request:

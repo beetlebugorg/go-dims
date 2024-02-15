@@ -3,7 +3,7 @@ name: User Guide
 on:
   push:
     branches:
-      - test/mdbook
+      - main
   pull_request:
 
 jobs:

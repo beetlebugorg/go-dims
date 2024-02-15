@@ -1,0 +1,259 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>mod-dims - Dynamic Image Manipulation Service</title>
+                
+
+        <!-- Custom HTML head -->
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="lakdjfadjf">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+                <link rel="icon" href="../favicon.svg">
+                        <link rel="shortcut icon" href="../favicon.png">
+                <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+                <link rel="stylesheet" href="../css/print.css" media="print">
+        
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+                <link rel="stylesheet" href="../fonts/fonts.css">
+        
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+                <link rel="stylesheet" href="../theme/css/custom.css">
+        
+            </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="../guide/installation.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../guide/running.html"><strong aria-hidden="true">2.</strong> Running</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../running/aws.html"><strong aria-hidden="true">2.1.</strong> AWS</a></li><li class="chapter-item expanded "><a href="../running/local.html"><strong aria-hidden="true">2.2.</strong> Local</a></li><li class="chapter-item expanded "><a href="../running/resources.html"><strong aria-hidden="true">2.3.</strong> Resources</a></li></ol></li><li class="chapter-item expanded "><a href="../configuration/index.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../configuration/signing.html"><strong aria-hidden="true">3.1.</strong> Request Signing</a></li><li class="chapter-item expanded "><a href="../configuration/cache-control.html"><strong aria-hidden="true">3.2.</strong> Cache Control</a></li><li class="chapter-item expanded "><a href="../configuration/other.html"><strong aria-hidden="true">3.3.</strong> Other</a></li><li class="chapter-item expanded "><a href="../configuration/mod-dims.html" class="active"><strong aria-hidden="true">3.4.</strong> mod-dims</a></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> Administration</div></li><li><ol class="section"><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.</strong> Security</div></li><li><ol class="section"><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.1.</strong> Vulnerabilities</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.2.</strong> Upgrades</div></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.2.</strong> Logging</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.3.</strong> Metrics</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.4.</strong> Monitoring</div></li></ol></li><li class="chapter-item expanded "><li class="part-title">API Reference</li><li class="chapter-item expanded "><div><strong aria-hidden="true">5.</strong> Endpoints</div></li><li><ol class="section"><li class="chapter-item expanded "><a href="../endpoints/dims4.html"><strong aria-hidden="true">5.1.</strong> /v4</a></li><li class="chapter-item expanded "><a href="../endpoints/status.html"><strong aria-hidden="true">5.2.</strong> /status</a></li><li class="chapter-item expanded "><a href="../endpoints/health.html"><strong aria-hidden="true">5.3.</strong> /health</a></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">6.</strong> Image Management Commands</div></li><li><ol class="section"><li class="chapter-item expanded "><a href="../operations/resize.html"><strong aria-hidden="true">6.1.</strong> Resize</a></li><li class="chapter-item expanded "><a href="../operations/crop.html"><strong aria-hidden="true">6.2.</strong> Crop</a></li><li class="chapter-item expanded "><a href="../operations/thumbnail.html"><strong aria-hidden="true">6.3.</strong> Thumbnail</a></li><li class="chapter-item expanded "><a href="../operations/quality.html"><strong aria-hidden="true">6.4.</strong> Quality</a></li><li class="chapter-item expanded "><a href="../operations/format.html"><strong aria-hidden="true">6.5.</strong> Format</a></li><li class="chapter-item expanded "><a href="../operations/strip.html"><strong aria-hidden="true">6.6.</strong> Strip</a></li><li class="chapter-item expanded "><a href="../operations/sharpen.html"><strong aria-hidden="true">6.7.</strong> Sharpen</a></li><li class="chapter-item expanded "><a href="../operations/brightness.html"><strong aria-hidden="true">6.8.</strong> Brightness</a></li><li class="chapter-item expanded "><a href="../operations/flipflop.html"><strong aria-hidden="true">6.9.</strong> Flip Flop</a></li><li class="chapter-item expanded "><a href="../operations/sepia.html"><strong aria-hidden="true">6.10.</strong> Sepia</a></li><li class="chapter-item expanded "><a href="../operations/grayscale.html"><strong aria-hidden="true">6.11.</strong> Grayscale</a></li><li class="chapter-item expanded "><a href="../operations/invert.html"><strong aria-hidden="true">6.12.</strong> Invert</a></li><li class="chapter-item expanded "><a href="../operations/rotate.html"><strong aria-hidden="true">6.13.</strong> Rotate</a></li><li class="chapter-item expanded "><a href="../operations/legacy_thumbnail.html"><strong aria-hidden="true">6.14.</strong> Legacy Thumbnail</a></li></ol></li></ol>            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                                                <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                                            </div>
+
+                    <h1 class="menu-title">Dynamic Image Manipulation Service</h1>
+
+                    <div class="right-buttons">
+                                                <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                                                                        
+                    </div>
+                </div>
+
+                                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="mod-dims"><a class="header" href="#mod-dims">mod-dims</a></h1>
+<p>The mod-dims and go-dims configurations are largely the same. go-dims gives
+some settings better names, and removes unnecessary settings.</p>
+<p>This page documents those differences and how to migrate. It's mostly just naming.</p>
+<h3 id="new"><a class="header" href="#new">New</a></h3>
+<p>Since go-dims has a new signing algorithm we added <code>DIMS_SIGNING_ALGORITHM</code>.  Set this to <code>md5</code> for
+compatiblity with mod-dims.</p>
+<h3 id="changed"><a class="header" href="#changed">Changed</a></h3>
+<p><code>DimsClient</code> was removed. Each option it had is now available globally.</p>
+<p>The <code>DimsClient</code> setting had a lot of options:</p>
+<pre><code>&lt;appId&gt; &lt;noImageUrl&gt; &lt;cache control max-age&gt; &lt;edge control downstream-ttl&gt; &lt;trustSource?&gt; &lt;minSourceCache&gt; &lt;maxSourceCache&gt; &lt;password&gt;
+</code></pre>
+<p>Here is how they map to go-dims settings:</p>
+<ul>
+<li><code>&lt;appId&gt;</code> is now <code>DIMS_CLIENT_ID</code></li>
+<li><code>&lt;noImageUrl&gt;</code> is now <code>DIMS_ERROR_BACKGROUND</code></li>
+<li><code>&lt;cache control max-age&gt;</code> is now <code>DIMS_CACHE_CONTROL_DEFAULT</code></li>
+<li><code>&lt;edge control downstream-ttl&gt;</code> is now <code>DIMS_EDGE_CONTROL_DOWNSTREAM_TTL</code></li>
+<li><code>&lt;trustedSource&gt;</code> is now <code>DIMS_CACHE_CONTROL_USE_ORIGIN</code></li>
+<li><code>&lt;minSourceCache&gt;</code> is now <code>DIMS_CACHE_CONTROL_MIN</code></li>
+<li><code>&lt;maxSourceCache&gt;</code> is now <code>DIMS_CACHE_CONTROL_MAX</code></li>
+<li><code>&lt;password&gt;</code> is now <code>DIMS_SIGNING_KEY</code></li>
+</ul>
+<h3 id="renamed"><a class="header" href="#renamed">Renamed</a></h3>
+<ul>
+<li><code>DimsCacheExpire</code> to <code>DIMS_CACHE_CONTROL_DEFAULT</code></li>
+<li><code>DimsNoImageCacheExpire</code> to <code>DIMS_CACHE_CONTROL_ERROR</code></li>
+</ul>
+<h3 id="moved"><a class="header" href="#moved">Moved</a></h3>
+<p>All settings related to Imagemagick were removed. They didn't disappear though.  You can set
+everything mod-dims could using Imagemagick environment variables.</p>
+<p>See the Imagemagick documentation for <a href="https://imagemagick.org/script/resources.php#environment">settings</a>.</p>
+<ul>
+<li><code>DimsImagemagickTimeout</code></li>
+<li><code>DimsImagemagickMemorySize</code></li>
+<li><code>DimsImagemagickAreaSize</code></li>
+<li><code>DimsImagemagickMapSize</code></li>
+<li><code>DimsImagemagickDiskSize</code></li>
+</ul>
+<h3 id="removed"><a class="header" href="#removed">Removed</a></h3>
+<ul>
+<li><code>DimsDefaultImageURL</code></li>
+<li><code>DimsAddWhitelist</code></li>
+<li><code>DimsDisableEncodedFetch</code></li>
+<li><code>DimsUserAgentEnabled</code></li>
+<li><code>DimsUserAgentOverride</code></li>
+<li><code>DimsOptimizeResize</code></li>
+</ul>
+<h3 id="example-dimsconf"><a class="header" href="#example-dimsconf">Example: dims.conf</a></h3>
+<pre><code>DimsDownloadTimeout 60000
+DimsImagemagickTimeout 20000
+
+# DimsClient &lt;appId&gt; &lt;noImageUrl&gt; &lt;cache control max-age&gt; &lt;edge control downstream-ttl&gt; &lt;trustSource?&gt; &lt;minSourceCache&gt; &lt;maxSourceCache&gt; &lt;password&gt;
+DimsAddClient TEST http://placehold.it/350x150 604800 604800 trust 604800 604800 t3st
+
+DimsDefaultImageURL http://placehold.it/350x150
+DimsCacheExpire 604800
+DimsNoImageCacheExpire 60
+DimsDefaultImagePrefix
+
+DimsAddWhitelist www.google.com
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                                                    <a rel="prev" href="../configuration/other.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+                                                    <a rel="next" href="../endpoints/dims4.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                                    <a rel="prev" href="../configuration/other.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+                                    <a rel="next" href="../endpoints/dims4.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                            </nav>
+
+        </div>
+
+        
+        
+        
+                <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+        
+                <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        
+    </body>
+</html>

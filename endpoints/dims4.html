@@ -1,0 +1,380 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>/v4 - Dynamic Image Manipulation Service</title>
+                
+
+        <!-- Custom HTML head -->
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="lakdjfadjf">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+                <link rel="icon" href="../favicon.svg">
+                        <link rel="shortcut icon" href="../favicon.png">
+                <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+                <link rel="stylesheet" href="../css/print.css" media="print">
+        
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+                <link rel="stylesheet" href="../fonts/fonts.css">
+        
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+                <link rel="stylesheet" href="../theme/css/custom.css">
+        
+            </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="../guide/installation.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../guide/running.html"><strong aria-hidden="true">2.</strong> Running</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../running/aws.html"><strong aria-hidden="true">2.1.</strong> AWS</a></li><li class="chapter-item expanded "><a href="../running/local.html"><strong aria-hidden="true">2.2.</strong> Local</a></li><li class="chapter-item expanded "><a href="../running/resources.html"><strong aria-hidden="true">2.3.</strong> Resources</a></li></ol></li><li class="chapter-item expanded "><a href="../configuration/index.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../configuration/signing.html"><strong aria-hidden="true">3.1.</strong> Request Signing</a></li><li class="chapter-item expanded "><a href="../configuration/cache-control.html"><strong aria-hidden="true">3.2.</strong> Cache Control</a></li><li class="chapter-item expanded "><a href="../configuration/other.html"><strong aria-hidden="true">3.3.</strong> Other</a></li><li class="chapter-item expanded "><a href="../configuration/mod-dims.html"><strong aria-hidden="true">3.4.</strong> mod-dims</a></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.</strong> Administration</div></li><li><ol class="section"><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.</strong> Security</div></li><li><ol class="section"><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.1.</strong> Vulnerabilities</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.1.2.</strong> Upgrades</div></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.2.</strong> Logging</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.3.</strong> Metrics</div></li><li class="chapter-item expanded "><div><strong aria-hidden="true">4.4.</strong> Monitoring</div></li></ol></li><li class="chapter-item expanded "><li class="part-title">API Reference</li><li class="chapter-item expanded "><div><strong aria-hidden="true">5.</strong> Endpoints</div></li><li><ol class="section"><li class="chapter-item expanded "><a href="../endpoints/dims4.html" class="active"><strong aria-hidden="true">5.1.</strong> /v4</a></li><li class="chapter-item expanded "><a href="../endpoints/status.html"><strong aria-hidden="true">5.2.</strong> /status</a></li><li class="chapter-item expanded "><a href="../endpoints/health.html"><strong aria-hidden="true">5.3.</strong> /health</a></li></ol></li><li class="chapter-item expanded "><div><strong aria-hidden="true">6.</strong> Image Management Commands</div></li><li><ol class="section"><li class="chapter-item expanded "><a href="../operations/resize.html"><strong aria-hidden="true">6.1.</strong> Resize</a></li><li class="chapter-item expanded "><a href="../operations/crop.html"><strong aria-hidden="true">6.2.</strong> Crop</a></li><li class="chapter-item expanded "><a href="../operations/thumbnail.html"><strong aria-hidden="true">6.3.</strong> Thumbnail</a></li><li class="chapter-item expanded "><a href="../operations/quality.html"><strong aria-hidden="true">6.4.</strong> Quality</a></li><li class="chapter-item expanded "><a href="../operations/format.html"><strong aria-hidden="true">6.5.</strong> Format</a></li><li class="chapter-item expanded "><a href="../operations/strip.html"><strong aria-hidden="true">6.6.</strong> Strip</a></li><li class="chapter-item expanded "><a href="../operations/sharpen.html"><strong aria-hidden="true">6.7.</strong> Sharpen</a></li><li class="chapter-item expanded "><a href="../operations/brightness.html"><strong aria-hidden="true">6.8.</strong> Brightness</a></li><li class="chapter-item expanded "><a href="../operations/flipflop.html"><strong aria-hidden="true">6.9.</strong> Flip Flop</a></li><li class="chapter-item expanded "><a href="../operations/sepia.html"><strong aria-hidden="true">6.10.</strong> Sepia</a></li><li class="chapter-item expanded "><a href="../operations/grayscale.html"><strong aria-hidden="true">6.11.</strong> Grayscale</a></li><li class="chapter-item expanded "><a href="../operations/invert.html"><strong aria-hidden="true">6.12.</strong> Invert</a></li><li class="chapter-item expanded "><a href="../operations/rotate.html"><strong aria-hidden="true">6.13.</strong> Rotate</a></li><li class="chapter-item expanded "><a href="../operations/legacy_thumbnail.html"><strong aria-hidden="true">6.14.</strong> Legacy Thumbnail</a></li></ol></li></ol>            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                                                <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                                            </div>
+
+                    <h1 class="menu-title">Dynamic Image Manipulation Service</h1>
+
+                    <div class="right-buttons">
+                                                <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                                                                        
+                    </div>
+                </div>
+
+                                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="v4-endpoint"><a class="header" href="#v4-endpoint">/v4 Endpoint</a></h1>
+<pre><code class="language-html">/v4/&lt;ClientId&gt;/&lt;Signature&gt;/&lt;Timestamp&gt;/&lt;Commands&gt;.../?url=&lt;Image&gt;
+</code></pre>
+<p>This endpoint is backward compatible with the mod-dims <code>/dims4</code> endpoint. You can also
+access this endpoint at <code>/dims4</code>.</p>
+<h2 id="image-manipulation-request"><a class="header" href="#image-manipulation-request">Image Manipulation Request</a></h2>
+<p>An image manipulation request is made up of the url to the image you want to manipulate, and one or
+more commands.</p>
+<p>Here is the example we used in the <a href="../guide/installation.html">Getting Started</a> section:</p>
+<pre><code class="language-html">/v4/default/6d3dcb6/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
+</code></pre>
+<p>Breaking the request down into its parts you get the following:</p>
+<p><strong>URL parameters</strong>:
+| Parameter               |  Value            | Description
+|-------------------------|-------------------|----------------------------------------------------------------
+| <code>clientId</code>              | <strong><code>default</code></strong>           | name of client making request, tied to <a href="../configuration/signing.html">signing key</a>
+| <code>signature</code>             | <strong><code>6d3dcb6</code></strong>           | <a href="#signing">signature</a> to prevent request tampering
+| <code>timestamp</code>             | <strong><code>2147483647</code></strong>        | expiration as a unix timestamp (seconds since epoch)
+| <code>commands</code>              | <strong><code>resize/100x100</code></strong>    | one or more <a href="#commands">commands</a>, separated commands with <code>/</code></p>
+<p><strong>Query parameters</strong>:
+| Parameter             |  Value            | Description
+|-----------------------|-------------------|----------------------------------------------------------------
+| <code>url</code>                | <code>https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg</code> | image to manipulate
+| <code>download</code>           | <code>0</code>                | if set to <code>1</code> include <code>attachment</code> content disposition header</p>
+<h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
+<p>Commands are used to transform your origin image. Each command takes a single argument, and performs
+a single manipulation such as resizing or cropping the origin image.</p>
+<p>Commands can be combined to perform more complex manipulations. They are processed in the order they
+appear in the url.</p>
+<h3 id="resize"><a class="header" href="#resize">Resize</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>resize</code></td><td><code>&lt;width&gt;x&lt;height&gt;</code></td></tr>
+</tbody></table>
+<p>This command will resize an image to the size specified in the image geometry.</p>
+<p>The resize image geometry format is <code>&lt;width&gt;x&lt;height&gt;</code> which will resize an image while
+preserving its aspect ratio. Since the aspect ratio is preserved the resulting image may
+be smaller than requested.</p>
+<p>If you need an exact size you can add the <code>!</code> symbol to your request, such as <code>100x100!</code>. This
+will not preserve aspect ratios and may cause your image to compress or stretch. Listing 1 shows
+how the image can be stretched, Listing 2 shows it without the <code>!</code>.</p>
+<p><img src="../assets/resize100x100exclamation.jpg" alt="Listing 1 - resize/100x100!" title="Listing 1" />
+<span class="caption">Listing 1 - <code>/v4/.../resize/100x100!/?url=...</code> results in a 100x100 image</span></p>
+<p><img src="../assets/resize100x100.jpg" alt="Listing 2 - resize/100x100" title="Listing 2" />
+<span class="caption">Listing 2 - <code>/v4/.../resize/100x100/?url=...</code> results in a 80x100 image</span></p>
+<blockquote>
+<p>Some geometry formats use symbols that need to be escaped so make sure to always escape
+command arguments.</p>
+<p>An example would be resizing by percentage. We're can't have <code>%</code> in the url so it needs 
+to be escaped. For example, in <code>resize/15%25</code>, the <code>%25</code> is the url encoding for <code>%</code>.</p>
+</blockquote>
+<h3 id="crop"><a class="header" href="#crop">Crop</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>crop</code></td><td><code>&lt;width&gt;x&lt;height&gt;+{x}+{y}</code></td></tr>
+</tbody></table>
+<p>This command will crop an image to the size, and at the location, specified in the image geometry.</p>
+<p>The crop image geometry format is <code>&lt;width&gt;x&lt;height&gt;+{x}+{y}</code> which will crop an image to the
+size specified <code>width</code> and <code>height</code> offset by <code>x</code> and <code>y</code>.</p>
+<p>The <code>width</code> plus <code>x</code> offset must be less than the width of the image.</p>
+<p>The <code>height</code> plus <code>y</code> offset must be less than the height of the image.</p>
+<p>The <code>+{x}+{y}</code> is optional, they will both default to <code>0</code>.</p>
+<h3 id="thumbnail"><a class="header" href="#thumbnail">Thumbnail</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>thumbnail</code></td><td><code>&lt;width&gt;x&lt;height&gt;</code></td></tr>
+</tbody></table>
+<p>This command is the same as <code>resize/&lt;width&gt;x&lt;height&gt;^/strip/true</code>. </p>
+<blockquote>
+<p>This command is deprecated and will be removed in a future release.</p>
+</blockquote>
+<h3 id="legacy-thumbnail"><a class="header" href="#legacy-thumbnail">Legacy Thumbnail</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>legacy_thumbnail</code></td><td><code>&lt;width&gt;x&lt;height&gt;</code></td></tr>
+</tbody></table>
+<p>This command is similar to <code>thumbnail</code> and <code>resize</code> but it will crop the image to the
+width and height from the center of the image.</p>
+<p>This command is the equivalent to running <code>gravity/center/resize/&lt;width&gt;x&lt;height&gt;^/crop/&lt;width&gt;x&lt;height&gt;+0+0</code>.</p>
+<h3 id="format"><a class="header" href="#format">Format</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>format</code></td><td><code>&lt;format_ext&gt;</code></td></tr>
+</tbody></table>
+<p>This command will convert the origin image into the format provided by <code>format_ext</code>.</p>
+<p>The formats available for conversion are:</p>
+<ul>
+<li><code>webp</code></li>
+<li><code>png</code></li>
+<li><code>jpg</code></li>
+<li><code>gif</code></li>
+</ul>
+<h3 id="quality"><a class="header" href="#quality">Quality</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>quality</code></td><td><code>int</code></td></tr>
+</tbody></table>
+<p>This command adjusts the amount of compression for <code>JPG</code>, <code>PNG</code>, and <code>TIFF</code> images. It's named quality
+because it can directly affect the quality of the resulting image.</p>
+<p>It accepts a value between:</p>
+<ul>
+<li><code>1</code> - lowest quality, highest compression</li>
+<li><code>100</code> - highest quality, lowest compression</li>
+</ul>
+<h3 id="rotate"><a class="header" href="#rotate">Rotate</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>rotate</code></td><td><code>float</code> (degrees)</td></tr>
+</tbody></table>
+<p>This command will rotate an image.</p>
+<p>This should be a value between 0 and 360. You can provide decimal places, like <code>25.75</code>, but
+for web use cases I can't imagine anyone is going to notice.</p>
+<p>The default rotation is clockwise. Use negative numbers to rotate counter-clockwise.</p>
+<h3 id="sepia"><a class="header" href="#sepia">Sepia</a></h3>
+<h3 id="sharpen"><a class="header" href="#sharpen">Sharpen</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>sharpen</code></td><td><code>&lt;radius&gt;{xsigma}</code></td></tr>
+</tbody></table>
+<h3 id="brightness"><a class="header" href="#brightness">Brightness</a></h3>
+<h3 id="grayscale"><a class="header" href="#grayscale">Grayscale</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>grayscale</code></td><td><code>&lt;bool&gt;</code></td></tr>
+</tbody></table>
+<p>This command will set the image colorspace to grayscale when <code>true</code>.</p>
+<h3 id="strip"><a class="header" href="#strip">Strip</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>strip</code></td><td><code>&lt;bool&gt;</code></td></tr>
+</tbody></table>
+<p>This command will remove ICC, and Exif profiles.</p>
+<p>Use this command to reduce the size of your images. This especially helps
+when generating thumbnail images as this profile data can become a large
+percent of the final image once it's been reduced to a thumbnail.</p>
+<p>By default dims will strip metadata anyway so this call is a no-op.</p>
+<p>However, there are use cases such as DAM solutions where you may not want to
+strip this data by default. In those cases disable <a href="../configuration/other.html#dims_strip_metadata">DIMS_STRIP_METADATA</a>
+globally and call this command when needed.</p>
+<h3 id="invert"><a class="header" href="#invert">Invert</a></h3>
+<table><thead><tr><th>Command</th><th>Argument Type</th></tr></thead><tbody>
+<tr><td><code>invert</code></td><td><code>&lt;bool&gt;</code></td></tr>
+</tbody></table>
+<p>This command inverts the colors of an image.</p>
+<h2 id="signing"><a class="header" href="#signing">Signing</a></h2>
+<p>All requests to this endpoint must be signed. Signing requests ensures that
+the image request has not been changed.</p>
+<p>In the examples below note the following:</p>
+<ul>
+<li><em>imageCommands</em> <strong>should</strong> have any preceding or trailing slashes (<code>/</code>) removed. </li>
+<li><em>imageUrl</em> <strong>should not</strong> be url encoded.</li>
+<li><em>timestamp</em> is a unix timestamp (seconds since epoch).</li>
+</ul>
+<p>The algorithm used is controlled by the environment variables <code>DIMS_SIGNING_ALGORITHM</code>. See
+<a href="../configuration/signing.html#dims_signing_algorithm">Signing Request</a> configuration.</p>
+<h3 id="hmac-sha256"><a class="header" href="#hmac-sha256">HMAC-SHA256</a></h3>
+<p>Requests are signed using <strong>HMAC-SHA256</strong>.</p>
+<p>To sign a request concatenate and sign: <em>timestamp</em>, <em>imageCommands</em>, and <em>imageUrl</em>.</p>
+<p>Here is how we do this on the server in Go:</p>
+<pre><code class="language-go">func SignHmacSha256(timestamp string, secret string, imageCommands string, imageUrl string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(timestamp))
+	mac.Write([]byte(imageCommands))
+	mac.Write([]byte(imageUrl))
+
+	return fmt.Sprintf(&quot;%x&quot;, mac.Sum(nil))[0:24]
+}
+</code></pre>
+<p>To test this out you can use the <code>sign</code> subcommand of dims:</p>
+<pre><code class="language-shell">$ dims sign 2147483647 mysecret resize/100x100 &quot;https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&quot;
+dc45b8f4a9405247f25bd22f
+</code></pre>
+<h3 id="md5"><a class="header" href="#md5">MD5</a></h3>
+<p>Legacy mod-dims requests were signed with md5.</p>
+<p>To sign a request with md5 concatenate and hash: <em>timestamp</em>, <em>secret</em>, <em>imageCommands</em>, <em>imageUrl</em>.</p>
+<p>Here is how we do this on the server in Go:</p>
+<pre><code class="language-go">func Sign(timestamp string, secret string, imageCommands string, imageUrl string) string {
+	hash := md5.New()
+	io.WriteString(hash, timestamp)
+	io.WriteString(hash, secret)
+	io.WriteString(hash, imageCommands)
+	io.WriteString(hash, imageUrl)
+
+	return fmt.Sprintf(&quot;%x&quot;, hash.Sum(nil))[0:7]
+}
+</code></pre>
+<p>To test this out you can use the <code>sign</code> subcommand of dims:</p>
+<pre><code class="language-shell">$ dims sign 2147483647 mysecret resize/100x100 &quot;https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&quot; --signing-algorithm=md5
+6d3dcb6
+</code></pre>
+<blockquote>
+<p>This signature method is deprecated and should not be used.</p>
+</blockquote>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                                                    <a rel="prev" href="../configuration/mod-dims.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+                                                    <a rel="next" href="../endpoints/status.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                                    <a rel="prev" href="../configuration/mod-dims.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+                                    <a rel="next" href="../endpoints/status.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                            </nav>
+
+        </div>
+
+        
+        
+        
+                <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+        
+                <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        
+    </body>
+</html>

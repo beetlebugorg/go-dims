@@ -1,6 +1,10 @@
 name: go-dims
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
     go-dims-docker:
@@ -28,10 +32,19 @@ jobs:
                 username: ${{github.actor}}
                 password: ${{secrets.GITHUB_TOKEN}}
 
-            - name: Build and push
+            - name: Build and Push (Main)
               uses: docker/build-push-action@v5
+              if: ${{ github.ref == 'refs/heads/main' }}
               with:
                 context: .
                 push: true
                 platforms: linux/amd64,linux/arm64
                 tags: ghcr.io/beetlebugorg/go-dims:latest
+
+            - name: Build Only (Branches)
+              uses: docker/build-push-action@v5
+              if: ${{ github.ref != 'refs/heads/main' }}
+              with:
+                context: .
+                push: false
+                platforms: linux/amd64

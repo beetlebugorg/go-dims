@@ -4,6 +4,8 @@ on:
   push:
     paths-ignore:
       - 'docs/**'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/build.yml'
     branches:
       - main
   pull_request:

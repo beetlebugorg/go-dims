@@ -2,7 +2,7 @@ FROM ghcr.io/beetlebugorg/go-dims:build-latest as build-go-dims
 
 COPY . /build/go-dims
 WORKDIR /build/go-dims
-RUN go build -o /usr/local/imagemagick/bin/dims cmd/dims/main.go
+RUN go build -o /usr/local/imagemagick/bin/dims go-dims.go
 
 FROM debian:bookworm-slim
 

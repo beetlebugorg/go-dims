@@ -24,7 +24,7 @@ import (
 	"strings"
 )
 
-var V5_COMMANDS = map[string]dims.Operation{
+var commandsV5 = map[string]dims.Operation{
 	"crop":       v4.CropCommand,
 	"resize":     v4.ResizeCommand,
 	"strip":      v4.StripMetadataCommand,
@@ -39,7 +39,7 @@ var V5_COMMANDS = map[string]dims.Operation{
 	"invert":     v4.InvertCommand,
 	"rotate":     v4.RotateCommand,
 	"thumbnail":  v4.ThumbnailCommand,
-	"gravity":    v4.GravityCommand,
+	"gravity":    GravityCommand,
 }
 
 func NewRequest(r *http.Request, config dims.Config) *dims.Request {
@@ -58,7 +58,7 @@ func NewRequest(r *http.Request, config dims.Config) *dims.Request {
 		commands = append(commands, dims.Command{
 			Name:      command,
 			Args:      args,
-			Operation: V5_COMMANDS[command],
+			Operation: commandsV5[command],
 		})
 	}
 

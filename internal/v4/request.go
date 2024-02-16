@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-var V4_COMMANDS = map[string]dims.Operation{
+var commandsV4 = map[string]dims.Operation{
 	"crop":             CropCommand,
 	"resize":           ResizeCommand,
 	"strip":            StripMetadataCommand,
@@ -39,7 +39,6 @@ var V4_COMMANDS = map[string]dims.Operation{
 	"rotate":           RotateCommand,
 	"thumbnail":        ThumbnailCommand,
 	"legacy_thumbnail": LegacyThumbnailCommand,
-	"gravity":          GravityCommand,
 }
 
 type RequestV4 struct {
@@ -66,7 +65,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 		commands = append(commands, dims.Command{
 			Name:      command,
 			Args:      args,
-			Operation: V4_COMMANDS[command],
+			Operation: commandsV4[command],
 		})
 	}
 

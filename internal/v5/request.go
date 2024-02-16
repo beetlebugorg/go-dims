@@ -43,9 +43,6 @@ var V5_COMMANDS = map[string]dims.Operation{
 }
 
 func NewRequest(r *http.Request, config dims.Config) *dims.Request {
-	var timestamp int32
-	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
-
 	h := sha256.New()
 	io.WriteString(h, r.PathValue("clientId"))
 	io.WriteString(h, r.PathValue("commands"))
@@ -71,6 +68,6 @@ func NewRequest(r *http.Request, config dims.Config) *dims.Request {
 		ClientId:  r.PathValue("clientId"),
 		ImageUrl:  r.URL.Query().Get("url"),
 		Commands:  commands,
-		Signature: r.PathValue("signature"),
+		Signature: r.URL.Query().Get("sign"),
 	}
 }

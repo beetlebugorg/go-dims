@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signing
+package dims
 
 import (
 	"crypto/hmac"
@@ -33,12 +33,14 @@ func NewHmacSha256(signingKey string) SignatureAlgorithm {
 }
 
 // Sign returns a signed string using the HMAC-SHA256 algorithm.
-func (h HmacSha256Algorithm) Sign(commands string, imageUrl string) string {
-	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
-	sanitizedCommands = strings.Trim(sanitizedCommands, "/")
-
+func (h HmacSha256Algorithm) Sign(commands []Command, imageUrl string) string {
 	mac := hmac.New(sha256.New, []byte(h.Key))
-	mac.Write([]byte(sanitizedCommands))
+	for _, command := range commands {
+		santizedArgs := strings.ReplaceAll(command.Args, " ", "+")
+
+		mac.Write([]byte(command.Name))
+		mac.Write([]byte(santizedArgs))
+	}
 	mac.Write([]byte(imageUrl))
 
 	return fmt.Sprintf("%x", mac.Sum(nil))[0:24]

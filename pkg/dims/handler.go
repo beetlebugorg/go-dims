@@ -16,10 +16,9 @@ package dims
 
 import (
 	"fmt"
-	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"net/http"
 
-	"github.com/beetlebugorg/go-dims/internal/dims"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
@@ -37,10 +36,24 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
 	v4 := func(w http.ResponseWriter, r *http.Request) {
-		v4.HandleDims4(config, debug, dev, w, r)
+		request := dims.NewV4Request(r, config)
+		request.DevMode = dev
+		request.Debug = debug
+
+		dims.Handler(request, w, r)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
 	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)
+
+	// v5 endpoint
+	mux.HandleFunc("/v5/{clientId}/{commands...}",
+		func(w http.ResponseWriter, r *http.Request) {
+			request := dims.NewV5Request(r, config)
+			request.DevMode = dev
+			request.Debug = debug
+
+			dims.Handler(request, w, r)
+		})
 
 	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {

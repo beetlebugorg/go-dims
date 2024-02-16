@@ -52,36 +52,33 @@ func ParseMetaGeometry(geometry string, x *int, y *int, width *uint, height *uin
 	return uint(flags)
 }
 
-func (mw *MagickWand) ParseGravityGeometry(geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
+func ParseGravityGeometry(image *Image, geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
 	var ri C.RectangleInfo
 	var ex C.ExceptionInfo
 
-	image := C.GetImageFromMagickWand(mw.mw)
-	flags := C.ParseGravityGeometry(image, C.CString(geometry), &ri, &ex)
+	flags := C.ParseGravityGeometry(image.img, C.CString(geometry), &ri, &ex)
 	*rect = *newRectangleInfo(&ri)
 	*exception = *newExceptionInfo(&ex)
 
 	return uint(flags)
 }
 
-func (mw *MagickWand) ParsePageGeometry(geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
+func ParsePageGeometry(image *Image, geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
 	var ri C.RectangleInfo
 	var ex C.ExceptionInfo
 
-	image := C.GetImageFromMagickWand(mw.mw)
-	flags := C.ParsePageGeometry(image, C.CString(geometry), &ri, &ex)
+	flags := C.ParsePageGeometry(image.img, C.CString(geometry), &ri, &ex)
 	*rect = *newRectangleInfo(&ri)
 	*exception = *newExceptionInfo(&ex)
 
 	return uint(flags)
 }
 
-func (mw *MagickWand) ParseRegionGeometry(geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
+func ParseRegionGeometry(image *Image, geometry string, rect *RectangleInfo, exception *ExceptionInfo) uint {
 	var ri C.RectangleInfo
 	var ex C.ExceptionInfo
 
-	image := C.GetImageFromMagickWand(mw.mw)
-	flags := C.ParseRegionGeometry(image, C.CString(geometry), &ri, &ex)
+	flags := C.ParseRegionGeometry(image.img, C.CString(geometry), &ri, &ex)
 	*rect = *newRectangleInfo(&ri)
 	*exception = *newExceptionInfo(&ex)
 

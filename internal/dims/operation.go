@@ -98,7 +98,7 @@ func ThumbnailOperation(mw *imagick.MagickWand, args string) error {
 	mw.ThumbnailImage(rect.Width, rect.Height)
 
 	if (flags & imagick.PERCENTVALUE) != 0 {
-		flags = mw.ParseGravityGeometry(args, &rect, &exception)
+		flags = imagick.ParseGravityGeometry(mw.Image(), args, &rect, &exception)
 		if (flags & imagick.ALLVALUES) == 0 {
 			return errors.New("parsing thumbnail (crop) geometry failed")
 		}
@@ -128,7 +128,7 @@ func CropOperation(mw *imagick.MagickWand, args string) error {
 	// Parse Geometry
 	var rect imagick.RectangleInfo
 	var exception imagick.ExceptionInfo
-	flags := mw.ParseGravityGeometry(sanitizedArgs, &rect, &exception)
+	flags := imagick.ParseGravityGeometry(mw.Image(), sanitizedArgs, &rect, &exception)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("invalid geometry")
 	}

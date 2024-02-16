@@ -15,10 +15,13 @@
 package dims
 
 import (
-	"net/http"
+	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func HandleDimsStatus(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+type Operation func(mw *imagick.MagickWand, args string) error
+
+type Command struct {
+	Name      string
+	Args      string
+	Operation Operation
 }

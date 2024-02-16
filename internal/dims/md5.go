@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signing
+package dims
 
 import (
 	"crypto/md5"
@@ -35,8 +35,15 @@ func NewMD5(signingKey string, timestamp int32) SignatureAlgorithm {
 }
 
 // Sign returns a signed string using the MD5 algorithm.
-func (h MD5Algorithm) Sign(commands string, imageUrl string) string {
-	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
+func (h MD5Algorithm) Sign(commands []Command, imageUrl string) string {
+	// Concatenate the commands into a single string.
+	commandStrings := make([]string, len(commands))
+	for _, command := range commands {
+		commandStrings = append(commandStrings, fmt.Sprintf("%s/%s", command.Name, command.Args))
+	}
+
+	sanitizedCommands := strings.Join(commandStrings, "/")
+	sanitizedCommands = strings.ReplaceAll(sanitizedCommands, " ", "+")
 	sanitizedCommands = strings.Trim(sanitizedCommands, "/")
 
 	timestamp := fmt.Sprintf("%d", h.timestamp)

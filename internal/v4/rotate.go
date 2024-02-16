@@ -12,9 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signing
+package v4
 
-// SignatureAlgorithm is an interface to implement different signing algorithms.
-type SignatureAlgorithm interface {
-	Sign(commands string, imageUrl string) string
+import (
+	"github.com/sagikazarmark/slog-shim"
+	"gopkg.in/gographics/imagick.v3/imagick"
+	"strconv"
+)
+
+func RotateCommand(mw *imagick.MagickWand, args string) error {
+	slog.Debug("RotateCommand", "args", args)
+
+	degrees, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
+	}
+
+	return mw.RotateImage(imagick.NewPixelWand(), degrees)
 }

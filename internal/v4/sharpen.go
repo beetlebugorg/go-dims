@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
 import (
-	"net/http"
+	"github.com/sagikazarmark/slog-shim"
+	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func HandleDimsStatus(config EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+func SharpenCommand(mw *imagick.MagickWand, args string) error {
+	slog.Debug("SharpenCommand", "args", args)
+
+	var geometry imagick.GeometryInfo
+	flags := imagick.ParseGeometry(args, &geometry)
+	if (flags & imagick.SIGMAVALUE) == 0 {
+		geometry.Sigma = 1.0
+	}
+
+	return mw.SharpenImage(geometry.Rho, geometry.Sigma)
 }

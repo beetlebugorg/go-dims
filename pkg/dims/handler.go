@@ -45,13 +45,13 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
-	v4 := func(w http.ResponseWriter, r *http.Request) {
+	v4Handler := func(w http.ResponseWriter, r *http.Request) {
 		request := v4.NewRequest(r, config)
 
 		dims.Handler(request, config, w, r)
 	}
-	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
-	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)
+	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4Handler)
+	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4Handler)
 
 	// v5 endpoint
 	mux.HandleFunc("/v5/{clientId}/{commands...}",

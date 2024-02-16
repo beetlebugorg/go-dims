@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/beetlebugorg/go-dims/internal/v4"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"hash"
 	"io"
@@ -22,7 +21,8 @@ import (
 
 type Kernel interface {
 	ValidateSignature() bool
-	ProcessCommands()
+	FetchImage() error
+	ProcessImage() (string, []byte, error)
 	SendHeaders(w http.ResponseWriter)
 	SendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error
 	SendError(w http.ResponseWriter, status int, message string)
@@ -30,38 +30,33 @@ type Kernel interface {
 
 type Request struct {
 	Id                     string    // The hash of the request -> hash(clientId + commands + imageUrl).
+	Signature              string    // The signature of the request.
 	Config                 Config    // The global configuration.
 	ClientId               string    // The client ID of this request.
 	ImageUrl               string    // The image URL that is being manipulated.
 	SendContentDisposition bool      // The content disposition of the request.
 	Commands               []Command // The commands (resize, crop, etc).
 	Error                  bool      // Whether the error image is being served.
-	Debug                  bool      // Whether debug mode is enabled.
-	DevMode                bool      // Whether dev mode is enabled.
 	SourceImage            Image     // The source image.
-
-	// v4
-	Signature string // The signature of the request.
-	Timestamp int32  // The timestamp of the request.
 }
 
-// verifySignature verifies the signature of the image resize is valid.
-func (r *Request) VerifySignature() error {
+// ValidateSignature verifies the signature of the image resize is valid.
+func (r *Request) ValidateSignature() bool {
 	slog.Debug("verifySignature", "url", r.ImageUrl)
 
 	algorithm := NewHmacSha256(r.Config.Signing.SigningKey)
 	signature := algorithm.Sign(r.Commands, r.ImageUrl)
 
-	if !bytes.Equal([]byte(signature), []byte(r.Signature)) {
-		slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
-
-		return fmt.Errorf("invalid signature")
+	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
+		return true
 	}
 
-	return nil
+	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
+
+	return false
 }
 
-// fetchImage downloads the image from the given URL.
+// FetchImage downloads the image from the given URL.
 func (r *Request) FetchImage() error {
 	slog.Info("downloadImage", "url", r.ImageUrl)
 
@@ -137,22 +132,7 @@ func (r *Request) setOptimalImageSize(mw *imagick.MagickWand) {
 	}
 }
 
-/*
-This is the main code for processing images.  It will parse
-the command string into individual commands and execute them.
-
-When it's finished it will write the content type header and
-image data to connection and flush the connection.
-
-Commands should always come in pairs, the command name followed
-by the commands arguments delimited by '/'.  Example:
-
-	thumbnail/78x110/quality/70
-
-This will first execute the thumbnail command then it will
-set the quality of the image to 70 before writing the image
-to the connection.
-*/
+// ProcessImage will execute the commands on the image.
 func (r *Request) ProcessImage() (string, []byte, error) {
 	slog.Debug("executeImagemagick")
 
@@ -221,50 +201,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	return mw.GetImageFormat(), mw.GetImagesBlob(), nil
 }
 
-func (r *Request) SendError(w http.ResponseWriter) {
-	mw := imagick.NewMagickWand()
-	defer mw.Destroy()
-
-	pw := imagick.NewPixelWand()
-	defer pw.Destroy()
-
-	pw.SetColor(r.Config.Error.Background)
-
-	mw.NewImage(1, 1, pw)
-
-	// Execute the commands on the placeholder image, giving it the same dimensions as the requested image.
-	for _, command := range r.Commands {
-		if command.Name == "crop" || command.Name == "thumbnail" {
-			var rect imagick.RectangleInfo
-			imagick.ParseAbsoluteGeometry(command.Args, &rect)
-
-			if rect.Width > 0 && rect.Height == 0 {
-				command.Args = fmt.Sprintf("%d", rect.Height)
-			} else if rect.Height > 0 && rect.Width == 0 {
-				command.Args = fmt.Sprintf("x%d", rect.Width)
-			} else if rect.Width > 0 && rect.Height > 0 {
-				command.Args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
-			}
-
-			command.Name = "resize"
-			command.Operation = v4.ResizeCommand
-		}
-
-		if err := command.Operation(mw, command.Args); err != nil {
-			r.SendError(w)
-			return
-		}
-	}
-
-	r.Error = true
-	r.SendImage(w, mw.GetImageFormat(), mw.GetImageBlob())
-}
-
-func (r *Request) SendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error {
-	if imageBlob == nil {
-		return fmt.Errorf("image is empty")
-	}
-
+func (r *Request) SendHeaders(w http.ResponseWriter) {
 	maxAge := r.Config.OriginCacheControl.Default
 	edgeControlTtl := r.Config.EdgeControl.DownstreamTtl
 
@@ -291,9 +228,6 @@ func (r *Request) SendImage(w http.ResponseWriter, imageType string, imageBlob [
 		maxAge = r.Config.OriginCacheControl.Error
 	}
 
-	// Set content type.
-	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageType)))
-
 	// Set cache headers.
 	if maxAge > 0 {
 		slog.Debug("sendImage", "maxAge", maxAge)
@@ -315,7 +249,7 @@ func (r *Request) SendImage(w http.ResponseWriter, imageType string, imageBlob [
 		// Grab filename from imageUrl
 		u, err := url.Parse(r.ImageUrl)
 		if err != nil {
-			return err
+			return
 		}
 
 		filename := filepath.Base(u.Path)
@@ -345,6 +279,15 @@ func (r *Request) SendImage(w http.ResponseWriter, imageType string, imageBlob [
 
 		w.Header().Set("Etag", etag)
 	}
+}
+
+func (r *Request) SendImage(w http.ResponseWriter, imageFormat string, imageBlob []byte) error {
+	if imageBlob == nil {
+		return fmt.Errorf("image is empty")
+	}
+
+	// Set content type.
+	w.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageFormat)))
 
 	// Set content length
 	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
@@ -356,6 +299,53 @@ func (r *Request) SendImage(w http.ResponseWriter, imageType string, imageBlob [
 	w.Write(imageBlob)
 
 	return nil
+}
+
+func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
+	mw := imagick.NewMagickWand()
+	defer mw.Destroy()
+
+	pw := imagick.NewPixelWand()
+	defer pw.Destroy()
+
+	pw.SetColor(r.Config.Error.Background)
+
+	mw.NewImage(1, 1, pw)
+
+	// Execute the commands on the placeholder image, giving it the same dimensions as the requested image.
+	for _, command := range r.Commands {
+		if command.Name == "crop" || command.Name == "thumbnail" {
+			var rect imagick.RectangleInfo
+			imagick.ParseAbsoluteGeometry(command.Args, &rect)
+
+			if rect.Width > 0 && rect.Height == 0 {
+				command.Args = fmt.Sprintf("%d", rect.Height)
+			} else if rect.Height > 0 && rect.Width == 0 {
+				command.Args = fmt.Sprintf("x%d", rect.Width)
+			} else if rect.Width > 0 && rect.Height > 0 {
+				command.Args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
+			}
+
+			command.Name = "resize"
+			command.Operation = func(mw *imagick.MagickWand, args string) error {
+				var rect imagick.RectangleInfo
+				imagick.SetGeometry(mw.Image(), &rect)
+				flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
+				if (flags & imagick.ALLVALUES) != 0 {
+					return mw.ScaleImage(rect.Width, rect.Height)
+				}
+
+				return nil
+			}
+		}
+
+		if err := command.Operation(mw, command.Args); err != nil {
+			return
+		}
+	}
+
+	r.Error = true
+	r.SendImage(w, mw.GetImageFormat(), mw.GetImageBlob())
 }
 
 func sourceMaxAge(header string) (int, error) {

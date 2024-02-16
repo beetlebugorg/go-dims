@@ -12,37 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"io"
 	"net/http"
 	"strings"
 )
 
-var v4Commands = map[string]Operation{
-	"crop":             v4.CropCommand,
-	"resize":           v4.ResizeCommand,
-	"strip":            v4.StripMetadataCommand,
-	"format":           v4.FormatCommand,
-	"quality":          v4.QualityCommand,
-	"sharpen":          v4.SharpenCommand,
-	"brightness":       v4.BrightnessCommand,
-	"flipflop":         v4.FlipFlopCommand,
-	"sepia":            v4.SepiaCommand,
-	"grayscale":        v4.GrayscaleCommand,
-	"autolevel":        v4.AutolevelCommand,
-	"invert":           v4.InvertCommand,
-	"rotate":           v4.RotateCommand,
-	"thumbnail":        v4.ThumbnailCommand,
-	"legacy_thumbnail": v4.LegacyThumbnailCommand,
-	"gravity":          v4.GravityCommand,
+var V4_COMMANDS = map[string]dims.Operation{
+	"crop":             CropCommand,
+	"resize":           ResizeCommand,
+	"strip":            StripMetadataCommand,
+	"format":           FormatCommand,
+	"quality":          QualityCommand,
+	"sharpen":          SharpenCommand,
+	"brightness":       BrightnessCommand,
+	"flipflop":         FlipFlopCommand,
+	"sepia":            SepiaCommand,
+	"grayscale":        GrayscaleCommand,
+	"autolevel":        AutolevelCommand,
+	"invert":           InvertCommand,
+	"rotate":           RotateCommand,
+	"thumbnail":        ThumbnailCommand,
+	"legacy_thumbnail": LegacyThumbnailCommand,
+	"gravity":          GravityCommand,
 }
 
-func NewV4Request(r *http.Request, config Config) Request {
+type RequestV4 struct {
+	dims.Request
+	Timestamp int32
+}
+
+func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 	var timestamp int32
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
@@ -52,26 +57,28 @@ func NewV4Request(r *http.Request, config Config) Request {
 	io.WriteString(h, r.URL.Query().Get("url"))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	var commands []Command
+	var commands []dims.Command
 	parsedCommands := strings.Split(r.PathValue("commands"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
 		command := parsedCommands[i]
 		args := parsedCommands[i+1]
 
-		commands = append(commands, Command{
+		commands = append(commands, dims.Command{
 			Name:      command,
 			Args:      args,
-			Operation: v4Commands[command],
+			Operation: V4_COMMANDS[command],
 		})
 	}
 
-	return Request{
-		Id:        requestHash,
-		Config:    config,
-		ClientId:  r.PathValue("clientId"),
-		ImageUrl:  r.URL.Query().Get("url"),
+	return &RequestV4{
+		Request: dims.Request{
+			Id:        requestHash,
+			Config:    config,
+			ClientId:  r.PathValue("clientId"),
+			ImageUrl:  r.URL.Query().Get("url"),
+			Commands:  commands,
+			Signature: r.PathValue("signature"),
+		},
 		Timestamp: timestamp,
-		Commands:  commands,
-		Signature: r.PathValue("signature"),
 	}
 }

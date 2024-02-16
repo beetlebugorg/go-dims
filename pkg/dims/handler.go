@@ -17,6 +17,8 @@ package dims
 import (
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"net/http"
 
 	"gopkg.in/gographics/imagick.v3/imagick"
@@ -25,7 +27,15 @@ import (
 func NewHandler(debug bool, dev bool) http.Handler {
 	imagick.Initialize()
 
-	config := dims.ReadConfig()
+	environmentConfig := dims.ReadConfig()
+	argumentConfig := dims.ArgumentConfig{
+		DevelopmentMode: dev,
+		DebugMode:       debug,
+	}
+	config := dims.Config{
+		EnvironmentConfig: environmentConfig,
+		ArgumentConfig:    argumentConfig,
+	}
 
 	if debug {
 		fmt.Printf("config: %+v\n", config)
@@ -36,11 +46,9 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
 	v4 := func(w http.ResponseWriter, r *http.Request) {
-		request := dims.NewV4Request(r, config)
-		request.DevMode = dev
-		request.Debug = debug
+		request := v4.NewRequest(r, config)
 
-		dims.Handler(request, w, r)
+		dims.Handler(request, config, w, r)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
 	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)
@@ -48,16 +56,14 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v5 endpoint
 	mux.HandleFunc("/v5/{clientId}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			request := dims.NewV5Request(r, config)
-			request.DevMode = dev
-			request.Debug = debug
+			request := v5.NewRequest(r, config)
 
-			dims.Handler(request, w, r)
+			dims.Handler(request, config, w, r)
 		})
 
 	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsStatus(config, debug, dev, w, r)
+			dims.HandleDimsStatus(config.EnvironmentConfig, debug, dev, w, r)
 		})
 
 	return mux

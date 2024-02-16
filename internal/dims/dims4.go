@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/pkg/signing"
 	"hash"
 	"io"
 	"log/slog"
@@ -43,8 +44,7 @@ type request struct {
 	sendContentDisposition bool        // The content disposition of the request.
 	commands               string      // The unparsed commands (resize, crop, etc).
 	requestHash            string      // The hash of the request.
-	sampleFactor           float64     // The sample factor for optimizing resizing.
-	placeholder            bool        // Whether the placeholder image is being served.
+	error                  bool        // Whether the error image is being served.
 	sourceImage            sourceImage // The source image.
 }
 
@@ -140,15 +140,17 @@ func newRequest(r *http.Request, config *Config) request {
 func (r *request) verifySignature() error {
 	slog.Debug("verifySignature", "url", r.imageUrl)
 
-	var h string
+	var algorithm signing.SignatureAlgorithm
 	if r.config.Signing.SigningAlgorithm == "md5" {
-		h = Sign(fmt.Sprintf("%d", r.timestamp), r.config.Signing.SigningKey, r.commands, r.imageUrl)
+		algorithm = signing.NewMD5(r.config.Signing.SigningKey, r.timestamp)
 	} else {
-		h = SignHmacSha256(fmt.Sprintf("%d", r.timestamp), r.config.Signing.SigningKey, r.commands, r.imageUrl)
+		algorithm = signing.NewHmacSha256(r.config.Signing.SigningKey)
 	}
 
-	if !bytes.Equal([]byte(h), []byte(r.signature)) {
-		slog.Error("verifySignature failed.", "expected", h, "got", r.signature)
+	signature := algorithm.Sign(r.commands, r.imageUrl)
+
+	if !bytes.Equal([]byte(signature), []byte(r.signature)) {
+		slog.Error("verifySignature failed.", "expected", signature, "got", r.signature)
 
 		return fmt.Errorf("invalid signature")
 	}
@@ -362,7 +364,7 @@ func (r *request) sendPlaceholderImage(w http.ResponseWriter) {
 		}
 	}
 
-	r.placeholder = true
+	r.error = true
 	r.sendImage(w, mw.GetImageFormat(), mw.GetImageBlob())
 }
 
@@ -393,7 +395,7 @@ func (r *request) sendImage(w http.ResponseWriter, imageType string, imageBlob [
 		}
 	}
 
-	if r.placeholder {
+	if r.error {
 		maxAge = r.config.OriginCacheControl.Error
 	}
 

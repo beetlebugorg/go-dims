@@ -12,16 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package signing
 
-import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
-)
-
-func Sign(timestamp string, secret string, commands string, imageUrl string) string {
-	return dims.Sign(timestamp, secret, commands, imageUrl)
-}
-
-func SignHmacSha256(timestamp string, secret string, commands string, imageUrl string) string {
-	return dims.SignHmacSha256(timestamp, secret, commands, imageUrl)
+// SignatureAlgorithm is an interface to implement different signing algorithms.
+type SignatureAlgorithm interface {
+	Sign(commands string, imageUrl string) string
 }

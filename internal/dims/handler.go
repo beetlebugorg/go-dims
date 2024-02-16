@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func Handler(request Request, w http.ResponseWriter, r *http.Request) {
+func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
 		"imageUrl", r.URL.Query().Get("url"),
 		"clientId", r.PathValue("clientId"),
@@ -14,38 +14,35 @@ func Handler(request Request, w http.ResponseWriter, r *http.Request) {
 		"commands", r.PathValue("commands"))
 
 	// Verify signature.
-	if !request.DevMode {
-		if err := request.VerifySignature(); err != nil {
-			request.SourceImage = Image{
-				Status: 500,
-			}
-			request.SendError(w)
+	if !config.DevelopmentMode {
+		if !kernel.ValidateSignature() {
+			kernel.SendError(w, 500, "signature verification failed.")
 
 			return
 		}
 	}
 
 	// Download image.
-	if err := request.FetchImage(); err != nil {
+	if err := kernel.FetchImage(); err != nil {
 		slog.Error("downloadImage failed.", "error", err)
 
-		request.SendError(w)
+		kernel.SendError(w, 500, "downloadImage failed.")
 
 		return
 	}
 
 	// Execute Imagemagick commands.
-	imageType, imageBlob, err := request.ProcessImage()
+	imageType, imageBlob, err := kernel.ProcessImage()
 	if err != nil {
 		slog.Error("executeImagemagick failed.", "error", err)
 
-		request.SendError(w)
+		kernel.SendError(w, 500, "image processing failed.")
 
 		return
 	}
 
 	// Serve the image.
-	if err := request.SendImage(w, imageType, imageBlob); err != nil {
+	if err := kernel.SendImage(w, imageType, imageBlob); err != nil {
 		slog.Error("serveImage failed.", "error", err)
 
 		http.Error(w, "Failed to serve image", http.StatusInternalServerError)

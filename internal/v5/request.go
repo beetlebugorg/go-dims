@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/v4"
 	"io"
 	"net/http"
 	"strings"
 )
 
-var v5Operations = map[string]Operation{
-	"crop":             v4.CropCommand,
-	"resize":           v4.ResizeCommand,
-	"strip":            v4.StripMetadataCommand,
-	"format":           v4.FormatCommand,
-	"quality":          v4.QualityCommand,
-	"sharpen":          v4.SharpenCommand,
-	"brightness":       v4.BrightnessCommand,
-	"flipflop":         v4.FlipFlopCommand,
-	"sepia":            v4.SepiaCommand,
-	"grayscale":        v4.GrayscaleCommand,
-	"autolevel":        v4.AutolevelCommand,
-	"invert":           v4.InvertCommand,
-	"rotate":           v4.RotateCommand,
-	"thumbnail":        v4.ThumbnailCommand,
-	"legacy_thumbnail": v4.LegacyThumbnailCommand,
-	"gravity":          v4.GravityCommand,
+var V5_COMMANDS = map[string]dims.Operation{
+	"crop":       v4.CropCommand,
+	"resize":     v4.ResizeCommand,
+	"strip":      v4.StripMetadataCommand,
+	"format":     v4.FormatCommand,
+	"quality":    v4.QualityCommand,
+	"sharpen":    v4.SharpenCommand,
+	"brightness": v4.BrightnessCommand,
+	"flipflop":   v4.FlipFlopCommand,
+	"sepia":      v4.SepiaCommand,
+	"grayscale":  v4.GrayscaleCommand,
+	"autolevel":  v4.AutolevelCommand,
+	"invert":     v4.InvertCommand,
+	"rotate":     v4.RotateCommand,
+	"thumbnail":  v4.ThumbnailCommand,
+	"gravity":    v4.GravityCommand,
 }
 
-func NewV5Request(r *http.Request, config Config) Request {
+func NewRequest(r *http.Request, config dims.Config) *dims.Request {
 	var timestamp int32
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
@@ -52,25 +52,24 @@ func NewV5Request(r *http.Request, config Config) Request {
 	io.WriteString(h, r.URL.Query().Get("url"))
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 
-	var commands []Command
+	var commands []dims.Command
 	parsedCommands := strings.Split(r.PathValue("commands"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
 		command := parsedCommands[i]
 		args := parsedCommands[i+1]
 
-		commands = append(commands, Command{
+		commands = append(commands, dims.Command{
 			Name:      command,
 			Args:      args,
-			Operation: v5Operations[command],
+			Operation: V5_COMMANDS[command],
 		})
 	}
 
-	return Request{
+	return &dims.Request{
 		Id:        hash,
 		Config:    config,
 		ClientId:  r.PathValue("clientId"),
 		ImageUrl:  r.URL.Query().Get("url"),
-		Timestamp: timestamp,
 		Commands:  commands,
 		Signature: r.PathValue("signature"),
 	}

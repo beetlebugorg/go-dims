@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
 import (
 	"bytes"
@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/pkg/signing"
 	"hash"
 	"io"
@@ -36,16 +37,16 @@ import (
 )
 
 type request struct {
-	config                 *Config     // The global configuration.
-	clientId               string      // The client ID of this request.
-	signature              string      // The signature of the request.
-	timestamp              int32       // The timestamp of the request.
-	imageUrl               string      // The image URL that is being manipulated.
-	sendContentDisposition bool        // The content disposition of the request.
-	commands               string      // The unparsed commands (resize, crop, etc).
-	requestHash            string      // The hash of the request.
-	error                  bool        // Whether the error image is being served.
-	sourceImage            sourceImage // The source image.
+	config                 *dims.Config // The global configuration.
+	clientId               string       // The client ID of this request.
+	signature              string       // The signature of the request.
+	timestamp              int32        // The timestamp of the request.
+	imageUrl               string       // The image URL that is being manipulated.
+	sendContentDisposition bool         // The content disposition of the request.
+	commands               string       // The unparsed commands (resize, crop, etc).
+	requestHash            string       // The hash of the request.
+	error                  bool         // Whether the error image is being served.
+	sourceImage            sourceImage  // The source image.
 }
 
 type sourceImage struct {
@@ -59,7 +60,7 @@ type sourceImage struct {
 	etag                string // The etag header from the downloaded image.
 }
 
-func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
+func HandleDims4(config dims.Config, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	slog.Info("handleDims5()",
 		"imageUrl", r.URL.Query().Get("url"),
 		"clientId", r.PathValue("clientId"),
@@ -109,7 +110,7 @@ func HandleDims4(config Config, debug bool, dev bool, w http.ResponseWriter, r *
 	}
 }
 
-func newRequest(r *http.Request, config *Config) request {
+func newRequest(r *http.Request, config *dims.Config) request {
 	var timestamp int32
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
@@ -268,9 +269,9 @@ func (r *request) processImage() (string, []byte, error) {
 	if mw.GetImageColorspace() == imagick.COLORSPACE_CMYK {
 		profiles := mw.GetImageProfiles("icc")
 		if profiles != nil {
-			mw.ProfileImage("ICC", CmykIccProfile)
+			mw.ProfileImage("ICC", dims.CmykIccProfile)
 		}
-		mw.ProfileImage("ICC", RgbIccProfile)
+		mw.ProfileImage("ICC", dims.RgbIccProfile)
 
 		err = mw.TransformImageColorspace(imagick.COLORSPACE_RGB)
 		if err != nil {

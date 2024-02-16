@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/pkg/signing"
 	"log/slog"
 	"net/http"
 	"os"
@@ -51,21 +52,21 @@ func (s *ServeCmd) Run() error {
 
 type SignCmd struct {
 	SigningAlgorithm string `help:"SigningAlgorithm to use." default:"hmac-sha256"`
-	Timestamp        string `arg:"" name:"timestamp" help:"Expiration timestamp" type:"timestamp"`
+	Timestamp        int32  `arg:"" name:"timestamp" help:"Expiration timestamp" type:"timestamp"`
 	Secret           string `arg:"" name:"secret" help:"Secret key."`
 	Commands         string `arg:"" name:"commands" help:"Commands to sign."`
 	ImageURL         string `arg:"" name:"image_url" help:"Image URL to sign."`
 }
 
 func (s *SignCmd) Run() error {
-	var hash string
+	var algorithm signing.SignatureAlgorithm
 	if s.SigningAlgorithm == "md5" {
-		hash = dims.Sign(s.Timestamp, s.Secret, s.Commands, s.ImageURL)
+		algorithm = signing.NewMD5(s.Secret, s.Timestamp)
 	} else if s.SigningAlgorithm == "hmac-sha256" {
-		hash = dims.SignHmacSha256(s.Timestamp, s.Secret, s.Commands, s.ImageURL)
+		algorithm = signing.NewHmacSha256(s.Secret)
 	}
 
-	fmt.Printf("%s\n", hash)
+	fmt.Printf("%s\n", algorithm.Sign(s.Commands, s.ImageURL))
 
 	return nil
 }
@@ -77,5 +78,8 @@ var CLI struct {
 
 func main() {
 	ctx := kong.Parse(&CLI)
-	ctx.Run()
+	err := ctx.Run()
+	if err != nil {
+		return
+	}
 }

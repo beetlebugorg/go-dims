@@ -7,6 +7,13 @@
 This endpoint is backward compatible with the mod-dims `/dims4` endpoint. You can also
 access this endpoint at `/dims4`.
 
+This endpoint is designed to always return an image, including in most error
+cases. When a command fails dims will return an auto-generated image using the
+background color defined in the [DIMS_ERROR_BACKGROUND](../configuration/other.md#dims_error_background) 
+environment variable. 
+
+The auto-generated error image will be resized and/or cropped to match the requested image.
+
 ## Image Manipulation Request
 
 An image manipulation request is made up of the url to the image you want to manipulate, and one or
@@ -60,8 +67,8 @@ To sign a request concatenate and sign: *timestamp*, *imageCommands*, and *image
 Here is how we do this on the server in Go:
 
 ```go
-func SignHmacSha256(timestamp string, secret string, imageCommands string, imageUrl string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
+func SignHmacSha256(signingKey string, timestamp string, imageCommands string, imageUrl string) string {
+	mac := hmac.New(sha256.New, []byte(signingKey))
 	mac.Write([]byte(timestamp))
 	mac.Write([]byte(imageCommands))
 	mac.Write([]byte(imageUrl))

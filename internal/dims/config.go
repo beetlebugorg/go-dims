@@ -56,7 +56,12 @@ type Options struct {
 	IncludeDisposition bool `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
 }
 
-type Config struct {
+type ArgumentConfig struct {
+	DevelopmentMode bool
+	DebugMode       bool
+}
+
+type EnvironmentConfig struct {
 	Timeout
 	EdgeControl
 	Signing
@@ -66,8 +71,13 @@ type Config struct {
 	Options
 }
 
-func ReadConfig() Config {
-	cfg := Config{}
+type Config struct {
+	EnvironmentConfig
+	ArgumentConfig
+}
+
+func ReadConfig() EnvironmentConfig {
+	cfg := EnvironmentConfig{}
 	if err := env.Parse(&cfg); err != nil {
 		fmt.Printf("%+v\n", err)
 	}

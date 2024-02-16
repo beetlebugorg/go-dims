@@ -16,10 +16,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/beetlebugorg/go-dims/pkg/signing"
+	internal "github.com/beetlebugorg/go-dims/internal/dims"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
@@ -59,14 +60,26 @@ type SignCmd struct {
 }
 
 func (s *SignCmd) Run() error {
-	var algorithm signing.SignatureAlgorithm
+	var algorithm internal.SignatureAlgorithm
 	if s.SigningAlgorithm == "md5" {
-		algorithm = signing.NewMD5(s.Secret, s.Timestamp)
+		algorithm = internal.NewMD5(s.Secret, s.Timestamp)
 	} else if s.SigningAlgorithm == "hmac-sha256" {
-		algorithm = signing.NewHmacSha256(s.Secret)
+		algorithm = internal.NewHmacSha256(s.Secret)
 	}
 
-	fmt.Printf("%s\n", algorithm.Sign(s.Commands, s.ImageURL))
+	var commands []internal.Command
+	parsedCommands := strings.Split(s.Commands, "/")
+	for i := 0; i < len(parsedCommands)-1; i += 2 {
+		command := parsedCommands[i]
+		args := parsedCommands[i+1]
+
+		commands = append(commands, internal.Command{
+			Name: command,
+			Args: args,
+		})
+	}
+
+	fmt.Printf("%s\n", algorithm.Sign(commands, s.ImageURL))
 
 	return nil
 }

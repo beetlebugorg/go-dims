@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
 import (
-	"net/http"
+	"github.com/sagikazarmark/slog-shim"
+	"gopkg.in/gographics/imagick.v3/imagick"
+	"strconv"
 )
 
-func HandleDimsStatus(config EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+func SepiaCommand(mw *imagick.MagickWand, args string) error {
+	slog.Debug("SepiaCommand", "args", args)
+
+	threshold, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
+	}
+
+	return mw.SepiaToneImage(threshold * imagick.QUANTUM_RANGE)
 }

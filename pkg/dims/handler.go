@@ -16,38 +16,54 @@ package dims
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"net/http"
 
-	"github.com/beetlebugorg/go-dims/internal/dims"
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
 	imagick.Initialize()
 
-	config := dims.ReadConfig()
+	environmentConfig := dims.ReadConfig()
+	argumentConfig := dims.ArgumentConfig{
+		DevelopmentMode: dev,
+		DebugMode:       debug,
+	}
+	config := dims.Config{
+		EnvironmentConfig: environmentConfig,
+		ArgumentConfig:    argumentConfig,
+	}
 
 	if debug {
 		fmt.Printf("config: %+v\n", config)
 	}
 
 	mux := http.NewServeMux()
+
+	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
 	v4 := func(w http.ResponseWriter, r *http.Request) {
-		dims.HandleDims4(config, debug, dev, w, r)
-	}
+		request := v4.NewRequest(r, config)
 
+		dims.Handler(request, config, w, r)
+	}
 	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
 	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)
 
-	mux.HandleFunc("/dims-sizer/{url}",
+	// v5 endpoint
+	mux.HandleFunc("/v5/{clientId}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsSizer(config, debug, dev, w, r)
+			request := v5.NewRequest(r, config)
+
+			dims.Handler(request, config, w, r)
 		})
 
 	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsStatus(config, debug, dev, w, r)
+			dims.HandleDimsStatus(config.EnvironmentConfig, debug, dev, w, r)
 		})
 
 	return mux

@@ -14,11 +14,7 @@
 
 package dims
 
-import (
-	"net/http"
-)
-
-func HandleDimsStatus(config EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+// SignatureAlgorithm is an interface to implement different signing algorithms.
+type SignatureAlgorithm interface {
+	Sign(commands []Command, imageUrl string) string
 }

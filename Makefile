@@ -1,5 +1,5 @@
 all:
-	go build -o ./build/bin/dims cmd/dims/main.go
+	go build -o ./build/dims go-dims.go
 
 docs:
 	mdbook build docs

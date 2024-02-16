@@ -16,6 +16,7 @@ package dims
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/v4"
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
@@ -36,7 +37,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
 	v4 := func(w http.ResponseWriter, r *http.Request) {
-		dims.HandleDims4(config, debug, dev, w, r)
+		v4.HandleDims4(config, debug, dev, w, r)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/%s", v4Arguments), v4)
 	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4)

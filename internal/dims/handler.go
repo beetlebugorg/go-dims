@@ -29,8 +29,10 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Reques
 
 	// Verify signature.
 	if !config.DevelopmentMode {
-		if !kernel.ValidateSignature() {
-			kernel.SendError(w, 500, "signature verification failed.")
+		if kernel.ValidateSignature() == false {
+			kernel.SendError(w, 403, "verification failed.")
+
+			slog.Info("verification failed.")
 
 			return
 		}
@@ -56,7 +58,7 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Reques
 	}
 
 	// Serve the image.
-	if err := kernel.SendImage(w, imageType, imageBlob); err != nil {
+	if err := kernel.SendImage(w, 200, imageType, imageBlob); err != nil {
 		slog.Error("serveImage failed.", "error", err)
 
 		http.Error(w, "Failed to serve image", http.StatusInternalServerError)

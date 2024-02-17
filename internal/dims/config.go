@@ -38,8 +38,8 @@ type Error struct {
 }
 
 type Signing struct {
-	SigningAlgorithm string `env:"DIMS_SIGNING_ALGORITHM" envDefault:"hmac-sha256"`
-	SigningKey       string `env:"DIMS_SIGNING_KEY,notEmpty"`
+	SigningKey    string `env:"DIMS_SIGNING_KEY,notEmpty"`
+	EtagAlgorithm string
 }
 
 type OutputFormat struct {
@@ -56,11 +56,6 @@ type Options struct {
 	IncludeDisposition bool `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
 }
 
-type ArgumentConfig struct {
-	DevelopmentMode bool
-	DebugMode       bool
-}
-
 type EnvironmentConfig struct {
 	Timeout
 	EdgeControl
@@ -72,8 +67,10 @@ type EnvironmentConfig struct {
 }
 
 type Config struct {
+	DevelopmentMode bool
+	DebugMode       bool
+	EtagAlgorithm   string
 	EnvironmentConfig
-	ArgumentConfig
 }
 
 func ReadConfig() EnvironmentConfig {

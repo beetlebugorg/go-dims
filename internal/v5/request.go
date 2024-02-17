@@ -15,11 +15,13 @@
 package v5
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/v4"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -42,7 +44,11 @@ var commandsV5 = map[string]dims.Operation{
 	"gravity":    GravityCommand,
 }
 
-func NewRequest(r *http.Request, config dims.Config) *dims.Request {
+type RequestV5 struct {
+	dims.Request
+}
+
+func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 	h := sha256.New()
 	io.WriteString(h, r.PathValue("clientId"))
 	io.WriteString(h, r.PathValue("commands"))
@@ -62,12 +68,30 @@ func NewRequest(r *http.Request, config dims.Config) *dims.Request {
 		})
 	}
 
-	return &dims.Request{
-		Id:        hash,
-		Config:    config,
-		ClientId:  r.PathValue("clientId"),
-		ImageUrl:  r.URL.Query().Get("url"),
-		Commands:  commands,
-		Signature: r.URL.Query().Get("sign"),
+	return &RequestV5{
+		dims.Request{
+			Id:        hash,
+			Config:    config,
+			ClientId:  r.PathValue("clientId"),
+			ImageUrl:  r.URL.Query().Get("url"),
+			Commands:  commands,
+			Signature: r.URL.Query().Get("sign"),
+		},
 	}
+}
+
+// ValidateSignature verifies the signature of the image resize is valid.
+func (r *RequestV5) ValidateSignature() bool {
+	slog.Debug("verifySignature", "url", r.ImageUrl)
+
+	algorithm := NewHmacSha256(r.Config.Signing.SigningKey)
+	signature := algorithm.Sign(r.Commands, r.ImageUrl)
+
+	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
+		return true
+	}
+
+	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
+
+	return false
 }

@@ -15,10 +15,12 @@
 package v4
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -70,7 +72,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 	}
 
 	return &RequestV4{
-		Request: dims.Request{
+		dims.Request{
 			Id:        requestHash,
 			Config:    config,
 			ClientId:  r.PathValue("clientId"),
@@ -78,6 +80,22 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 			Commands:  commands,
 			Signature: r.PathValue("signature"),
 		},
-		Timestamp: timestamp,
+		timestamp,
 	}
+}
+
+// ValidateSignature verifies the signature of the image resize is valid.
+func (r *RequestV4) ValidateSignature() bool {
+	slog.Debug("verifySignature", "url", r.ImageUrl)
+
+	algorithm := NewMD5(r.Config.Signing.SigningKey, r.Timestamp)
+	signature := algorithm.Sign(r.Commands, r.ImageUrl)
+
+	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
+		return true
+	}
+
+	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
+
+	return false
 }

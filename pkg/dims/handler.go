@@ -28,24 +28,23 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	imagick.Initialize()
 
 	environmentConfig := dims.ReadConfig()
-	argumentConfig := dims.ArgumentConfig{
-		DevelopmentMode: dev,
-		DebugMode:       debug,
-	}
-	config := dims.Config{
-		EnvironmentConfig: environmentConfig,
-		ArgumentConfig:    argumentConfig,
-	}
-
-	if debug {
-		fmt.Printf("config: %+v\n", config)
-	}
 
 	mux := http.NewServeMux()
 
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
 	v4Handler := func(w http.ResponseWriter, r *http.Request) {
+		config := dims.Config{
+			EnvironmentConfig: environmentConfig,
+			DevelopmentMode:   dev,
+			DebugMode:         debug,
+			EtagAlgorithm:     "md5",
+		}
+
+		if debug {
+			fmt.Printf("config: %+v\n", config)
+		}
+
 		request := v4.NewRequest(r, config)
 
 		dims.Handler(request, config, w, r)
@@ -56,6 +55,17 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v5 endpoint
 	mux.HandleFunc("/v5/{clientId}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
+			config := dims.Config{
+				EnvironmentConfig: environmentConfig,
+				DevelopmentMode:   dev,
+				DebugMode:         debug,
+				EtagAlgorithm:     "hmac-sha256",
+			}
+
+			if debug {
+				fmt.Printf("config: %+v\n", config)
+			}
+
 			request := v5.NewRequest(r, config)
 
 			dims.Handler(request, config, w, r)
@@ -63,7 +73,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsStatus(config.EnvironmentConfig, debug, dev, w, r)
+			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
 		})
 
 	return mux

@@ -259,7 +259,7 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	// Set etag header.
 	if r.SourceImage.Etag != "" || r.SourceImage.LastModified != "" {
 		var h hash.Hash
-		if r.Config.Signing.SigningAlgorithm == "md5" {
+		if r.Config.Signing.EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()

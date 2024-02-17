@@ -10,9 +10,9 @@
     - [Local](running/local.md)
     - [Resources](running/resources.md)
 - [Configuration](configuration/index.md)
-    - [Cache Control](configuration/cache-control.md)
-    - [Other](configuration/other.md)
     - [Signing Requests](configuration/signing.md)
+    - [Cache Control Headers](configuration/cache-control.md)
+    - [Other Settings](configuration/other.md)
     - [mod-dims](configuration/mod-dims.md)
 - [Administration]()
     - [Security]()
@@ -25,7 +25,10 @@
 # API Reference
 
 - [Endpoints]()
-    - [/v4](endpoints/dims4.md)
+    - [/v4]()
+      - [/v4/dims](endpoints/dims4.md)
+    - [/v5]()
+      - [/v5/dims](endpoints/dims5.md)
     - [/status](endpoints/status.md)
     - [/health](endpoints/health.md)
 - [Image Management Commands]()
@@ -43,3 +46,4 @@
     - [Invert](operations/invert.md)
     - [Rotate](operations/rotate.md)
     - [Legacy Thumbnail](operations/legacy_thumbnail.md)
+    - [Gravity](operations/gravity.md)

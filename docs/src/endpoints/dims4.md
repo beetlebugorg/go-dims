@@ -1,114 +1,87 @@
-# /v4 Endpoint
+# /v4/dims Endpoint
 
 ```html
-/v4/<ClientId>/<Signature>/<Timestamp>/<Commands>.../?url=<Image>
+/v4/dims/<clientId>/<signature>/<timestamp>/<commands>.../?url=<image>
 ```
 
-This endpoint is backward compatible with the mod-dims `/dims4` endpoint. You can also
-access this endpoint at `/dims4`.
+The `dims` endpoint lets you crop, resize, and apply other transformations to images.
 
-This endpoint is designed to always return an image, including in most error
-cases. When a command fails dims will return an auto-generated image using the
-background color defined in the [DIMS_ERROR_BACKGROUND](../configuration/other.md#dims_error_background) 
-environment variable. 
+An image manipulation request is made up of one or more [commands](#commands) that will transform an image, such
+as `resize/100x100`. These commands will be applied on the image provided in the
+`url` parameter. They are applied in the order they appear in the URL.
 
-The auto-generated error image will be resized and/or cropped to match the requested image.
-
-## Image Manipulation Request
-
-An image manipulation request is made up of the url to the image you want to manipulate, and one or
-more commands.
-
-Here is the example we used in the [Getting Started](../guide/installation.md) section:
+Let's break down the example we used in the [Getting Started](../guide/installation.md) section:
 
 ```html
-/v4/default/6d3dcb6/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
+/v4/dims/default/6d3dcb6/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
 ```
 
-Breaking the request down into its parts you get the following:
+Breaking the request down into its parts we get the following:
 
-**URL parameters**:
+**URL**:
 | Parameter               |  Value            | Description
 |-------------------------|-------------------|----------------------------------------------------------------
 | `clientId`              | **`default`**           | name of client making request, tied to [signing key](../configuration/signing.md)
 | `signature`             | **`6d3dcb6`**           | [signature](#signing) to prevent request tampering
 | `timestamp`             | **`2147483647`**        | expiration as a unix timestamp (seconds since epoch)
-| `commands`              | **`resize/100x100`**    | one or more [commands](#commands), separated commands with `/`
+| `commands`              | **`resize/100x100`**    | one or more [commands](#commands), separated by `/`
 
-**Query parameters**:
+**Query String**:
 | Parameter             |  Value            | Description
 |-----------------------|-------------------|----------------------------------------------------------------
 | `url`                | `https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg` | image to manipulate
 | `download`           | `0`                | if set to `1` include `attachment` content disposition header
 
-## Commands
+## Error Handling
 
-{{#include ../operations/operations.md}}
+This endpoint will always return an image.  When a command fails dims will return an auto-generated image
+using the background color defined in the
+[DIMS_ERROR_BACKGROUND](../configuration/other.md#dims_error_background) environment variable.
+
+The auto-generated error image will be resized and/or cropped to match the requested image so it'll
+fit nicely in the space where the original image would have been.
 
 ## Signing
 
 All requests to this endpoint must be signed. Signing requests ensures that
 the image request has not been changed.
 
-In the examples below note the following:
-- *imageCommands* **should** have any preceding or trailing slashes (`/`) removed. 
-- *imageUrl* **should not** be url encoded.
-- *timestamp* is a unix timestamp (seconds since epoch).
+The signature is a MD5-56 hash of:
+- `timestamp`
+- `signingKey`
+- `imageCommands`
+- `imageUrl`. 
+ 
+Those values should be concatenated together without any spaces or other characters between them,
+and then hashed.
 
-The algorithm used is controlled by the environment variables `DIMS_SIGNING_ALGORITHM`. See
-[Signing Request](../configuration/signing.md#dims_signing_algorithm) configuration.
+Note:
+- `imageCommands` **should not** have any preceding or trailing slashes (`/`).
+  - ✅️`resize/100x100/crop/10x10+25+25`
+  
+  - ❌️`/resize/100x100/crop/10x10+25+25/`
 
-### HMAC-SHA256
+- `imageUrl` **should not** be url encoded.
+  - ✅️`https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg`
 
-Requests are signed using **HMAC-SHA256**.
+  - ❌️`https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1539116%2Fpexels-photo-1539116.jpeg`
 
-To sign a request concatenate and sign: *timestamp*, *imageCommands*, and *imageUrl*.
+- `timestamp` is a unix timestamp (seconds since epoch).
 
-Here is how we do this on the server in Go:
-
-```go
-func SignHmacSha256(signingKey string, timestamp string, imageCommands string, imageUrl string) string {
-	mac := hmac.New(sha256.New, []byte(signingKey))
-	mac.Write([]byte(timestamp))
-	mac.Write([]byte(imageCommands))
-	mac.Write([]byte(imageUrl))
-
-	return fmt.Sprintf("%x", mac.Sum(nil))[0:24]
-}
-```
-
-To test this out you can use the `sign` subcommand of dims:
+Bringing that all together, here is an example of how to sign a request using the example from above:
 
 ```shell
-$ dims sign 2147483647 mysecret resize/100x100 "https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg"
-dc45b8f4a9405247f25bd22f
+$ echo -n "2147483647mysecretresize/100x100https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg" | md5 | cut -b 1-7
+6d3dcb6
 ```
 
-### MD5
-
-Legacy mod-dims requests were signed with md5.
-
-To sign a request with md5 concatenate and hash: *timestamp*, *secret*, *imageCommands*, *imageUrl*.
-
-Here is how we do this on the server in Go:
-
-```go
-func Sign(timestamp string, secret string, imageCommands string, imageUrl string) string {
-	hash := md5.New()
-	io.WriteString(hash, timestamp)
-	io.WriteString(hash, secret)
-	io.WriteString(hash, imageCommands)
-	io.WriteString(hash, imageUrl)
-
-	return fmt.Sprintf("%x", hash.Sum(nil))[0:7]
-}
-```
-
-To test this out you can use the `sign` subcommand of dims:
+We've wrapped this up into a simple command:
 
 ```shell
 $ dims sign 2147483647 mysecret resize/100x100 "https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg" --signing-algorithm=md5
 6d3dcb6
 ```
 
-> This signature method is deprecated and should not be used.
+## Commands
+
+{{#include ../operations/v4.md}}

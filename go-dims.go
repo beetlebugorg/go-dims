@@ -17,6 +17,8 @@ package main
 import (
 	"fmt"
 	internal "github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"log/slog"
 	"net/http"
 	"os"
@@ -62,9 +64,9 @@ type SignCmd struct {
 func (s *SignCmd) Run() error {
 	var algorithm internal.SignatureAlgorithm
 	if s.SigningAlgorithm == "md5" {
-		algorithm = internal.NewMD5(s.Secret, s.Timestamp)
+		algorithm = v4.NewMD5(s.Secret, s.Timestamp)
 	} else if s.SigningAlgorithm == "hmac-sha256" {
-		algorithm = internal.NewHmacSha256(s.Secret)
+		algorithm = v5.NewHmacSha256(s.Secret)
 	}
 
 	var commands []internal.Command

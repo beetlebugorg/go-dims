@@ -15,7 +15,6 @@
 package dims
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"errors"
@@ -38,7 +37,7 @@ type Kernel interface {
 	FetchImage() error
 	ProcessImage() (string, []byte, error)
 	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, imageType string, imageBlob []byte) error
+	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
 	SendError(w http.ResponseWriter, status int, message string)
 }
 
@@ -52,22 +51,6 @@ type Request struct {
 	Commands               []Command // The commands (resize, crop, etc).
 	Error                  bool      // Whether the error image is being served.
 	SourceImage            Image     // The source image.
-}
-
-// ValidateSignature verifies the signature of the image resize is valid.
-func (r *Request) ValidateSignature() bool {
-	slog.Debug("verifySignature", "url", r.ImageUrl)
-
-	algorithm := NewHmacSha256(r.Config.Signing.SigningKey)
-	signature := algorithm.Sign(r.Commands, r.ImageUrl)
-
-	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
-		return true
-	}
-
-	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
-
-	return false
 }
 
 // FetchImage downloads the image from the given URL.
@@ -295,7 +278,9 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	}
 }
 
-func (r *Request) SendImage(w http.ResponseWriter, imageFormat string, imageBlob []byte) error {
+func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error {
+	slog.Info("SendImage", "status", status, "format", imageFormat, "size", len(imageBlob))
+
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
 	}
@@ -307,7 +292,7 @@ func (r *Request) SendImage(w http.ResponseWriter, imageFormat string, imageBlob
 	w.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
 
 	// Set status code.
-	w.WriteHeader(r.SourceImage.Status)
+	w.WriteHeader(status)
 
 	// Write the image.
 	w.Write(imageBlob)
@@ -316,6 +301,8 @@ func (r *Request) SendImage(w http.ResponseWriter, imageFormat string, imageBlob
 }
 
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
+	slog.Info("sendError", "status", status, "message", message)
+
 	mw := imagick.NewMagickWand()
 	defer mw.Destroy()
 
@@ -358,8 +345,20 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 		}
 	}
 
+	// Set the format for the error image.
+	format := mw.GetImageFormat()
+	if format == "" && r.Config.OutputFormat.OutputFormat != "" {
+		format = r.Config.OutputFormat.OutputFormat
+	} else if format == "" {
+		format = "png"
+	}
+	mw.SetImageFormat(format)
+
 	r.Error = true
-	r.SendImage(w, mw.GetImageFormat(), mw.GetImageBlob())
+	err := r.SendImage(w, status, format, mw.GetImageBlob())
+	if err != nil {
+		slog.Error("sendError failed.", "error", err)
+	}
 }
 
 func sourceMaxAge(header string) (int, error) {

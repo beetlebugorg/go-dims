@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"strings"
 )
 
@@ -26,20 +27,20 @@ type HmacSha256Algorithm struct {
 }
 
 // NewHmacSha256 returns a new HmacSha256Algorithm.
-func NewHmacSha256(signingKey string) SignatureAlgorithm {
+func NewHmacSha256(signingKey string) dims.SignatureAlgorithm {
 	return HmacSha256Algorithm{
 		Key: signingKey,
 	}
 }
 
 // Sign returns a signed string using the HMAC-SHA256 algorithm.
-func (h HmacSha256Algorithm) Sign(commands []Command, imageUrl string) string {
+func (h HmacSha256Algorithm) Sign(commands []dims.Command, imageUrl string) string {
 	mac := hmac.New(sha256.New, []byte(h.Key))
 	for _, command := range commands {
-		santizedArgs := strings.ReplaceAll(command.Args, " ", "+")
+		sanitizedArgs := strings.ReplaceAll(command.Args, " ", "+")
 
 		mac.Write([]byte(command.Name))
-		mac.Write([]byte(santizedArgs))
+		mac.Write([]byte(sanitizedArgs))
 	}
 	mac.Write([]byte(imageUrl))
 

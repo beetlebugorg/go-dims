@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"io"
 	"strings"
 )
@@ -27,7 +28,7 @@ type MD5Algorithm struct {
 }
 
 // NewMD5 returns a new MD5Algorithm.
-func NewMD5(signingKey string, timestamp int32) SignatureAlgorithm {
+func NewMD5(signingKey string, timestamp int32) dims.SignatureAlgorithm {
 	return MD5Algorithm{
 		key:       signingKey,
 		timestamp: timestamp,
@@ -35,7 +36,7 @@ func NewMD5(signingKey string, timestamp int32) SignatureAlgorithm {
 }
 
 // Sign returns a signed string using the MD5 algorithm.
-func (h MD5Algorithm) Sign(commands []Command, imageUrl string) string {
+func (h MD5Algorithm) Sign(commands []dims.Command, imageUrl string) string {
 	// Concatenate the commands into a single string.
 	commandStrings := make([]string, len(commands))
 	for _, command := range commands {

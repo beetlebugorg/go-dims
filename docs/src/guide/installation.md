@@ -40,9 +40,7 @@ $ brew install imagemagick
 ```
 
 On Linux you'll need to find an Imagemagick 7 package or compile it from source. It's not hard to
-compile, it just takes a while. Check out our the
-[Dockerfile.buildimage](https://github.com/beetlebugorg/go-dims/blob/main/Dockerfile.buildimage) to
-see how we compile Imagemagick.
+compile, it just takes a while. 
 
 Then you can compile and run go-dims:
 

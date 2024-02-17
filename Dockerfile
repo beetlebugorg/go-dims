@@ -1,10 +1,21 @@
-FROM ghcr.io/beetlebugorg/go-dims:build-latest as build-go-dims
+FROM alpine:edge as build-go-dims
+
+RUN apk add --no-cache \
+    imagemagick-dev imagemagick-webp \
+    imagemagick-jpeg imagemagick-tiff imagemagick-svg \
+    imagemagick-pango \
+    go upx make alpine-sdk
+
+# Configure Go
+ENV GOROOT /usr/lib/go
+ENV GOPATH /go
+ENV PATH /go/bin:$PATH
 
 COPY . /build/go-dims
 WORKDIR /build/go-dims
-RUN go build -o /usr/local/imagemagick/bin/dims go-dims.go
+RUN make
 
-FROM debian:bookworm-slim
+FROM alpine:3.19
 
 #-- Imagemagick Settings
 # 
@@ -32,10 +43,6 @@ ENV DIMS_CACHE_CONTROL_MAX=31536000
 ENV DIMS_CACHE_CONTROL_ERROR=60
 ENV DIMS_EDGE_CONTROL_DOWNSTREAM_TTL=604800
 
-# DIMS_SIGNING_ALGORITHM can be md5 or hmac-sha256
-# For compatibility with the original DIMS, set to md5.
-ENV DIMS_SIGNING_ALGORITHM=md5
-
 #ENV DIMS_DEFAULT_IMAGE_PREFIX=""
 #ENV DIMS_DEFAULT_OUTPUT_FORMAT=webp
 #ENV DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS=jpeg,png
@@ -48,18 +55,14 @@ ENV LC_ALL="C"
 
 USER root
 
-RUN apt-get update && \
-    apt-get -y install \
-        libpangocairo-1.0-0 libgif7 libjpeg62-turbo libpng16-16 libgomp1 libjbig0 liblcms2-2 \
-        libbz2-1.0 libfftw3-double3 libfontconfig1 libfreetype6 libheif1 \
-        liblqr-1-0 libltdl7 liblzma5 libopenjp2-7 libopenexr-3-1-30 ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    imagemagick-webp \
+    imagemagick-jpeg imagemagick-tiff imagemagick-svg \
+    imagemagick-pango
 
-COPY --from=build-go-dims /usr/local/imagemagick /usr/local/imagemagick
+COPY --from=build-go-dims /build/go-dims/build/dims /usr/local/bin/dims
 
-ENV LD_LIBRARY_PATH=/usr/local/imagemagick/lib
-
-ENTRYPOINT ["/usr/local/imagemagick/bin/dims"]
+ENTRYPOINT ["/usr/local/bin/dims"]
 CMD ["serve", "--bind", ":8080"]
 EXPOSE 8080
 

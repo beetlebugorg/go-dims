@@ -366,8 +366,8 @@ func sourceMaxAge(header string) (int, error) {
 		return 0, errors.New("empty header")
 	}
 
-	regex, _ := regexp.Compile("max-age=([\\d]+)")
-	match := regex.FindStringSubmatch(header)
+	pattern, _ := regexp.Compile(`max-age=(\d+)`)
+	match := pattern.FindStringSubmatch(header)
 	if len(match) == 1 {
 		sourceMaxAge, err := strconv.Atoi(match[0])
 		if err != nil {

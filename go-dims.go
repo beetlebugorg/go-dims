@@ -16,16 +16,11 @@ package main
 
 import (
 	"fmt"
-	internal "github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/beetlebugorg/go-dims/internal/v4"
-	"github.com/beetlebugorg/go-dims/internal/v5"
+	"github.com/alecthomas/kong"
+	"github.com/beetlebugorg/go-dims/pkg/dims"
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/alecthomas/kong"
-	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 
 type ServeCmd struct {
@@ -54,34 +49,17 @@ func (s *ServeCmd) Run() error {
 }
 
 type SignCmd struct {
-	SigningAlgorithm string `help:"SigningAlgorithm to use." default:"hmac-sha256"`
-	Timestamp        int32  `arg:"" name:"timestamp" help:"Expiration timestamp" type:"timestamp"`
-	Secret           string `arg:"" name:"secret" help:"Secret key."`
-	Commands         string `arg:"" name:"commands" help:"Commands to sign."`
-	ImageURL         string `arg:"" name:"image_url" help:"Image URL to sign."`
+	Dev      bool   `help:"Enable development mode." default:"false"`
+	ImageURL string `arg:"" name:"imageUrl" help:"Image URL to sign. For v4 urls place any value in the signature position in the URL."`
 }
 
 func (s *SignCmd) Run() error {
-	var algorithm internal.SignatureAlgorithm
-	if s.SigningAlgorithm == "md5" {
-		algorithm = v4.NewMD5(s.Secret, s.Timestamp)
-	} else if s.SigningAlgorithm == "hmac-sha256" {
-		algorithm = v5.NewHmacSha256(s.Secret)
+	signedUrl, err := dims.SignUrl(s.ImageURL, s.Dev)
+	if err != nil {
+		return err
 	}
 
-	var commands []internal.Command
-	parsedCommands := strings.Split(s.Commands, "/")
-	for i := 0; i < len(parsedCommands)-1; i += 2 {
-		command := parsedCommands[i]
-		args := parsedCommands[i+1]
-
-		commands = append(commands, internal.Command{
-			Name: command,
-			Args: args,
-		})
-	}
-
-	fmt.Printf("%s\n", algorithm.Sign(commands, s.ImageURL))
+	fmt.Printf("\n%s\n", signedUrl)
 
 	return nil
 }

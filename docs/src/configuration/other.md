@@ -1,4 +1,4 @@
-# Other
+# Other Settings
 
 Occasionally useful settings that can probably be left as-is, except for the
 error color setting, change that one.

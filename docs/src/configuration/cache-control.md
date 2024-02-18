@@ -1,4 +1,4 @@
-# Cache Control
+# Cache Control Headers
 
 Cache control can be confusing but it's also super important to get it right. It impacts
 not only the load on your dims servers but it also affects your [Lighthouse

@@ -19,7 +19,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -53,9 +52,9 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
 
 	h := md5.New()
-	io.WriteString(h, r.PathValue("clientId"))
-	io.WriteString(h, r.PathValue("commands"))
-	io.WriteString(h, r.URL.Query().Get("url"))
+	h.Write([]byte(r.PathValue("clientId")))
+	h.Write([]byte(r.PathValue("commands")))
+	h.Write([]byte(r.URL.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	var commands []dims.Command
@@ -88,8 +87,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 func (r *RequestV4) ValidateSignature() bool {
 	slog.Debug("verifySignature", "url", r.ImageUrl)
 
-	algorithm := NewMD5(r.Config.Signing.SigningKey, r.Timestamp)
-	signature := algorithm.Sign(r.Commands, r.ImageUrl)
+	signature := r.Sign()
 
 	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
 		return true
@@ -98,4 +96,25 @@ func (r *RequestV4) ValidateSignature() bool {
 	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
 
 	return false
+}
+
+// Sign returns a signed string using the MD5 algorithm.
+func (r *RequestV4) Sign() string {
+	// Concatenate the commands into a single string.
+	commandStrings := make([]string, len(r.Commands))
+	for _, command := range r.Commands {
+		commandStrings = append(commandStrings, fmt.Sprintf("%s/%s", command.Name, command.Args))
+	}
+
+	sanitizedCommands := strings.Join(commandStrings, "/")
+	sanitizedCommands = strings.ReplaceAll(sanitizedCommands, " ", "+")
+	sanitizedCommands = strings.Trim(sanitizedCommands, "/")
+
+	hash := md5.New()
+	hash.Write([]byte(fmt.Sprintf("%d", r.Timestamp)))
+	hash.Write([]byte(r.Config.Signing.SigningKey))
+	hash.Write([]byte(sanitizedCommands))
+	hash.Write([]byte(r.ImageUrl))
+
+	return fmt.Sprintf("%x", hash.Sum(nil))[0:7]
 }

@@ -71,15 +71,29 @@ Note:
 Bringing that all together, here is an example of how to sign a request using the example from above:
 
 ```shell
-$ echo -n "2147483647mysecretresize/100x100https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg" | md5 | cut -b 1-7
+❯ echo -n "2147483647mysecretresize/100x100https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg" | md5 | cut -b 1-7
 6d3dcb6
 ```
 
-We've wrapped this up into a simple command:
+We've wrapped this up into a command to make signing and validating requests easier. 
+
+Use the `sign` command to sign a request by passing in a URL to sign, and setting the signing
+key in the `DIMS_SIGNING_KEY` environment variable.
+
+The `signature` part of your URL does not need to be valid but must be 7 characters long. The `sign` command will
+replace it with a valid signature and output the result.
 
 ```shell
-$ dims sign 2147483647 mysecret resize/100x100 "https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg" --signing-algorithm=md5
-6d3dcb6
+❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v4/dims/default/1234567/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev
+Image to be transformed:
+
+https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
+
+Transformation commands found:
+
+resize('100x100')
+
+http://localhost:8080/v4/dims/default/6d3dcb6/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
 ```
 
 ## Commands

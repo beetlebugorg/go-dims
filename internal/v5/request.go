@@ -15,12 +15,12 @@
 package v5
 
 import (
-	"bytes"
+	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/v4"
-	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -50,13 +50,63 @@ type RequestV5 struct {
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 	h := sha256.New()
-	io.WriteString(h, r.PathValue("clientId"))
-	io.WriteString(h, r.PathValue("commands"))
-	io.WriteString(h, r.URL.Query().Get("url"))
-	hash := fmt.Sprintf("%x", h.Sum(nil))
+	h.Write([]byte(r.PathValue("clientId")))
+	h.Write([]byte(r.PathValue("commands")))
+	h.Write([]byte(r.URL.Query().Get("url")))
+	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	var commands []dims.Command
-	parsedCommands := strings.Split(r.PathValue("commands"), "/")
+	return &RequestV5{
+		dims.Request{
+			Id:        requestHash,
+			Config:    config,
+			ClientId:  r.URL.Query().Get("clientId"),
+			ImageUrl:  r.URL.Query().Get("url"),
+			Commands:  parseCommands(r.PathValue("commands")),
+			Signature: r.URL.Query().Get("sig"),
+		},
+	}
+}
+
+// ValidateSignature verifies the signature of the image resize is valid.
+func (r *RequestV5) ValidateSignature() bool {
+	slog.Debug("verifySignature", "url", r.ImageUrl)
+
+	expectedSignature := r.Sign()
+	gotSignature, err := hex.DecodeString(r.Signature)
+	if err != nil {
+		slog.Error("verifySignature failed.", "error", err)
+		return false
+	}
+
+	if hmac.Equal(expectedSignature, gotSignature) {
+		return true
+	}
+
+	slog.Error("verifySignature failed.",
+		"expected", hex.EncodeToString(expectedSignature),
+		"got", r.Signature)
+
+	return false
+}
+
+// Sign returns a signed string using HMAC-SHA256-128.
+func (r *RequestV5) Sign() []byte {
+	mac := hmac.New(sha256.New, []byte(r.Config.SigningKey))
+	for _, command := range r.Commands {
+		sanitizedArgs := strings.ReplaceAll(command.Args, " ", "+")
+
+		mac.Write([]byte(command.Name))
+		mac.Write([]byte("/"))
+		mac.Write([]byte(sanitizedArgs))
+	}
+	mac.Write([]byte(r.ImageUrl))
+
+	return mac.Sum(nil)[0:31]
+}
+
+func parseCommands(cmds string) []dims.Command {
+	commands := make([]dims.Command, 0)
+	parsedCommands := strings.Split(strings.Trim(cmds, "/"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
 		command := parsedCommands[i]
 		args := parsedCommands[i+1]
@@ -66,32 +116,9 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 			Args:      args,
 			Operation: commandsV5[command],
 		})
+
+		slog.Info("parsedCommand", "command", command, "args", args)
 	}
 
-	return &RequestV5{
-		dims.Request{
-			Id:        hash,
-			Config:    config,
-			ClientId:  r.PathValue("clientId"),
-			ImageUrl:  r.URL.Query().Get("url"),
-			Commands:  commands,
-			Signature: r.URL.Query().Get("sign"),
-		},
-	}
-}
-
-// ValidateSignature verifies the signature of the image resize is valid.
-func (r *RequestV5) ValidateSignature() bool {
-	slog.Debug("verifySignature", "url", r.ImageUrl)
-
-	algorithm := NewHmacSha256(r.Config.Signing.SigningKey)
-	signature := algorithm.Sign(r.Commands, r.ImageUrl)
-
-	if bytes.Equal([]byte(signature), []byte(r.Signature)) {
-		return true
-	}
-
-	slog.Error("verifySignature failed.", "expected", signature, "got", r.Signature)
-
-	return false
+	return commands
 }

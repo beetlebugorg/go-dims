@@ -1,7 +1,7 @@
 # /v5/dims Endpoint
 
 ```html
-/v5/dims/<commands>.../?url=<image>
+/v5/dims/<commands>.../?url=<image>&clientId=<clientId>&sig=<signature>
 ```
 
 The `dims` endpoint lets you crop, resize, and apply other transformations to images.
@@ -29,8 +29,7 @@ Breaking the request down into its parts we get the following:
 | `url`             | `https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg` | image to manipulate
 | `download`        | `0`                | if set to `1` include `attachment` content disposition header
 | `clientId`        | **`default`**           | name of client making request, tied to [signing key](../configuration/signing.md)
-| `sig`            | **`6d3dcb6`**           | [signature](#signing) to prevent request tampering
-| `expire`          | **`2024-02-18T15:28:00Z`**        | expiration in ISO 8601 format
+| `sig`            | **`6d3dcb6...`**           | [signature](#signing) to prevent request tampering
 
 ## Error Handling
 
@@ -49,7 +48,6 @@ not been changed.
 The signature is a HMAC-SHA256-128 of:
 - `imageCommands`
 - `imageUrl`
-- `expire` (optional)
  
 Those values should be concatenated together without any spaces or other characters between them, and
 then signed.
@@ -64,6 +62,25 @@ Note:
     - ✅️`https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg`
 
     - ❌️`https%3A%2F%2Fimages.pexels.com%2Fphotos%2F1539116%2Fpexels-photo-1539116.jpeg`
+
+We've wrapped this up into a command to make signing and validating requests easier.
+
+Use the `sign` command to sign a request by passing in a URL to sign, and setting the signing
+key in the `DIMS_SIGNING_KEY` environment variable.
+
+```shell
+❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v5/dims/resize/100x100/?clientId=default&url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev  
+
+Image to be transformed:
+
+https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
+
+Transformation commands found:
+
+resize('100x100')
+
+http://localhost:8080/v5/dims/resize/100x100/?clientId=default&url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&sig=325d12cdbcb496ac7c27622b7bb6fb453449b3789dc3fa999996691f18f2dc
+```
 
 ## Commands
 

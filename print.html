@@ -510,8 +510,8 @@ and then hashed.</p>
 6d3dcb6
 </code></pre>
 <p>We've wrapped this up into a command to make signing and validating requests easier.</p>
-<p>Use the <code>sign</code> command to sign a request by passing in your URL you want to sign, and setting your signing
-key as an environment variable.</p>
+<p>Use the <code>sign</code> command to sign a request by passing in a URL to sign, and setting the signing
+key in the <code>DIMS_SIGNING_KEY</code> environment variable.</p>
 <p>The <code>signature</code> part of your URL does not need to be valid but must be 7 characters long. The <code>sign</code> command will
 replace it with a valid signature and output the result.</p>
 <pre><code class="language-shell">❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v4/dims/default/1234567/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev
@@ -647,7 +647,7 @@ globally and call this command when needed.</p>
 </div>
 <p>This command inverts the colors of an image.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="v5dims-endpoint"><a class="header" href="#v5dims-endpoint">/v5/dims Endpoint</a></h1>
-<pre><code class="language-html">/v5/dims/&lt;commands&gt;.../?url=&lt;image&gt;
+<pre><code class="language-html">/v5/dims/&lt;commands&gt;.../?url=&lt;image&gt;&amp;clientId=&lt;clientId&gt;&amp;sig=&lt;signature&gt;
 </code></pre>
 <p>The <code>dims</code> endpoint lets you crop, resize, and apply other transformations to images.</p>
 <p>An image manipulation request is made up of one or more <a href="endpoints/dims5.html#commands">commands</a> that will transform an image, such
@@ -667,8 +667,7 @@ as <code>resize/100x100</code>. These commands will be applied on the image prov
 <tr><td><code>url</code></td><td><code>https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg</code></td><td>image to manipulate</td></tr>
 <tr><td><code>download</code></td><td><code>0</code></td><td>if set to <code>1</code> include <code>attachment</code> content disposition header</td></tr>
 <tr><td><code>clientId</code></td><td><strong><code>default</code></strong></td><td>name of client making request, tied to <a href="endpoints/../configuration/signing.html">signing key</a></td></tr>
-<tr><td><code>sig</code></td><td><strong><code>6d3dcb6</code></strong></td><td><a href="endpoints/dims5.html#signing">signature</a> to prevent request tampering</td></tr>
-<tr><td><code>expire</code></td><td><strong><code>2024-02-18T15:28:00Z</code></strong></td><td>expiration in ISO 8601 format</td></tr>
+<tr><td><code>sig</code></td><td><strong><code>6d3dcb6...</code></strong></td><td><a href="endpoints/dims5.html#signing">signature</a> to prevent request tampering</td></tr>
 </tbody></table>
 </div>
 <h2 id="error-handling-1"><a class="header" href="#error-handling-1">Error Handling</a></h2>
@@ -684,7 +683,6 @@ not been changed.</p>
 <ul>
 <li><code>imageCommands</code></li>
 <li><code>imageUrl</code></li>
-<li><code>expire</code> (optional)</li>
 </ul>
 <p>Those values should be concatenated together without any spaces or other characters between them, and
 then signed.</p>
@@ -714,8 +712,8 @@ then signed.</p>
 </li>
 </ul>
 <p>We've wrapped this up into a command to make signing and validating requests easier.</p>
-<p>Use the <code>sign</code> command to sign a request by passing in your URL you want to sign, and setting your signing
-key as an environment variable.</p>
+<p>Use the <code>sign</code> command to sign a request by passing in a URL to sign, and setting the signing
+key in the <code>DIMS_SIGNING_KEY</code> environment variable.</p>
 <pre><code class="language-shell">❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v5/dims/resize/100x100/?clientId=default&amp;url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev  
 
 Image to be transformed:

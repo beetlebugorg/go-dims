@@ -250,8 +250,8 @@ and then hashed.</p>
 6d3dcb6
 </code></pre>
 <p>We've wrapped this up into a command to make signing and validating requests easier.</p>
-<p>Use the <code>sign</code> command to sign a request by passing in your URL you want to sign, and setting your signing
-key as an environment variable.</p>
+<p>Use the <code>sign</code> command to sign a request by passing in a URL to sign, and setting the signing
+key in the <code>DIMS_SIGNING_KEY</code> environment variable.</p>
 <p>The <code>signature</code> part of your URL does not need to be valid but must be 7 characters long. The <code>sign</code> command will
 replace it with a valid signature and output the result.</p>
 <pre><code class="language-shell">❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v4/dims/default/1234567/2147483647/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev

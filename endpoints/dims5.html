@@ -241,6 +241,21 @@ then signed.</p>
 </ul>
 </li>
 </ul>
+<p>We've wrapped this up into a command to make signing and validating requests easier.</p>
+<p>Use the <code>sign</code> command to sign a request by passing in your URL you want to sign, and setting your signing
+key as an environment variable.</p>
+<pre><code class="language-shell">❯ docker run -e DIMS_SIGNING_KEY=mysecret ghcr.io/beetlebugorg/go-dims sign 'https://myhost.com/v5/dims/resize/100x100/?clientId=default&amp;url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg' --dev  
+
+Image to be transformed:
+
+https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
+
+Transformation commands found:
+
+resize('100x100')
+
+http://localhost:8080/v5/dims/resize/100x100/?clientId=default&amp;url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&amp;sig=325d12cdbcb496ac7c27622b7bb6fb453449b3789dc3fa999996691f18f2dc
+</code></pre>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
 <p>Commands are used to transform your origin image. Each command takes a single argument, and performs
 a single manipulation such as resizing or cropping the origin image.</p>

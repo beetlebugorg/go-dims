@@ -49,6 +49,46 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache m
 
 FROM debian:bookworm-slim
 
+LABEL org.opencontainers.image.source="https://github.com/beetlebugorg/go-dims"
+LABEL org.opencontainers.image.base.name="debian:bookworm-slim"
+LABEL org.opencontainers.image.version="edge"
+
+#-- Imagemagick Settings
+#
+# For a complete list of ImageMagick environment variables, see: https://imagemagick.org/script/resources.php
+#
+
+# MAGIC_TIME_LIMIT is the maximum time in seconds that the ImageMagick operations will run
+ENV MAGICK_TIME_LIMIT=1
+
+# MAGICK_MEMORY_LIMIT is the maximum amount of memory that the ImageMagick operations will use
+# before caching to disk.
+ENV MAGICK_MEMORY_LIMIT=128MB
+
+#-- DIMS Settings
+#
+# For a complete list of DIMS environment variables, see: internal/dims/config.go
+#
+
+ENV DIMS_SECRET_KEY=""
+
+ENV DIMS_CACHE_CONTROL_USE_ORIGIN=true
+ENV DIMS_CACHE_CONTROL_DEFAULT=31536000
+ENV DIMS_CACHE_CONTROL_MIN=0
+ENV DIMS_CACHE_CONTROL_MAX=31536000
+ENV DIMS_CACHE_CONTROL_ERROR=60
+ENV DIMS_EDGE_CONTROL_DOWNSTREAM_TTL=604800
+
+#ENV DIMS_DEFAULT_IMAGE_PREFIX=""
+#ENV DIMS_DEFAULT_OUTPUT_FORMAT=webp
+#ENV DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS=jpeg,png
+#ENV DIMS_DOWNLOAD_TIMEOUT=60000
+#ENV DIMS_ERROR_BACKGROUND="#5adafd"
+#ENV DIMS_STRIP_METADATA=true
+#ENV DIMS_INCLUDE_DISPOSITION=false
+
+ENV LC_ALL="C"
+
 RUN apt-get -y update && \
     apt-get install -y --no-install-recommends \
     libjpeg62-turbo liblcms2-2 libfreetype6 libxml2 libgif7 libpng16-16 libtiff6 libwebp7 \

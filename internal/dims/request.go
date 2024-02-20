@@ -68,7 +68,8 @@ func (r *Request) FetchImage() error {
 }
 
 func _fetchImage(imageUrl string, timeout time.Duration) Image {
-	if _, err := url.ParseRequestURI(imageUrl); err != nil {
+	_, err := url.ParseRequestURI(imageUrl)
+	if err != nil {
 		return Image{
 			Status: 400,
 		}
@@ -76,9 +77,9 @@ func _fetchImage(imageUrl string, timeout time.Duration) Image {
 
 	http.DefaultClient.Timeout = timeout
 	image, err := http.Get(imageUrl)
-	if err != nil || image.StatusCode != 200 {
+	if err != nil {
 		return Image{
-			Status: image.StatusCode,
+			Status: 500,
 		}
 	}
 
@@ -97,20 +98,17 @@ func _fetchImage(imageUrl string, timeout time.Duration) Image {
 	return sourceImage
 }
 
-/*
-Parse through the requested commands and set
-the optimal image size on the MagicWand.
-
-This is used while reading an image to improve
-performance when generating thumbnails from very
-large images.
-
-An example speed is taking 1817x3000 sized image and
-reducing it to a 78x110 thumbnail:
-
-	without MagickSetSize: 396ms
-	with MagickSetSize:    105ms
-*/
+// Parse through the requested commands and set the optimal image size on the MagicWand.
+//
+// This is used while reading an image to improve
+// performance when generating thumbnails from very
+// large images.
+//
+// An example speed is taking 1817x3000 sized image and
+// reducing it to a 78x110 thumbnail:
+//
+//	without MagickSetSize: 396ms
+//	with MagickSetSize:    105ms
 func (r *Request) setOptimalImageSize(mw *imagick.MagickWand) {
 	for _, command := range r.Commands {
 		if command.Name == "thumbnail" || command.Name == "resize" {

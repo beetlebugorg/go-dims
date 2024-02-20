@@ -35,7 +35,9 @@ func ResizeCommand(mw *imagick.MagickWand, args string) error {
 	format := mw.GetImageFormat()
 	if format == "JPG" {
 		factors := []float64{2.0, 1.0, 1.0}
-		mw.SetSamplingFactors(factors)
+		if err := mw.SetSamplingFactors(factors); err != nil {
+			return err
+		}
 	}
 
 	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)

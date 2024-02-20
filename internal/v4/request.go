@@ -49,7 +49,10 @@ type RequestV4 struct {
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 	var timestamp int32
-	fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
+	n, err := fmt.Sscanf(r.PathValue("timestamp"), "%d", &timestamp)
+	if err != nil || n != 1 {
+		timestamp = 0
+	}
 
 	h := md5.New()
 	h.Write([]byte(r.PathValue("clientId")))

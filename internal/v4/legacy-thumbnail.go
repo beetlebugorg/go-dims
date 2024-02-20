@@ -40,13 +40,19 @@ func LegacyThumbnailCommand(mw *imagick.MagickWand, args string) error {
 	format := mw.GetImageFormat()
 	if format == "JPG" {
 		factors := []float64{2.0, 1.0, 1.0}
-		mw.SetSamplingFactors(factors)
+		if err := mw.SetSamplingFactors(factors); err != nil {
+			return err
+		}
 	}
 
 	if rect.Width < 200 && rect.Height < 200 {
-		mw.ThumbnailImage(rect.Width, rect.Height)
+		if err := mw.ThumbnailImage(rect.Width, rect.Height); err != nil {
+			return err
+		}
 	} else {
-		mw.ScaleImage(rect.Width, rect.Height)
+		if err := mw.ScaleImage(rect.Width, rect.Height); err != nil {
+			return err
+		}
 	}
 
 	flags = imagick.ParseAbsoluteGeometry(args, &rect)
@@ -59,8 +65,13 @@ func LegacyThumbnailCommand(mw *imagick.MagickWand, args string) error {
 	x := (width / 2) - (rect.Width / 2)
 	y := (height / 2) - (rect.Height / 2)
 
-	mw.CropImage(rect.Width, rect.Height, int(x), int(y))
-	mw.SetImagePage(rect.Width, rect.Height, int(x), int(y))
+	if err := mw.CropImage(rect.Width, rect.Height, int(x), int(y)); err != nil {
+		return err
+	}
+
+	if err := mw.SetImagePage(rect.Width, rect.Height, int(x), int(y)); err != nil {
+		return err
+	}
 
 	return nil
 }

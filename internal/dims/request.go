@@ -119,7 +119,9 @@ func (r *Request) setOptimalImageSize(mw *imagick.MagickWand) {
 				(flags&imagick.HEIGHTVALUE != 0) &&
 				(flags&imagick.PERCENTVALUE == 0) {
 
-				mw.SetSize(rect.Width, rect.Height)
+				if err := mw.SetSize(rect.Width, rect.Height); err != nil {
+					slog.Error("setOptimalImageSize failed.", "error", err)
+				}
 
 				return
 			}
@@ -145,9 +147,14 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	if mw.GetImageColorspace() == imagick.COLORSPACE_CMYK {
 		profiles := mw.GetImageProfiles("icc")
 		if profiles != nil {
-			mw.ProfileImage("ICC", CmykIccProfile)
+			if err := mw.ProfileImage("ICC", CmykIccProfile); err != nil {
+				return "", nil, err
+			}
 		}
-		mw.ProfileImage("ICC", RgbIccProfile)
+
+		if err := mw.ProfileImage("ICC", RgbIccProfile); err != nil {
+			return "", nil, err
+		}
 
 		err = mw.TransformImageColorspace(imagick.COLORSPACE_RGB)
 		if err != nil {
@@ -156,7 +163,9 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	}
 
 	// Flip image orientation, if needed.
-	mw.AutoOrientImage()
+	if err := mw.AutoOrientImage(); err != nil {
+		return "", nil, err
+	}
 
 	// Execute the commands.
 	stripMetadata := true
@@ -180,14 +189,18 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 	// Strip metadata. (if not already stripped)
 	if stripMetadata && r.Config.StripMetadata {
-		mw.StripImage()
+		if err := mw.StripImage(); err != nil {
+			return "", nil, err
+		}
 	}
 
 	// Set output format if not provided in the request.
 	if !formatProvided && r.Config.OutputFormat.OutputFormat != "" {
 		format := strings.ToLower(mw.GetImageFormat())
 		if !contains(r.Config.OutputFormat.Exclude, format) {
-			mw.SetImageFormat(r.Config.OutputFormat.OutputFormat)
+			if err := mw.SetImageFormat(r.Config.OutputFormat.OutputFormat); err != nil {
+				return "", nil, err
+			}
 		}
 	}
 
@@ -206,15 +219,15 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 			maxAge = originMaxAge
 
 			// If below minimum, set to minimum.
-			min := r.Config.OriginCacheControl.Min
-			if min != 0 && maxAge <= min {
-				maxAge = min
+			minCacheAge := r.Config.OriginCacheControl.Min
+			if minCacheAge != 0 && maxAge <= minCacheAge {
+				maxAge = minCacheAge
 			}
 
 			// If above maximum, set to maximum.
-			max := r.Config.OriginCacheControl.Max
-			if max != 0 && maxAge >= max {
-				maxAge = max
+			maxCacheAge := r.Config.OriginCacheControl.Max
+			if maxCacheAge != 0 && maxAge >= maxCacheAge {
+				maxAge = maxCacheAge
 			}
 		}
 	}
@@ -263,11 +276,11 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 			h = sha256.New()
 		}
 
-		io.WriteString(h, r.Id)
+		h.Write([]byte(r.Id))
 		if r.SourceImage.Etag != "" {
-			io.WriteString(h, r.SourceImage.Etag)
+			h.Write([]byte(r.SourceImage.Etag))
 		} else if r.SourceImage.LastModified != "" {
-			io.WriteString(h, r.SourceImage.LastModified)
+			h.Write([]byte(r.SourceImage.LastModified))
 		}
 
 		etag := fmt.Sprintf("%x", h.Sum(nil))
@@ -293,7 +306,10 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 	w.WriteHeader(status)
 
 	// Write the image.
-	w.Write(imageBlob)
+	_, err := w.Write(imageBlob)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -309,7 +325,10 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 
 	pw.SetColor(r.Config.Error.Background)
 
-	mw.NewImage(1, 1, pw)
+	if err := mw.NewImage(1, 1, pw); err != nil {
+		slog.Error("sendError failed.", "error", err)
+		return
+	}
 
 	// Execute the commands on the placeholder image, giving it the same dimensions as the requested image.
 	for _, command := range r.Commands {
@@ -350,7 +369,10 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	} else if format == "" {
 		format = "png"
 	}
-	mw.SetImageFormat(format)
+	if err := mw.SetImageFormat(format); err != nil {
+		slog.Error("sendError failed.", "error", err)
+		return
+	}
 
 	r.Error = true
 	err := r.SendImage(w, status, format, mw.GetImageBlob())

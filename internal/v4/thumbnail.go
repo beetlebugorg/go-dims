@@ -45,10 +45,14 @@ func ThumbnailCommand(mw *imagick.MagickWand, args string) error {
 	format := mw.GetImageFormat()
 	if format == "JPG" {
 		factors := []float64{2.0, 1.0, 1.0}
-		mw.SetSamplingFactors(factors)
+		if err := mw.SetSamplingFactors(factors); err != nil {
+			return err
+		}
 	}
 
-	mw.ThumbnailImage(rect.Width, rect.Height)
+	if err := mw.ThumbnailImage(rect.Width, rect.Height); err != nil {
+		return err
+	}
 
 	if (flags & imagick.PERCENTVALUE) != 0 {
 		flags = imagick.ParseGravityGeometry(mw.Image(), args, &rect, &exception)
@@ -57,7 +61,10 @@ func ThumbnailCommand(mw *imagick.MagickWand, args string) error {
 		}
 
 		slog.Debug("ThumbnailCommand[crop]", "rect", rect)
-		mw.CropImage(rect.Width, rect.Height, rect.X, rect.Y)
+		if err := mw.CropImage(rect.Width, rect.Height, rect.X, rect.Y); err != nil {
+			return err
+		}
+
 		return mw.SetImagePage(rect.Width, rect.Height, rect.X, rect.Y)
 	}
 

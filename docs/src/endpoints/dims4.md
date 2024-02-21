@@ -56,10 +56,14 @@ Those values should be concatenated together without any spaces or other charact
 and then hashed.
 
 Note:
-- `imageCommands` **should not** have any preceding or trailing slashes (`/`).
+- `imageCommands` **should not** have a preceding slash but should include a trailing slash if included in the URL. (`/`).
   - ✅️`resize/100x100/crop/10x10+25+25`
+  - 
+  - ✅️`resize/100x100/crop/10x10+25+25/`
   
   - ❌️`/resize/100x100/crop/10x10+25+25/`
+  - 
+  - ❌️`/resize/100x100/crop/10x10+25+25`
 
 - `imageUrl` **should not** be url encoded.
   - ✅️`https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg`

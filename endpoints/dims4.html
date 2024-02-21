@@ -220,13 +220,21 @@ and then hashed.</p>
 <p>Note:</p>
 <ul>
 <li>
-<p><code>imageCommands</code> <strong>should not</strong> have any preceding or trailing slashes (<code>/</code>).</p>
+<p><code>imageCommands</code> <strong>should not</strong> have a preceding slash but should include a trailing slash if included in the URL. (<code>/</code>).</p>
 <ul>
 <li>
 <p>✅️<code>resize/100x100/crop/10x10+25+25</code></p>
 </li>
+<li></li>
+<li>
+<p>✅️<code>resize/100x100/crop/10x10+25+25/</code></p>
+</li>
 <li>
 <p>❌️<code>/resize/100x100/crop/10x10+25+25/</code></p>
+</li>
+<li></li>
+<li>
+<p>❌️<code>/resize/100x100/crop/10x10+25+25</code></p>
 </li>
 </ul>
 </li>

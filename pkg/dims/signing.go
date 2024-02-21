@@ -101,10 +101,18 @@ func signV4(u *url.URL) (*url.URL, error) {
 
 	fmt.Printf("Transformation commands found:\n\n")
 	for _, command := range request.Commands {
-		fmt.Printf("%s('%s')\n",
+		fmt.Printf("  %s('%s')\n",
 			valueColor.Render(command.Name),
 			keyColor.Render(command.Args))
 	}
+
+	if request.TrailingSlash {
+		fmt.Printf("\n%s\n", lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6B6B")).Render("Warning: Trailing slash detected. Make sure you include the trailing slash in your signature."))
+	}
+
+	fmt.Printf("\nCalculate the signature as signature: \n\n  hex(md5('%s'))[0:7]\n",
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#0053CA")).Render(fmt.Sprintf("%s%s%s%s",
+			match[3], request.Config.SigningKey, match[4], request.ImageUrl)))
 
 	signature := request.Sign()
 

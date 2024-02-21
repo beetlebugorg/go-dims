@@ -44,7 +44,8 @@ var commandsV4 = map[string]dims.Operation{
 
 type RequestV4 struct {
 	dims.Request
-	Timestamp int32
+	Timestamp     int32
+	TrailingSlash bool
 }
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
@@ -83,6 +84,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 			Signature: r.PathValue("signature"),
 		},
 		timestamp,
+		strings.HasSuffix(r.URL.Path, "/"),
 	}
 }
 
@@ -112,6 +114,11 @@ func (r *RequestV4) Sign() string {
 	sanitizedCommands := strings.Join(commandStrings, "/")
 	sanitizedCommands = strings.ReplaceAll(sanitizedCommands, " ", "+")
 	sanitizedCommands = strings.Trim(sanitizedCommands, "/")
+
+	// This makes the signing algorithm compatible with mod-dims.
+	if r.TrailingSlash {
+		sanitizedCommands += "/"
+	}
 
 	hash := md5.New()
 	hash.Write([]byte(fmt.Sprintf("%d", r.Timestamp)))

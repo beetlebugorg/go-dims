@@ -314,6 +314,19 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 	return nil
 }
 
+func ImageFromMagickWand(mw *imagick.MagickWand) Image {
+	return Image{
+		Bytes:        mw.GetImagesBlob(),
+		Format:       mw.GetImageFormat(),
+		EdgeControl:  mw.GetImageProperty("Edge-Control"),
+		CacheControl: mw.GetImageProperty("Cache-Control"),
+		LastModified: mw.GetImageProperty("Last-Modified"),
+		Etag:         mw.GetImageProperty("Etag"),
+		Size:         len(mw.GetImagesBlob()),
+		Status:       200,
+	}
+}
+
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	slog.Info("sendError", "status", status, "message", message)
 
@@ -347,7 +360,7 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 			command.Name = "resize"
 			command.Operation = func(mw *imagick.MagickWand, args string) error {
 				var rect imagick.RectangleInfo
-				imagick.SetGeometry(mw.Image(), &rect)
+				imagick.SetGeometry(mw.GetImageFromMagickWand(), &rect)
 				flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 				if (flags & imagick.ALLVALUES) != 0 {
 					return mw.ScaleImage(rect.Width, rect.Height)

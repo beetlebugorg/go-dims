@@ -34,7 +34,7 @@ func ThumbnailCommand(mw *imagick.MagickWand, args string) error {
 
 	slog.Info("ThumbnailCommand", "resizedArgs", resizedArgs)
 
-	imagick.SetGeometry(mw.Image(), &rect)
+	imagick.SetGeometry(mw.GetImageFromMagickWand(), &rect)
 	flags := imagick.ParseMetaGeometry(resizedArgs, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("parsing thumbnail (resize) geometry failed")
@@ -55,7 +55,7 @@ func ThumbnailCommand(mw *imagick.MagickWand, args string) error {
 	}
 
 	if (flags & imagick.PERCENTVALUE) != 0 {
-		flags = imagick.ParseGravityGeometry(mw.Image(), args, &rect, &exception)
+		flags = imagick.ParseGravityGeometry(mw.GetImageFromMagickWand(), args, &rect, &exception)
 		if (flags & imagick.ALLVALUES) == 0 {
 			return errors.New("parsing thumbnail (crop) geometry failed")
 		}

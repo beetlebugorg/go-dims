@@ -38,7 +38,7 @@ func CropCommand(mw *imagick.MagickWand, args string) error {
 	// Parse Geometry
 	var rect imagick.RectangleInfo
 	var exception imagick.ExceptionInfo
-	flags := imagick.ParseGravityGeometry(mw.Image(), sanitizedArgs, &rect, &exception)
+	flags := imagick.ParseGravityGeometry(mw.GetImageFromMagickWand(), sanitizedArgs, &rect, &exception)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("invalid geometry")
 	}

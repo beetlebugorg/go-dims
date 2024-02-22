@@ -33,5 +33,5 @@ golang.org/x/exp v0.0.0-20230905200255-921286631fa9/go.mod h1:S2oDrQGGwySpoQPVqR
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.12.0 h1:CM0HF96J0hcLAwsHPJZjfdNzs0gftsLfgKt57wWHJ0o=
 golang.org/x/sys v0.12.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-gopkg.in/gographics/imagick.v3 v3.5.1 h1:58JqK0UCx5RfvbRggF5FKuK6jHwAtTQopUxK8mzFa40=
-gopkg.in/gographics/imagick.v3 v3.5.1/go.mod h1:+Q9nyA2xRZXrDyTtJ/eko+8V/5E7bWYs08ndkZp8UmA=
+gopkg.in/gographics/imagick.v3 v3.5.2 h1:JipawUSyuPRkdOdIwUvsHpIO9h0V7SpmPDXCRWx1c1o=
+gopkg.in/gographics/imagick.v3 v3.5.2/go.mod h1:+Q9nyA2xRZXrDyTtJ/eko+8V/5E7bWYs08ndkZp8UmA=

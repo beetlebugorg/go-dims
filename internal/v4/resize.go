@@ -26,7 +26,7 @@ func ResizeCommand(mw *imagick.MagickWand, args string) error {
 	// Parse Geometry
 	var rect imagick.RectangleInfo
 
-	imagick.SetGeometry(mw.Image(), &rect)
+	imagick.SetGeometry(mw.GetImageFromMagickWand(), &rect)
 	flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
 	if (flags & imagick.ALLVALUES) == 0 {
 		return errors.New("parsing thumbnail (resize) geometry failed")

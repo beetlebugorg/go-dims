@@ -25,6 +25,7 @@ WORKDIR /build
 
 RUN apk add --no-cache \
     libjpeg-turbo-dev libjpeg-turbo-static \
+    giflib-dev giflib-static \
     zstd-static zlib-static bzip2-static \
     fontconfig-static freetype-static libxml2-static \
     brotli-static expat-static \
@@ -65,7 +66,7 @@ RUN wget https://imagemagick.org/archive/releases/ImageMagick-${IMAGEMAGICK_VERS
     --with-modules=no --enable-hdri=no --without-utilities --disable-dpc \
     --enable-zero-configuration --with-threads \
     --disable-docs --without-openexr --without-lqr --without-x --without-jbig \
-    --with-png=yes --with-jpeg=yes --with-xml=yes --with-webp=yes --with-tiff=yes \
+    --with-gif=yes --with-png=yes --with-jpeg=yes --with-xml=yes --with-webp=yes --with-tiff=yes \
     --with-security-policy=websafe \
     --prefix=${PREFIX} && \
     make -j4 && \

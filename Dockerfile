@@ -1,109 +1,94 @@
-FROM golang:1.22.0-bookworm as imagemagick-builder
+FROM golang:1.22.0-alpine as build-go-dims
 
+ARG PREFIX=/usr/local/imagemagick
+ARG IMAGEMAGICK_VERSION=7.1.1-29
+ARG WEBP_VERSION=1.2.1
 ARG TIFF_VERSION=4.3.0
-ARG WEBP_VERSION=1.2.3
-ARG IMAGEMAGICK_VERSION=7.1.1-28
-ARG PREFIX=/usr/local/go-dims
-
-RUN apt-get -y update && \
-    apt-get install -y --no-install-recommends \
-      build-essential ca-certificates wget \
-      libxml2-dev libgif-dev libjpeg62-turbo-dev libpng-dev liblcms2-dev libfreetype6-dev \
-      libtiff5-dev libwebp7 libwebp-dev ca-certificates
-
-RUN wget https://imagemagick.org/archive/ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
-    tar -xf ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz
-
-WORKDIR ImageMagick-${IMAGEMAGICK_VERSION}
+ARG PNG_VERSION=1.6.43
 
 ENV PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 ENV LD_LIBRARY_PATH=${PREFIX}/lib
-RUN ./configure --disable-static --enable-opencl=no --disable-openmp \
-    --disable-dpc --without-threads --disable-installed \
-    --with-magick-plus-plus=no --with-modules=no --enable-hdri=no \
-    --without-utilities --disable-docs --without-openexr --without-lqr --without-x \
-    --without-jbig \
+
+ENV USER=dims
+ENV UID=10001
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+WORKDIR /build
+
+RUN apk add --no-cache \
+    libjpeg-turbo-dev libjpeg-turbo-static \
+    zstd-static zlib-static bzip2-static \
+    fontconfig-static freetype-static libxml2-static \
+    brotli-static expat-static \
+    lcms2-dev lcms2-static \
+    librsvg-dev make alpine-sdk wget vim gdb upx ca-certificates tzdata && \
+    update-ca-certificates
+
+# -- Build libpng
+
+RUN wget https://versaweb.dl.sourceforge.net/project/libpng/libpng16/${PNG_VERSION}/libpng-${PNG_VERSION}.tar.xz && \
+    tar xvf libpng-${PNG_VERSION}.tar.xz && \
+    cd libpng-${PNG_VERSION} && \
+    ./configure --prefix=${PREFIX} --enable-static && \
+    make -j4 && make install
+
+# -- Build webp
+
+RUN wget https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${WEBP_VERSION}.tar.gz && \
+    tar xzvf libwebp-${WEBP_VERSION}.tar.gz && \
+    cd libwebp-${WEBP_VERSION} && \
+    ./configure --prefix=${PREFIX} --enable-static && \
+    make -j4 && make install
+
+# -- Build tiff
+
+RUN wget https://download.osgeo.org/libtiff/tiff-${TIFF_VERSION}.tar.gz && \
+    tar xzvf tiff-${TIFF_VERSION}.tar.gz && \
+    cd tiff-${TIFF_VERSION} && \
+    ./configure --prefix=$PREFIX --enable-static --with-webp-include-dir=$PREFIX/include --with-webp-lib-dir=$PREFIX/lib && \
+    make -j4 && make install
+
+# -- Build Imagemagick
+
+RUN wget https://imagemagick.org/archive/releases/ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
+    tar -xf ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
+    cd ImageMagick-${IMAGEMAGICK_VERSION} && \
+    ./configure --enable-opencl=no --disable-openmp --with-magick-plus-plus=no \
+    --with-modules=no --enable-hdri=no --without-utilities --disable-dpc \
+    --enable-zero-configuration --with-threads \
+    --disable-docs --without-openexr --without-lqr --without-x --without-jbig \
     --with-png=yes --with-jpeg=yes --with-xml=yes --with-webp=yes --with-tiff=yes \
-    --prefix=${PREFIX}
+    --with-security-policy=websafe \
+    --prefix=${PREFIX} && \
+    make -j4 && \
+    make install
 
-RUN make -j"$(nproc)" && make install
-
-#FROM golang:1.22.0-alpine3.19
-FROM golang:1.22.0-bookworm as build-go-dims
-
-RUN apt-get -y update && \
-    apt-get install -y --no-install-recommends \
-    libjpeg62-turbo liblcms2-2 libfreetype6 libxml2 libgif7 libpng16-16 libtiff6 libwebp7 \
-    libwebpdemux2 libwebpmux3
-
-RUN go env -w GOCACHE=/go-cache
-RUN go env -w GOMODCACHE=/gomod-cache
-
-ENV PKG_CONFIG_PATH=/usr/local/go-dims/lib/pkgconfig
-ENV LD_LIBRARY_PATH=/usr/local/go-dims/lib
-
-COPY --from=imagemagick-builder /usr/local/go-dims /usr/local/go-dims
 COPY . /build/go-dims
-WORKDIR /build/go-dims
-RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache make && cp build/dims /usr/local/go-dims/bin/dims
+RUN cd go-dims && \
+    make static && \
+    strip build/dims && \
+    upx build/dims
 
-FROM debian:bookworm-slim
+#RUN ~/.config/gdb/gdbinit < "add-auto-load-safe-path /usr/local/go/src/runtime/runtime-gdb.py"
 
-LABEL org.opencontainers.image.source="https://github.com/beetlebugorg/go-dims"
-LABEL org.opencontainers.image.base.name="debian:bookworm-slim"
-LABEL org.opencontainers.image.version="edge"
+FROM scratch
 
-#-- Imagemagick Settings
-#
-# For a complete list of ImageMagick environment variables, see: https://imagemagick.org/script/resources.php
-#
+COPY --from=build-go-dims /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=build-go-dims /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build-go-dims /build/go-dims/build/dims /dims
+COPY --from=build-go-dims /etc/passwd /etc/passwd
+COPY --from=build-go-dims /etc/group /etc/group
 
-# MAGIC_TIME_LIMIT is the maximum time in seconds that the ImageMagick operations will run
-ENV MAGICK_TIME_LIMIT=1
-
-# MAGICK_MEMORY_LIMIT is the maximum amount of memory that the ImageMagick operations will use
-# before caching to disk.
-ENV MAGICK_MEMORY_LIMIT=128MB
-
-#-- DIMS Settings
-#
-# For a complete list of DIMS environment variables, see: internal/dims/config.go
-#
-
-ENV DIMS_SECRET_KEY=""
-
-ENV DIMS_CACHE_CONTROL_USE_ORIGIN=true
-ENV DIMS_CACHE_CONTROL_DEFAULT=31536000
-ENV DIMS_CACHE_CONTROL_MIN=0
-ENV DIMS_CACHE_CONTROL_MAX=31536000
-ENV DIMS_CACHE_CONTROL_ERROR=60
-ENV DIMS_EDGE_CONTROL_DOWNSTREAM_TTL=604800
-
-#ENV DIMS_DEFAULT_IMAGE_PREFIX=""
-#ENV DIMS_DEFAULT_OUTPUT_FORMAT=webp
-#ENV DIMS_IGNORE_DEFAULT_OUTPUT_FORMATS=jpeg,png
-#ENV DIMS_DOWNLOAD_TIMEOUT=60000
-#ENV DIMS_ERROR_BACKGROUND="#5adafd"
-#ENV DIMS_STRIP_METADATA=true
-#ENV DIMS_INCLUDE_DISPOSITION=false
-
-ENV LC_ALL="C"
-
-RUN apt-get -y update && \
-    apt-get install -y --no-install-recommends \
-    libjpeg62-turbo liblcms2-2 libfreetype6 libxml2 libgif7 libpng16-16 libtiff6 libwebp7 \
-    libwebpdemux2 libwebpmux3 ca-certificates libssl3 && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV PKG_CONFIG_PATH=/usr/local/go-dims/lib/pkgconfig
-ENV LD_LIBRARY_PATH=/usr/local/go-dims/lib
-
-COPY --from=build-go-dims /usr/local/go-dims /usr/local/go-dims
-
-ENTRYPOINT ["/usr/local/go-dims/bin/dims"]
+ENTRYPOINT ["/dims"]
 CMD ["serve", "--bind", ":8080"]
 EXPOSE 8080
+USER 10001:10001
 
-USER 33

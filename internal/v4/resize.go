@@ -42,5 +42,20 @@ func ResizeCommand(mw *imagick.MagickWand, args string) error {
 
 	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)
 
-	return mw.ScaleImage(rect.Width, rect.Height)
+	xs := mw.GetImageWidth() / rect.Width
+	ys := mw.GetImageHeight() / rect.Height
+
+	if (xs > 4) || (ys > 4) {
+		if err := mw.SampleImage(rect.Width*4, rect.Height*4); err != nil {
+			return err
+		}
+	}
+
+	if (xs > 2) || (ys > 2) {
+		if err := mw.ResizeImage(rect.Width*2, rect.Height*2, imagick.FILTER_BOX); err != nil {
+			return err
+		}
+	}
+
+	return mw.ResizeImage(rect.Width, rect.Height, imagick.FILTER_LANCZOS_SHARP)
 }

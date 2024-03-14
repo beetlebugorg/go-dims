@@ -17,16 +17,10 @@ package dims
 import (
 	"log/slog"
 	"net/http"
+	"time"
 )
 
-func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Request) {
-	slog.Info("handleDims5()",
-		"imageUrl", r.URL.Query().Get("url"),
-		"clientId", r.PathValue("clientId"),
-		"signature", r.PathValue("signature"),
-		"timestamp", r.PathValue("timestamp"),
-		"commands", r.PathValue("commands"))
-
+func Handler(kernel Kernel, config Config, w http.ResponseWriter) {
 	// Verify signature.
 	if !config.DevelopmentMode {
 		if kernel.ValidateSignature() == false {
@@ -39,6 +33,7 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Reques
 	}
 
 	// Download image.
+	start := time.Now()
 	if err := kernel.FetchImage(); err != nil {
 		slog.Error("downloadImage failed.", "error", err)
 
@@ -46,8 +41,10 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Reques
 
 		return
 	}
+	slog.Info("downloadImage", "duration", time.Since(start))
 
 	// Execute Imagemagick commands.
+	start = time.Now()
 	imageType, imageBlob, err := kernel.ProcessImage()
 	if err != nil {
 		slog.Error("executeImagemagick failed.", "error", err)
@@ -56,12 +53,15 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter, r *http.Reques
 
 		return
 	}
+	slog.Info("executeImagemagick", "duration", time.Since(start))
 
 	// Serve the image.
+	start = time.Now()
 	if err := kernel.SendImage(w, 200, imageType, imageBlob); err != nil {
 		slog.Error("serveImage failed.", "error", err)
 
 		http.Error(w, "Failed to serve image", http.StatusInternalServerError)
 		return
 	}
+	slog.Info("serveImage", "duration", time.Since(start))
 }

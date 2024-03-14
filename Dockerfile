@@ -61,23 +61,24 @@ RUN wget https://download.osgeo.org/libtiff/tiff-${TIFF_VERSION}.tar.gz && \
 RUN wget https://imagemagick.org/archive/releases/ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
     tar -xf ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
     cd ImageMagick-${IMAGEMAGICK_VERSION} && \
-    ./configure --enable-opencl=no --disable-openmp --with-magick-plus-plus=no \
+    ./configure --enable-opencl --with-openmp --with-magick-plus-plus=no \
     --with-modules=no --enable-hdri=no --without-utilities --disable-dpc \
-    --enable-zero-configuration --with-threads \
+    --enable-zero-configuration --with-threads --with-quantum-depth=8 \
     --disable-docs --without-openexr --without-lqr --without-x --without-jbig \
     --with-png=yes --with-jpeg=yes --with-xml=yes --with-webp=yes --with-tiff=yes \
-    --with-security-policy=websafe \
     --prefix=${PREFIX} && \
     make -j4 && \
     make install
 
 COPY . /build/go-dims
-RUN cd go-dims && \
+RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
+    cd go-dims && \
+    go env -w GOCACHE=/go-cache && \
+    go env -w GOMODCACHE=/gomod-cache && \
+    go mod download && \
     make static && \
     strip build/dims && \
     upx build/dims
-
-#RUN ~/.config/gdb/gdbinit < "add-auto-load-safe-path /usr/local/go/src/runtime/runtime-gdb.py"
 
 FROM scratch
 
@@ -88,7 +89,6 @@ COPY --from=build-go-dims /etc/passwd /etc/passwd
 COPY --from=build-go-dims /etc/group /etc/group
 
 ENTRYPOINT ["/dims"]
-CMD ["serve", "--bind", ":8080"]
 EXPOSE 8080
 USER 10001:10001
 

@@ -61,26 +61,13 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV4 {
 	h.Write([]byte(r.URL.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	var commands []dims.Command
-	parsedCommands := strings.Split(r.PathValue("commands"), "/")
-	for i := 0; i < len(parsedCommands)-1; i += 2 {
-		command := parsedCommands[i]
-		args := parsedCommands[i+1]
-
-		commands = append(commands, dims.Command{
-			Name:      command,
-			Args:      args,
-			Operation: commandsV4[command],
-		})
-	}
-
 	return &RequestV4{
 		dims.Request{
 			Id:        requestHash,
 			Config:    config,
 			ClientId:  r.PathValue("clientId"),
 			ImageUrl:  r.URL.Query().Get("url"),
-			Commands:  commands,
+			Commands:  dims.ParseCommands(r.PathValue("commands"), commandsV4),
 			Signature: r.PathValue("signature"),
 		},
 		timestamp,

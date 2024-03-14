@@ -16,6 +16,8 @@ package dims
 
 import (
 	"gopkg.in/gographics/imagick.v3/imagick"
+	"log/slog"
+	"strings"
 )
 
 type Operation func(mw *imagick.MagickWand, args string) error
@@ -24,4 +26,23 @@ type Command struct {
 	Name      string
 	Args      string
 	Operation Operation
+}
+
+func ParseCommands(cmds string, operations map[string]Operation) []Command {
+	commands := make([]Command, 0)
+	parsedCommands := strings.Split(strings.Trim(cmds, "/"), "/")
+	for i := 0; i < len(parsedCommands)-1; i += 2 {
+		command := parsedCommands[i]
+		args := parsedCommands[i+1]
+
+		commands = append(commands, Command{
+			Name:      command,
+			Args:      args,
+			Operation: operations[command],
+		})
+
+		slog.Info("parsedCommand", "command", command, "args", args)
+	}
+
+	return commands
 }

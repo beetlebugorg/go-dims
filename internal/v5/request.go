@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-var commandsV5 = map[string]dims.Operation{
+var CommandsV5 = map[string]dims.Operation{
 	"crop":       v4.CropCommand,
 	"resize":     v4.ResizeCommand,
 	"strip":      v4.StripMetadataCommand,
@@ -61,7 +61,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 			Config:    config,
 			ClientId:  r.URL.Query().Get("clientId"),
 			ImageUrl:  r.URL.Query().Get("url"),
-			Commands:  parseCommands(r.PathValue("commands")),
+			Commands:  dims.ParseCommands(r.PathValue("commands"), CommandsV5),
 			Signature: r.URL.Query().Get("sig"),
 		},
 	}
@@ -102,23 +102,4 @@ func (r *RequestV5) Sign() []byte {
 	mac.Write([]byte(r.ImageUrl))
 
 	return mac.Sum(nil)[0:31]
-}
-
-func parseCommands(cmds string) []dims.Command {
-	commands := make([]dims.Command, 0)
-	parsedCommands := strings.Split(strings.Trim(cmds, "/"), "/")
-	for i := 0; i < len(parsedCommands)-1; i += 2 {
-		command := parsedCommands[i]
-		args := parsedCommands[i+1]
-
-		commands = append(commands, dims.Command{
-			Name:      command,
-			Args:      args,
-			Operation: commandsV5[command],
-		})
-
-		slog.Info("parsedCommand", "command", command, "args", args)
-	}
-
-	return commands
 }

@@ -47,7 +47,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 		request := v4.NewRequest(r, config)
 
-		dims.Handler(request, config, w, r)
+		dims.Handler(request, config, w)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/dims/%s", v4Arguments), v4Handler)
 	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4Handler)
@@ -68,7 +68,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 			request := v5.NewRequest(r, config)
 
-			dims.Handler(request, config, w, r)
+			dims.Handler(request, config, w)
 		})
 
 	mux.HandleFunc("/dims-status",

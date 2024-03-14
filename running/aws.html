@@ -175,12 +175,17 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="amazon-web-services"><a class="header" href="#amazon-web-services">Amazon Web Services</a></h1>
-<h2 id="traditional-deployment"><a class="header" href="#traditional-deployment">Traditional deployment</a></h2>
-<pre><code>CF -&gt; ELB -&gt; DIMS -&gt; S3
-      [   K8S   ]
+<p>Serverless operation is supported for AWS Lambda Functional URL, and S3 Object Lambda.</p>
+<p>Each mode offers different trade-offs.</p>
+<p>The Lambda Functional URL mode allows you to resize images from any HTTP source, but also exposes
+that source to the client. This may not be ideal such as in Digital Asset Management systems.</p>
+<p>The S3 Object Lambda mode doesn't expose the origin and allows you to keep your S3 bucket completely
+private. However, it only works with S3 as the source.</p>
+<h2 id="aws-s3-object-lambda"><a class="header" href="#aws-s3-object-lambda">AWS S3 Object Lambda</a></h2>
+<pre><code>CloudFront -&gt; S3 Object Lambda Access Point -&gt; S3 Access Point -&gt; S3
 </code></pre>
-<h2 id="serverless-deployment"><a class="header" href="#serverless-deployment">Serverless deployment</a></h2>
-<pre><code>CF -&gt; API GATEWAY -&gt; LAMBDA -&gt; S3
+<h2 id="aws-lambda-functional-url"><a class="header" href="#aws-lambda-functional-url">AWS Lambda Functional URL</a></h2>
+<pre><code>CloudFront -&gt; Lambda Functional URL -&gt; Image Source (http, s3, etc)
 </code></pre>
 
                     </main>

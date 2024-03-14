@@ -72,10 +72,12 @@ func (s *SignCmd) Run() error {
 //-- dims lambda function-url
 
 type FunctionUrlCmd struct {
+	Debug bool `help:"Enable debug mode." default:"false"`
+	Dev   bool `help:"Enable development mode." default:"false"`
 }
 
 func (f *FunctionUrlCmd) Run() error {
-	lambda.Start(dims.HandleLambdaFunctionURLRequest)
+	lambda.Start(dims.NewLambdaFunctionURLHandler(f.Dev, f.Debug))
 
 	return nil
 }
@@ -83,10 +85,12 @@ func (f *FunctionUrlCmd) Run() error {
 //-- dims lambda s3-object
 
 type S3ObjectCmd struct {
+	Debug bool `help:"Enable debug mode." default:"false"`
+	Dev   bool `help:"Enable development mode." default:"false"`
 }
 
 func (s *S3ObjectCmd) Run() error {
-	lambda.Start(dims.HandleLambdaS3ObjectRequest)
+	lambda.Start(dims.NewLambdaS3ObjectHandler(s.Dev, s.Debug))
 
 	return nil
 }

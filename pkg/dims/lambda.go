@@ -16,20 +16,26 @@ import (
 	"strconv"
 )
 
-func HandleLambdaFunctionURLRequest(_ context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLResponse, error) {
-	if event == nil {
-		return nil, fmt.Errorf("received nil event")
-	}
-
+func NewLambdaFunctionURLHandler(devMode bool, debugMode bool) func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLResponse, error) {
 	imagick.Initialize()
 
 	environmentConfig := dims.ReadConfig()
 
 	config := dims.Config{
 		EnvironmentConfig: environmentConfig,
-		DevelopmentMode:   false,
-		DebugMode:         false,
+		DevelopmentMode:   devMode,
+		DebugMode:         debugMode,
 		EtagAlgorithm:     "hmac-sha256",
+	}
+
+	return func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLResponse, error) {
+		return handleLambdaFunctionURLRequest(ctx, event, config)
+	}
+}
+
+func handleLambdaFunctionURLRequest(_ context.Context, event *events.LambdaFunctionURLRequest, config dims.Config) (*events.LambdaFunctionURLResponse, error) {
+	if event == nil {
+		return nil, fmt.Errorf("received nil event")
 	}
 
 	request := lambda.NewLambdaFunctionURLRequest(*event, config)
@@ -61,20 +67,26 @@ func HandleLambdaFunctionURLRequest(_ context.Context, event *events.LambdaFunct
 	return dimsResponse, nil
 }
 
-func HandleLambdaS3ObjectRequest(ctx context.Context, event *events.S3ObjectLambdaEvent) error {
-	if event == nil {
-		return fmt.Errorf("received nil event")
-	}
-
+func NewLambdaS3ObjectHandler(devMode bool, debugMode bool) func(ctx context.Context, event *events.S3ObjectLambdaEvent) error {
 	imagick.Initialize()
 
 	environmentConfig := dims.ReadConfig()
 
 	config := dims.Config{
 		EnvironmentConfig: environmentConfig,
-		DevelopmentMode:   true,
-		DebugMode:         true,
+		DevelopmentMode:   devMode,
+		DebugMode:         debugMode,
 		EtagAlgorithm:     "hmac-sha256",
+	}
+
+	return func(ctx context.Context, event *events.S3ObjectLambdaEvent) error {
+		return handleLambdaS3ObjectRequest(ctx, event, config)
+	}
+}
+
+func handleLambdaS3ObjectRequest(ctx context.Context, event *events.S3ObjectLambdaEvent, config dims.Config) error {
+	if event == nil {
+		return fmt.Errorf("received nil event")
 	}
 
 	request := lambda.NewS3ObjectRequest(*event, config)

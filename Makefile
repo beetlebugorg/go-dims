@@ -25,3 +25,8 @@ docs-serve:
 docker: Dockerfile
 	docker buildx build --load -t beetlebugorg/go-dims:local .
 	docker images | grep beetlebugorg/go-dims
+
+devmedia:
+	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./devmedia:/usr/share/nginx/html:ro nginx:latest
+
+.PHONY: docs docs-serve devmedia

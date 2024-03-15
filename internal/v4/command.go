@@ -12,9 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v4
 
-type Command struct {
-	Name string
-	Args string
+import (
+	"github.com/beetlebugorg/go-dims/internal/dims"
+	"gopkg.in/gographics/imagick.v3/imagick"
+)
+
+type MagickOperation func(mw *imagick.MagickWand, args string) error
+
+type MagickCommand struct {
+	dims.Command
+	Operation MagickOperation
 }

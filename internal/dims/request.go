@@ -19,7 +19,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"hash"
 	"io"
 	"log/slog"
@@ -32,25 +31,16 @@ import (
 	"time"
 )
 
-type Kernel interface {
-	ValidateSignature() bool
-	FetchImage() error
-	ProcessImage() (string, []byte, error)
-	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
-	SendError(w http.ResponseWriter, status int, message string)
-}
-
 type Request struct {
-	Id                     string    // The hash of the request -> hash(clientId + commands + imageUrl).
-	Signature              string    // The signature of the request.
-	Config                 Config    // The global configuration.
-	ClientId               string    // The client ID of this request.
-	ImageUrl               string    // The image URL that is being manipulated.
-	SendContentDisposition bool      // The content disposition of the request.
-	Commands               []Command // The commands (resize, crop, etc).
-	Error                  bool      // Whether the error image is being served.
-	SourceImage            Image     // The source image.
+	Id                     string // The hash of the request -> hash(clientId + commands + imageUrl).
+	Signature              string // The signature of the request.
+	Config                 Config // The global configuration.
+	ClientId               string // The client ID of this request.
+	ImageUrl               string // The image URL that is being manipulated.
+	SendContentDisposition bool   // The content disposition of the request.
+	RawCommands            string // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	Error                  bool   // Whether the error image is being served.
+	SourceImage            Image  // The source image.
 }
 
 // FetchImage downloads the image from the given URL.
@@ -96,117 +86,6 @@ func _fetchImage(imageUrl string, timeout time.Duration) Image {
 	sourceImage.Bytes, _ = io.ReadAll(image.Body)
 
 	return sourceImage
-}
-
-// Parse through the requested commands and set the optimal image size on the MagicWand.
-//
-// This is used while reading an image to improve
-// performance when generating thumbnails from very
-// large images.
-//
-// An example speed is taking 1817x3000 sized image and
-// reducing it to a 78x110 thumbnail:
-//
-//	without MagickSetSize: 396ms
-//	with MagickSetSize:    105ms
-func (r *Request) setOptimalImageSize(mw *imagick.MagickWand) {
-	for _, command := range r.Commands {
-		if command.Name == "thumbnail" || command.Name == "resize" {
-			var rect imagick.RectangleInfo
-			flags := imagick.ParseAbsoluteGeometry(command.Args, &rect)
-
-			if (flags&imagick.WIDTHVALUE != 0) &&
-				(flags&imagick.HEIGHTVALUE != 0) &&
-				(flags&imagick.PERCENTVALUE == 0) {
-
-				if err := mw.SetSize(rect.Width, rect.Height); err != nil {
-					slog.Error("setOptimalImageSize failed.", "error", err)
-				}
-
-				return
-			}
-		}
-	}
-}
-
-// ProcessImage will execute the commands on the image.
-func (r *Request) ProcessImage() (string, []byte, error) {
-	slog.Debug("executeImagemagick")
-
-	mw := imagick.NewMagickWand()
-	defer mw.Destroy()
-
-	// Read the image.
-	r.setOptimalImageSize(mw)
-	err := mw.ReadImageBlob(r.SourceImage.Bytes)
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Convert image to RGB from CMYK.
-	if mw.GetImageColorspace() == imagick.COLORSPACE_CMYK {
-		profiles := mw.GetImageProfiles("icc")
-		if profiles != nil {
-			if err := mw.ProfileImage("ICC", CmykIccProfile); err != nil {
-				return "", nil, err
-			}
-		}
-
-		if err := mw.ProfileImage("ICC", RgbIccProfile); err != nil {
-			return "", nil, err
-		}
-
-		err = mw.TransformImageColorspace(imagick.COLORSPACE_RGB)
-		if err != nil {
-			return "", nil, err
-		}
-	}
-
-	// Flip image orientation, if needed.
-	if err := mw.AutoOrientImage(); err != nil {
-		return "", nil, err
-	}
-
-	// Execute the commands.
-	stripMetadata := true
-	formatProvided := false
-
-	for _, command := range r.Commands {
-		if command.Name == "strip" {
-			stripMetadata = false
-		}
-
-		if command.Name == "format" {
-			formatProvided = true
-		}
-
-		if err := command.Operation(mw, command.Args); err != nil {
-			return "", nil, err
-		}
-
-		mw.MergeImageLayers(imagick.IMAGE_LAYER_TRIM_BOUNDS)
-	}
-
-	// Strip metadata. (if not already stripped)
-	if stripMetadata && r.Config.StripMetadata {
-		if err := mw.StripImage(); err != nil {
-			return "", nil, err
-		}
-	}
-
-	// Set output format if not provided in the request.
-	if !formatProvided && r.Config.OutputFormat.OutputFormat != "" {
-		format := strings.ToLower(mw.GetImageFormat())
-		if !contains(r.Config.OutputFormat.Exclude, format) {
-			if err := mw.SetImageFormat(r.Config.OutputFormat.OutputFormat); err != nil {
-				return "", nil, err
-			}
-		}
-	}
-
-	mw.ResetIterator()
-
-	return mw.GetImageFormat(), mw.GetImagesBlob(), nil
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {
@@ -314,84 +193,26 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 	return nil
 }
 
-func ImageFromMagickWand(mw *imagick.MagickWand) Image {
-	return Image{
-		Bytes:        mw.GetImagesBlob(),
-		Format:       mw.GetImageFormat(),
-		EdgeControl:  mw.GetImageProperty("Edge-Control"),
-		CacheControl: mw.GetImageProperty("Cache-Control"),
-		LastModified: mw.GetImageProperty("Last-Modified"),
-		Etag:         mw.GetImageProperty("Etag"),
-		Size:         len(mw.GetImagesBlob()),
-		Status:       200,
-	}
-}
-
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	slog.Info("sendError", "status", status, "message", message)
+}
 
-	mw := imagick.NewMagickWand()
-	defer mw.Destroy()
+func (r *Request) Commands() []Command {
+	commands := make([]Command, 0)
+	parsedCommands := strings.Split(strings.Trim(r.RawCommands, "/"), "/")
+	for i := 0; i < len(parsedCommands)-1; i += 2 {
+		command := parsedCommands[i]
+		args := parsedCommands[i+1]
 
-	pw := imagick.NewPixelWand()
-	defer pw.Destroy()
+		commands = append(commands, Command{
+			Name: command,
+			Args: args,
+		})
 
-	pw.SetColor(r.Config.Error.Background)
-
-	if err := mw.NewImage(1, 1, pw); err != nil {
-		slog.Error("sendError failed.", "error", err)
-		return
+		slog.Debug("parsedCommand", "command", command, "args", args)
 	}
 
-	// Execute the commands on the placeholder image, giving it the same dimensions as the requested image.
-	for _, command := range r.Commands {
-		if command.Name == "crop" || command.Name == "thumbnail" {
-			var rect imagick.RectangleInfo
-			imagick.ParseAbsoluteGeometry(command.Args, &rect)
-
-			if rect.Width > 0 && rect.Height == 0 {
-				command.Args = fmt.Sprintf("%d", rect.Height)
-			} else if rect.Height > 0 && rect.Width == 0 {
-				command.Args = fmt.Sprintf("x%d", rect.Width)
-			} else if rect.Width > 0 && rect.Height > 0 {
-				command.Args = fmt.Sprintf("%dx%d", rect.Width, rect.Height)
-			}
-
-			command.Name = "resize"
-			command.Operation = func(mw *imagick.MagickWand, args string) error {
-				var rect imagick.RectangleInfo
-				imagick.SetGeometry(mw.GetImageFromMagickWand(), &rect)
-				flags := imagick.ParseMetaGeometry(args, &rect.X, &rect.Y, &rect.Width, &rect.Height)
-				if (flags & imagick.ALLVALUES) != 0 {
-					return mw.ScaleImage(rect.Width, rect.Height)
-				}
-
-				return nil
-			}
-		}
-
-		if err := command.Operation(mw, command.Args); err != nil {
-			return
-		}
-	}
-
-	// Set the format for the error image.
-	format := mw.GetImageFormat()
-	if format == "" && r.Config.OutputFormat.OutputFormat != "" {
-		format = r.Config.OutputFormat.OutputFormat
-	} else if format == "" {
-		format = "png"
-	}
-	if err := mw.SetImageFormat(format); err != nil {
-		slog.Error("sendError failed.", "error", err)
-		return
-	}
-
-	r.Error = true
-	err := r.SendImage(w, status, format, mw.GetImageBlob())
-	if err != nil {
-		slog.Error("sendError failed.", "error", err)
-	}
+	return commands
 }
 
 func sourceMaxAge(header string) (int, error) {
@@ -411,13 +232,4 @@ func sourceMaxAge(header string) (int, error) {
 	}
 
 	return 0, errors.New("max-age not found in header")
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }

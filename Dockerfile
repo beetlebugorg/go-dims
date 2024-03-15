@@ -87,8 +87,13 @@ COPY --from=build-go-dims /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build-go-dims /build/go-dims/build/dims /dims
 COPY --from=build-go-dims /etc/passwd /etc/passwd
 COPY --from=build-go-dims /etc/group /etc/group
+COPY --chmod=0755 entrypoint.sh /
+RUN wget https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie-arm64 -O /usr/local/bin/aws-lambda-rie && \
+    chmod 755 /usr/local/bin/aws-lambda-rie
+ADD aws-lambda-rie /usr/local/bin/aws-lambda-rie
 
-ENTRYPOINT ["/dims"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/dims", "serve"]
 EXPOSE 8080
 USER 10001:10001
 

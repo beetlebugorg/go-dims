@@ -3,7 +3,7 @@ FROM ghcr.io/beetlebugorg/go-dims:builder as go-dims
 ENV USER=dims
 ENV UID=10001
 
-COPY --exclude="Dockerfile" --exclude="docker/" . /build/go-dims
+COPY . /build/go-dims
 
 RUN adduser \
     --disabled-password \

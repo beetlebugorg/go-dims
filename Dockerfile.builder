@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7-labs
 ARG ALPINE_VERSION=3.19
 
 # -- Alpine Base

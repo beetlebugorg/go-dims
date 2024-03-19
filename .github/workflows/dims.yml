@@ -5,13 +5,17 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.github/workflows/docs.yml'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/builder.yml'
     branches:
       - main
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/builder.yml'
 
 jobs:
-    go-dims-docker:
+    docker:
         permissions:
           contents: read
           packages: write

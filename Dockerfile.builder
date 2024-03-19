@@ -175,7 +175,7 @@ RUN tar -xf vips-${VIPS_VERSION}.tar.xz && \
     meson install
 
 # -- Build base
-FROM golang:1.22.0-alpine as builder
+FROM golang:1.22.0-alpine
 
 WORKDIR /build
 

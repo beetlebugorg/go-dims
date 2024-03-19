@@ -60,5 +60,6 @@ jobs:
         with:
           context: .
           file: Dockerfile.builder
-          push: false
-          platforms: linux/amd64
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/beetlebugorg/go-dims:builder

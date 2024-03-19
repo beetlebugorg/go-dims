@@ -49,6 +49,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
           context: .
+          file: Dockerfile.builder
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/beetlebugorg/go-dims:builder
@@ -59,6 +60,7 @@ jobs:
         if: ${{ github.ref != 'refs/heads/main' }}
         with:
           context: .
+          file: Dockerfile.builder
           push: false
           platforms: linux/amd64
           target: builder

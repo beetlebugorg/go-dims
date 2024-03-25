@@ -48,29 +48,36 @@ func (r *Request) FetchImage() error {
 	slog.Info("downloadImage", "url", r.ImageUrl)
 
 	timeout := time.Duration(r.Config.Timeout.Download) * time.Millisecond
-	r.SourceImage = _fetchImage(r.ImageUrl, timeout)
-
-	if r.SourceImage.Status != 200 {
-		return fmt.Errorf("failed to download image")
+	sourceImage, err := _fetchImage(r.ImageUrl, timeout)
+	if err != nil {
+		return err
 	}
+
+	if sourceImage.Status != 200 {
+		return fmt.Errorf("failed to download image: %d", sourceImage.Status)
+	}
+
+	r.SourceImage = *sourceImage
 
 	return nil
 }
 
-func _fetchImage(imageUrl string, timeout time.Duration) Image {
+func _fetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	_, err := url.ParseRequestURI(imageUrl)
 	if err != nil {
-		return Image{
-			Status: 400,
-		}
+		return nil, err
 	}
 
 	http.DefaultClient.Timeout = timeout
 	image, err := http.Get(imageUrl)
 	if err != nil {
-		return Image{
-			Status: 500,
-		}
+		return nil, err
+	}
+
+	imageSize := int(image.ContentLength)
+	imageBytes, err := io.ReadAll(image.Body)
+	if err != nil {
+		return nil, err
 	}
 
 	sourceImage := Image{
@@ -80,12 +87,13 @@ func _fetchImage(imageUrl string, timeout time.Duration) Image {
 		LastModified: image.Header.Get("Last-Modified"),
 		Etag:         image.Header.Get("Etag"),
 		Format:       image.Header.Get("Content-Type"),
+		Size:         imageSize,
+		Bytes:        imageBytes,
 	}
 
-	sourceImage.Size = int(image.ContentLength)
-	sourceImage.Bytes, _ = io.ReadAll(image.Body)
+	slog.Info("downloadImage", "status", sourceImage.Status, "edgeControl", sourceImage.EdgeControl, "cacheControl", sourceImage.CacheControl, "lastModified", sourceImage.LastModified, "etag", sourceImage.Etag, "format", sourceImage.Format)
 
-	return sourceImage
+	return &sourceImage, nil
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {

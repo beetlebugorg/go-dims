@@ -6,6 +6,7 @@ on:
       - 'docs/**'
       - '.github/workflows/docs.yml'
       - '.github/workflows/builder.yml'
+      - 'Dockerfile.builder'
     branches:
       - main
   pull_request:
@@ -13,6 +14,7 @@ on:
       - 'docs/**'
       - '.github/workflows/docs.yml'
       - '.github/workflows/builder.yml'
+      - 'Dockerfile.builder'
 
 jobs:
     docker:

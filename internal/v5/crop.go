@@ -12,8 +12,8 @@ func CropCommand(image *vips.ImageRef, args string) error {
 
 	// Parse Geometry
 	rect := imagick.RectangleInfo{
-		Width:  uint(image.Width()),
-		Height: uint(image.Height()),
+		Width:  uint(image.Width()) / 2,
+		Height: uint(image.Height()) / 2,
 		X:      image.OffsetX(),
 		Y:      image.OffsetY(),
 	}
@@ -21,6 +21,7 @@ func CropCommand(image *vips.ImageRef, args string) error {
 	imagick.ParseAbsoluteGeometry(sanitizedArgs, &rect)
 
 	slog.Debug("CropCommand", "rect", rect)
+	slog.Info("CropCommand", "image", image, "args", args, "sanitizedArgs", sanitizedArgs, "rect", rect)
 
 	return image.Crop(rect.X, rect.Y, int(rect.Width), int(rect.Height))
 }

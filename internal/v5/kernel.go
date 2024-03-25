@@ -111,6 +111,8 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 
 	r.vipsImage = image
 
+	slog.Info("executeVips", "image", image, "buffersize", len(r.SourceImage.Bytes), "strip", r.strip, "format", r.format)
+
 	// Execute the commands.
 	stripMetadata := r.Config.StripMetadata
 	//formatProvided := false

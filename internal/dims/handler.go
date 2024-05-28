@@ -26,7 +26,7 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter) {
 		if kernel.ValidateSignature() == false {
 			kernel.SendError(w, 403, "verification failed.")
 
-			slog.Info("verification failed.")
+			slog.Warn("verification failed.")
 
 			return
 		}
@@ -35,25 +35,25 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter) {
 	// Download image.
 	start := time.Now()
 	if err := kernel.FetchImage(); err != nil {
-		slog.Error("downloadImage failed.", "error", err)
+		slog.Error("kernel.FetchImage() failed.", "error", err)
 
 		kernel.SendError(w, 500, "downloadImage failed.")
 
 		return
 	}
-	slog.Info("downloadImage", "duration", time.Since(start))
+	slog.Info("kernel.FetchImage()", "duration", time.Since(start).Milliseconds())
 
 	// Execute Imagemagick commands.
 	start = time.Now()
 	imageType, imageBlob, err := kernel.ProcessImage()
 	if err != nil {
-		slog.Error("executeImagemagick failed.", "error", err)
+		slog.Error("kernel.ProcessImage() failed.", "error", err)
 
 		kernel.SendError(w, 500, "image processing failed.")
 
 		return
 	}
-	slog.Info("executeImagemagick", "duration", time.Since(start))
+	slog.Info("kernel.ProcessImage()", "duration", time.Since(start).Milliseconds())
 
 	// Serve the image.
 	start = time.Now()
@@ -63,5 +63,5 @@ func Handler(kernel Kernel, config Config, w http.ResponseWriter) {
 		http.Error(w, "Failed to serve image", http.StatusInternalServerError)
 		return
 	}
-	slog.Info("serveImage", "duration", time.Since(start))
+	slog.Info("kernel.SendImage()", "duration", time.Since(start).Milliseconds())
 }

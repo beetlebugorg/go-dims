@@ -12,9 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
-type Command struct {
-	Name string
-	Args string
+import (
+	"github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/davidbyttow/govips/v2/vips"
+)
+
+type VipsOperation func(image *vips.ImageRef, args string) error
+
+type VipsCommand struct {
+	dims.Command
+	Operation VipsOperation
+}
+
+func PassThroughCommand(image *vips.ImageRef, args string) error {
+	return nil
 }

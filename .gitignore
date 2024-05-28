@@ -23,5 +23,7 @@ go.work
 tmp/
 build/
 go-dims
+devmedia/
+.DS_Store
 
 .idea/copilot

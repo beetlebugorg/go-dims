@@ -19,17 +19,20 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/v4"
 	"github.com/beetlebugorg/go-dims/internal/v5"
-	"net/http"
-
+	"github.com/davidbyttow/govips/v2/vips"
 	"gopkg.in/gographics/imagick.v3/imagick"
+	"net/http"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
-	imagick.Initialize()
-
 	environmentConfig := dims.ReadConfig()
 
 	mux := http.NewServeMux()
+
+	vips.LoggingSettings(nil, vips.LogLevelError)
+
+	imagick.Initialize()
+	vips.Startup(nil)
 
 	// v4 endpoint
 	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"

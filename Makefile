@@ -2,7 +2,7 @@ all:
 	go build -o ./build/dims go-dims.go
 
 static:
-	go build -o ./build/dims -ldflags "-linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lzstd -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lfontconfig -lfreetype -lexpat -lbrotlidec -lbrotlienc -lbrotlicommon -llcms2 -lgomp'" go-dims.go
+	go build -o ./build/dims -ldflags "-linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp'" go-dims.go
 
 publish-lambda: docker
 	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
@@ -25,3 +25,8 @@ docs-serve:
 docker: Dockerfile
 	docker buildx build --load -t beetlebugorg/go-dims:local .
 	docker images | grep beetlebugorg/go-dims
+
+devmedia:
+	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./devmedia:/usr/share/nginx/html:ro nginx:latest
+
+.PHONY: docs docs-serve devmedia

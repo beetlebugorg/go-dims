@@ -12,9 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
-type Command struct {
-	Name string
-	Args string
+import (
+	"gopkg.in/gographics/imagick.v3/imagick"
+	"log/slog"
+)
+
+func BrightnessCommand(request *RequestV5, args string) error {
+	slog.Debug("BrightnessCommand", "args", args)
+
+	image := request.vipsImage
+
+	var geometry imagick.GeometryInfo
+	imagick.ParseGeometry(args, &geometry)
+
+	return image.Linear([]float64{geometry.Rho}, []float64{geometry.Sigma})
 }

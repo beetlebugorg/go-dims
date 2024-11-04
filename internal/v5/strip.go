@@ -1,9 +1,9 @@
 package v5
 
-import (
-	"github.com/davidbyttow/govips/v2/vips"
-)
+func StripMetadataCommand(request *RequestV5, args string) error {
+	request.exportJpegParams.StripMetadata = true
+	request.exportWebpParams.StripMetadata = true
+	request.exportPngParams.StripMetadata = true
 
-func StripMetadataCommand(image *vips.ImageRef, args string) error {
 	return nil
 }

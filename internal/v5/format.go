@@ -1,7 +1,11 @@
 package v5
 
-import "github.com/davidbyttow/govips/v2/vips"
+import (
+	"strings"
+)
 
-func FormatCommand(image *vips.ImageRef, args string) error {
+func FormatCommand(request *RequestV5, args string) error {
+	format := strings.ToLower(args)
+	request.format = &format
 	return nil
 }

@@ -1,14 +1,14 @@
 package v5
 
 import (
-	"github.com/davidbyttow/govips/v2/vips"
 	"gopkg.in/gographics/imagick.v3/imagick"
 	"log/slog"
 	"strings"
 )
 
-func CropCommand(image *vips.ImageRef, args string) error {
+func CropCommand(request *RequestV5, args string) error {
 	sanitizedArgs := strings.ReplaceAll(args, " ", "+")
+	image := request.vipsImage
 
 	// Parse Geometry
 	rect := imagick.RectangleInfo{

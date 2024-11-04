@@ -21,8 +21,10 @@ import (
 	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func ResizeCommand(image *vips.ImageRef, args string) error {
+func ResizeCommand(request *RequestV5, args string) error {
 	slog.Debug("ResizeCommand", "args", args)
+
+	image := request.vipsImage
 
 	// Parse Geometry
 	rect := imagick.RectangleInfo{

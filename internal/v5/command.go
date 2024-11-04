@@ -16,16 +16,15 @@ package v5
 
 import (
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type VipsOperation func(image *vips.ImageRef, args string) error
+type VipsOperation func(request *RequestV5, args string) error
 
 type VipsCommand struct {
 	dims.Command
 	Operation VipsOperation
 }
 
-func PassThroughCommand(image *vips.ImageRef, args string) error {
+func PassThroughCommand(request *RequestV5, args string) error {
 	return nil
 }

@@ -31,16 +31,21 @@ import (
 var CommandsV5 = map[string]VipsOperation{
 	"resize":  ResizeCommand,
 	"strip":   StripMetadataCommand,
-	"format":  PassThroughCommand,
+	"format":  FormatCommand,
 	"quality": PassThroughCommand,
 	"crop":    CropCommand,
 }
 
 type RequestV5 struct {
 	dims.Request
-	format    string
+	format    *string
 	strip     bool
 	vipsImage *vips.ImageRef
+
+	// Format information
+	exportJpegParams *vips.JpegExportParams
+	exportPngParams  *vips.PngExportParams
+	exportWebpParams *vips.WebpExportParams
 }
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
@@ -59,14 +64,17 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 			RawCommands: r.PathValue("commands"),
 			Signature:   r.URL.Query().Get("sig"),
 		},
-		format: config.OutputFormat.OutputFormat,
-		strip:  config.StripMetadata,
+		format:           &config.OutputFormat.OutputFormat,
+		strip:            config.StripMetadata,
+		exportJpegParams: vips.NewJpegExportParams(),
+		exportPngParams:  vips.NewPngExportParams(),
+		exportWebpParams: vips.NewWebpExportParams(),
 	}
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
 func (r *RequestV5) ValidateSignature() bool {
-	slog.Debug("verifySignature", "url", r.ImageUrl)
+	slog.Debug("verifySignature", "url", r.ImageUrl())
 
 	expectedSignature := r.Sign()
 	gotSignature, err := hex.DecodeString(r.Signature)
@@ -111,11 +119,10 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 
 	r.vipsImage = image
 
-	slog.Info("executeVips", "image", image, "buffersize", len(r.SourceImage.Bytes), "strip", r.strip, "format", r.format)
+	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes), "strip", r.strip, "format", r.format)
 
 	// Execute the commands.
 	stripMetadata := r.Config.StripMetadata
-	//formatProvided := false
 
 	ctx, task := trace.NewTask(context.Background(), "v5.ProcessImage")
 	defer task.End()
@@ -124,10 +131,6 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 		if command.Name == "strip" && command.Args == "true" {
 			stripMetadata = false
 		}
-
-		//if command.Name == "format" {
-		//	formatProvided = true
-		//}
 
 		region := trace.StartRegion(ctx, command.Name)
 		if err := r.ProcessCommand(command); err != nil {
@@ -140,20 +143,27 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 		// set strip option in export options
 	}
 
-	if image.Format() == vips.ImageTypeJPEG {
-		exportParams := vips.NewJpegExportParams()
-		exportParams.StripMetadata = true
-		exportParams.Quality = 75
-		exportParams.OptimizeCoding = true
-		mode := vips.VipsForeignSubsampleAuto
-		exportParams.SubsampleMode = mode
-
-		imageBytes, _, err := image.ExportJpeg(exportParams)
+	if *r.format == "jpg" {
+		imageBytes, _, err := image.ExportJpeg(r.exportJpegParams)
 		if err != nil {
 			return "", nil, err
 		}
 
-		return vips.ImageTypes[image.Format()], imageBytes, nil
+		return vips.ImageTypes[vips.ImageTypeJPEG], imageBytes, nil
+	} else if *r.format == "png" {
+		imageBytes, _, err := image.ExportPng(r.exportPngParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypePNG], imageBytes, nil
+	} else if *r.format == "webp" {
+		imageBytes, _, err := image.ExportWebp(r.exportWebpParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeWEBP], imageBytes, nil
 	}
 
 	imageBytes, _, err := image.ExportNative()
@@ -166,7 +176,7 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 
 func (r *RequestV5) ProcessCommand(command dims.Command) error {
 	if operation, ok := CommandsV5[command.Name]; ok {
-		return operation(r.vipsImage, command.Args)
+		return operation(r, command.Args)
 	}
 
 	return fmt.Errorf("command not found: %s", command.Name)

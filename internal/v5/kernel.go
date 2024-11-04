@@ -29,11 +29,21 @@ import (
 )
 
 var CommandsV5 = map[string]VipsOperation{
-	"resize":  ResizeCommand,
-	"strip":   StripMetadataCommand,
-	"format":  FormatCommand,
-	"quality": PassThroughCommand,
-	"crop":    CropCommand,
+	"crop":             CropCommand,
+	"resize":           ResizeCommand,
+	"strip":            StripMetadataCommand,
+	"format":           FormatCommand,
+	"quality":          QualityCommand,
+	"sharpen":          SharpenCommand,
+	"brightness":       BrightnessCommand,
+	"flipflop":         FlipFlopCommand,
+	"sepia":            SepiaCommand,
+	"grayscale":        GrayscaleCommand,
+	"autolevel":        AutolevelCommand,
+	"invert":           InvertCommand,
+	"rotate":           RotateCommand,
+	"thumbnail":        ThumbnailCommand,
+	"legacy_thumbnail": LegacyThumbnailCommand,
 }
 
 type RequestV5 struct {

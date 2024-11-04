@@ -14,7 +14,26 @@
 
 package dims
 
-type Command struct {
-	Name string
-	Args string
+import "net/http"
+
+type Kernel interface {
+	ValidateSignature() bool
+	FetchImage() error
+	ProcessImage() (string, []byte, error)
+	ProcessCommand(command Command) error
+	SendHeaders(w http.ResponseWriter)
+	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
+	SendError(w http.ResponseWriter, status int, message string)
+}
+
+type ErrorImageGenerator interface {
+	GenerateErrorImage(w http.ResponseWriter, status int, message string)
+}
+
+type ImageProcessor interface {
+	ProcessImage() (string, []byte, error)
+}
+
+type Commands interface {
+	Commands(cmds string) []Command
 }

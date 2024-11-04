@@ -12,9 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
-type Command struct {
-	Name string
-	Args string
+import (
+	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
+)
+
+func FlipFlopCommand(request *RequestV5, args string) error {
+	image := request.vipsImage
+	slog.Debug("FlipFlopCommand", "args", args)
+
+	if args == "horizontal" {
+		return image.Flip(vips.DirectionHorizontal)
+	} else if args == "vertical" {
+		return image.Flip(vips.DirectionVertical)
+	}
+
+	return nil
 }

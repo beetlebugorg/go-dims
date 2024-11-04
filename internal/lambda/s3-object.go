@@ -1,3 +1,17 @@
+// Copyright 2024 Jeremy Collins. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package lambda
 
 import (
@@ -54,12 +68,12 @@ func NewS3ObjectRequest(event events.S3ObjectLambdaEvent, config dims.Config) *R
 	return &RequestLambdaS3Object{
 		RequestV5: v5.RequestV5{
 			Request: dims.Request{
-				Id:        requestHash,
-				Config:    config,
-				ClientId:  u.Query().Get("clientId"),
-				ImageUrl:  u.Query().Get("url"),
-				Commands:  dims.ParseCommands(rawCommands, v5.CommandsV5),
-				Signature: u.Query().Get("sig"),
+				Id:          requestHash,
+				Config:      config,
+				ClientId:    u.Query().Get("clientId"),
+				ImageUrl:    u.Query().Get("url"),
+				RawCommands: rawCommands,
+				Signature:   u.Query().Get("sig"),
 			},
 		},
 	}
@@ -70,7 +84,7 @@ func (r *RequestLambdaS3Object) FetchImage() error {
 	slog.Info("downloadImage", "url", r.ImageUrl)
 
 	timeout := time.Duration(r.Config.Timeout.Download) * time.Millisecond
-	image, err := _fetchImage(r.ImageUrl, timeout)
+	image, err := _fetchImage(r.Request.ImageUrl, timeout)
 	if err != nil {
 		return err
 	}

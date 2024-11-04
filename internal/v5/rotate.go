@@ -12,9 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package v5
 
-type Command struct {
-	Name string
-	Args string
+import (
+	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
+	"strconv"
+)
+
+func RotateCommand(request *RequestV5, args string) error {
+	slog.Debug("RotateCommand", "args", args)
+
+	degrees, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
+	}
+
+	return request.vipsImage.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0)
 }

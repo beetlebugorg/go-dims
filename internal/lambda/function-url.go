@@ -1,3 +1,17 @@
+// Copyright 2024 Jeremy Collins. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package lambda
 
 import (
@@ -12,7 +26,7 @@ import (
 	"strings"
 )
 
-var CommandsLambda = map[string]dims.Operation{
+var CommandsLambda = map[string]v4.MagickOperation{
 	"crop":       v4.CropCommand,
 	"resize":     v4.ResizeCommand,
 	"strip":      v4.StripMetadataCommand,
@@ -27,7 +41,6 @@ var CommandsLambda = map[string]dims.Operation{
 	"invert":     v4.InvertCommand,
 	"rotate":     v4.RotateCommand,
 	"thumbnail":  v4.ThumbnailCommand,
-	"gravity":    v5.GravityCommand,
 }
 
 type RequestLambdaFunctionURL struct {
@@ -54,12 +67,12 @@ func NewLambdaFunctionURLRequest(event events.LambdaFunctionURLRequest, config d
 	return &RequestLambdaFunctionURL{
 		RequestV5: v5.RequestV5{
 			Request: dims.Request{
-				Id:        requestHash,
-				Config:    config,
-				ClientId:  u.Query().Get("clientId"),
-				ImageUrl:  u.Query().Get("url"),
-				Commands:  dims.ParseCommands(rawCommands, CommandsLambda),
-				Signature: u.Query().Get("sig"),
+				Id:          requestHash,
+				Config:      config,
+				ClientId:    u.Query().Get("clientId"),
+				ImageUrl:    u.Query().Get("url"),
+				RawCommands: rawCommands,
+				Signature:   u.Query().Get("sig"),
 			},
 		},
 	}

@@ -14,7 +14,8 @@
 
 package dims
 
-type Command struct {
-	Name string
-	Args string
+type UrlSigner interface {
+	SignUrl() (string, error)
+	ImageUrl() string
+	Commands() []Command
 }

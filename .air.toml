@@ -4,8 +4,8 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./build/bin/dims serve --debug"
-  cmd = "go build -o ./build/bin/dims go-dims.go"
+  bin = "./build/dims serve --debug --dev"
+  cmd = "go build -o ./build/dims -ldflags '-compressdwarf=false -linkmode internal'"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []

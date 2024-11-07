@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/davidbyttow/govips/v2/vips"
+	"gopkg.in/gographics/imagick.v3/imagick"
 	"log/slog"
 	"net/http"
 	"runtime/trace"
@@ -119,10 +120,24 @@ func (r *RequestV5) Sign() []byte {
 func (r *RequestV5) ProcessImage() (string, []byte, error) {
 	slog.Debug("executeVips")
 
+	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
+	if err != nil {
+		return "", nil, err
+	}
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
-	image, err := vips.LoadImageFromBuffer(r.SourceImage.Bytes, importParams)
+	requestedSize := r.loadOptimization()
+	if requestedSize != nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
+		xs := image.Width() / int(requestedSize.Width)
+		ys := image.Height() / int(requestedSize.Height)
+
+		if (xs > 2) || (ys > 2) {
+			importParams.JpegShrinkFactor.Set(4)
+		}
+	}
+
+	image, err = vips.LoadImageFromBuffer(r.SourceImage.Bytes, importParams)
 	if err != nil {
 		return "", nil, err
 	}
@@ -190,4 +205,27 @@ func (r *RequestV5) ProcessCommand(command dims.Command) error {
 	}
 
 	return fmt.Errorf("command not found: %s", command.Name)
+}
+
+// Parse through the requested commands and return requested image size for thumbnail and resize
+// operations.
+//
+// This is used while reading an image to improve performance when generating thumbnails from very
+// large images.
+func (r *RequestV5) loadOptimization() *imagick.RectangleInfo {
+	for _, command := range r.Commands() {
+		if command.Name == "thumbnail" || command.Name == "resize" {
+			var rect imagick.RectangleInfo
+			flags := imagick.ParseAbsoluteGeometry(command.Args, &rect)
+
+			if (flags&imagick.WIDTHVALUE != 0) &&
+				(flags&imagick.HEIGHTVALUE != 0) &&
+				(flags&imagick.PERCENTVALUE == 0) {
+
+				return &rect
+			}
+		}
+	}
+
+	return nil
 }

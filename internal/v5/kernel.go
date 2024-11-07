@@ -127,7 +127,7 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
-	requestedSize := r.loadOptimization()
+	requestedSize := r.requestedImageSize()
 	if requestedSize != nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
 		xs := image.Width() / int(requestedSize.Width)
 		ys := image.Height() / int(requestedSize.Height)
@@ -212,7 +212,7 @@ func (r *RequestV5) ProcessCommand(command dims.Command) error {
 //
 // This is used while reading an image to improve performance when generating thumbnails from very
 // large images.
-func (r *RequestV5) loadOptimization() *imagick.RectangleInfo {
+func (r *RequestV5) requestedImageSize() *imagick.RectangleInfo {
 	for _, command := range r.Commands() {
 		if command.Name == "thumbnail" || command.Name == "resize" {
 			var rect imagick.RectangleInfo

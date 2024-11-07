@@ -9,6 +9,10 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - 'docs/**'
+      - '!.github/workflows/dims.yml'
+      - '!.github/workflows/build.yml'
 
 jobs:
   go-dims-docs:

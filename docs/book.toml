@@ -1,7 +1,7 @@
 [book]
 title = "Dynamic Image Manipulation Service"
 authors = ["Jeremy Collins"]
-description = "lakdjfadjf"
+description = "HTTP microservice for on-the-fly image manipulation written in Go."
 language = "en"
 multilingual = false
 src = "src"

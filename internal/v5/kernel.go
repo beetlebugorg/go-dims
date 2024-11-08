@@ -57,6 +57,7 @@ type RequestV5 struct {
 	exportJpegParams *vips.JpegExportParams
 	exportPngParams  *vips.PngExportParams
 	exportWebpParams *vips.WebpExportParams
+	exportGifParams  *vips.GifExportParams
 }
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
@@ -80,6 +81,7 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 		exportJpegParams: vips.NewJpegExportParams(),
 		exportPngParams:  vips.NewPngExportParams(),
 		exportWebpParams: vips.NewWebpExportParams(),
+		exportGifParams:  vips.NewGifExportParams(),
 	}
 }
 
@@ -189,6 +191,13 @@ func (r *RequestV5) ProcessImage() (string, []byte, error) {
 		}
 
 		return vips.ImageTypes[vips.ImageTypeWEBP], imageBytes, nil
+	} else if *r.format == "gif" {
+		imageBytes, _, err := image.ExportGIF(r.exportGifParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeGIF], imageBytes, nil
 	}
 
 	imageBytes, _, err := image.ExportNative()

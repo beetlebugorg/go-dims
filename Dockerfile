@@ -17,6 +17,7 @@ RUN adduser \
 RUN apk add --no-cache \
         jpeg-dev libjpeg-turbo-static \
         lcms2-dev lcms2-static \
+        giflib-dev giflib-static \
         bzip2-static \
         expat-dev expat-static \
         zlib-dev zlib-static \

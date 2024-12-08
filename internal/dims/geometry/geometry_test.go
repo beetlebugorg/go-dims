@@ -1,6 +1,7 @@
 package geometry
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -44,6 +45,47 @@ func TestGeometry(t *testing.T) {
 
 			if value != test.expected && test.success {
 				t.Errorf("expected %v, got %v => '%s'", test.expected, value, test.geometry)
+			}
+		})
+	}
+}
+
+func FuzzParseGeometry(f *testing.F) {
+	// Seed the fuzzer with initial test cases
+	geometries := []string{
+		"100", "100%", "100x", "x100", "100%x100", "abc123", "+100%", "100x100%+50+50",
+		"12380x7200%+100+100%", "100x100!", "010192309120391092301923x10293012390123-13",
+		"lakjdflajsdf", "---12-31-31-31", "xxxxxxxxxxxxxxxxx100000", "50x50+10a10",
+		"50%x50%+10+10:", "100x200d+0+0,", "75%x100%-10-20", "300x400!<>", "100%x100%!<>",
+		"-50x50+10+10", "50x-50+10+10", "50x50+10-", "50%x50%!<>", "010192309120391092301923x10293012390123-13",
+		"100x200x300",
+	}
+
+	for _, geometry := range geometries {
+		f.Add(geometry)
+	}
+
+	f.Fuzz(func(t *testing.T, geometry string) {
+		fmt.Println(geometry)
+		// Call the function with the fuzzed input
+		_ = parseGeometry(geometry)
+	})
+}
+
+func BenchmarkParseGeometry(b *testing.B) {
+	geometries := []string{
+		"100", "100%", "100x", "x100", "100%x100", "abc123", "+100%", "100x100%+50+50",
+		"12380x7200%+100+100%", "100x100!", "010192309120391092301923x10293012390123-13",
+		"lakjdflajsdf", "---12-31-31-31", "xxxxxxxxxxxxxxxxx100000", "50x50+10a10",
+		"50%x50%+10+10:", "100x200d+0+0,", "75%x100%-10-20", "300x400!<>", "100%x100%!<>",
+		"-50x50+10+10", "50x-50+10+10", "50x50+10-", "50%x50%!<>", "010192309120391092301923x10293012390123-13",
+		"100x200x300",
+	}
+
+	for _, geometry := range geometries {
+		b.Run(geometry, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				parseGeometry(geometry)
 			}
 		})
 	}

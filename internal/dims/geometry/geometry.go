@@ -1,7 +1,6 @@
 package geometry
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -24,11 +23,6 @@ type Geometry struct {
 	X      int64
 	Y      int64
 	Flags  Flags
-}
-
-type geometryListener struct {
-	*parser.BaseGeometryListener
-	*Geometry
 }
 
 // Parse a geometry string in the form of "WIDTHxHEIGHT{+}X{+}Y{!<>}"
@@ -56,27 +50,62 @@ type geometryListener struct {
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
 func parseGeometry(geometry string) Geometry {
 	stream := antlr.NewInputStream(geometry)
+
+	var errorListener = errorListener{}
+
 	lexer := parser.NewGeometryLexer(stream)
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(&errorListener)
+
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	var p = parser.NewGeometryParser(tokens)
+	p.RemoveErrorListeners()
+	p.AddErrorListener(&errorListener)
+
 	var g = &geometryListener{
 		Geometry: &Geometry{},
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(g, p.Start_())
 
+	if len(errorListener.Errors) > 0 {
+		return Geometry{}
+	}
+
 	return *g.Geometry
+}
+
+//-- ErrorListener
+
+type syntaxError struct {
+	line   int
+	column int
+	msg    string
+}
+
+type errorListener struct {
+	*antlr.DefaultErrorListener
+	Errors []syntaxError
+}
+
+func (g *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+	g.Errors = append(g.Errors, syntaxError{line, column, msg})
 }
 
 //-- GeometryListener
 
+type geometryListener struct {
+	*parser.BaseGeometryListener
+	*Geometry
+}
+
 func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
-	var err error
-	g.Width, err = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
-	if err != nil {
-		fmt.Println(err)
+	if c.NUMBER() == nil {
+		return
 	}
+
+	g.Width, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
 	if c.Percent() != nil {
 		g.Flags.WidthPercent = true
@@ -84,11 +113,11 @@ func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
 }
 
 func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
-	var err error
-	g.Height, err = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
-	if err != nil {
-		fmt.Println(err)
+	if c.NUMBER() == nil {
+		return
 	}
+
+	g.Height, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
 	if c.Percent() != nil {
 		g.Flags.HeightPercent = true
@@ -96,11 +125,11 @@ func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
 }
 
 func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
-	var err error
-	g.X, err = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
-	if err != nil {
-		fmt.Println(err)
+	if c.NUMBER() == nil {
+		return
 	}
+
+	g.X, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
 	if c.Percent() != nil {
 		g.Flags.OffsetXPercent = true
@@ -108,11 +137,11 @@ func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
 }
 
 func (g *geometryListener) ExitOffsety(c *parser.OffsetyContext) {
-	var err error
-	g.Y, err = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
-	if err != nil {
-		fmt.Println(err)
+	if c.NUMBER() == nil {
+		return
 	}
+
+	g.Y, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
 	if c.Percent() != nil {
 		g.Flags.OffsetYPercent = true

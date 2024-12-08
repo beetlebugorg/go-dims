@@ -13,6 +13,9 @@ require (
 )
 
 require (
+	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
+	github.com/antlr4-go/antlr v0.0.0-20230518091524-98b52378c522 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.3 // indirect
@@ -44,6 +47,6 @@ require (
 require (
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/sagikazarmark/slog-shim v0.1.0
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	gopkg.in/gographics/imagick.v3 v3.5.2
 )

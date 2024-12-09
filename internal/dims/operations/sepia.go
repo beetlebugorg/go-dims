@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package operations
 
-import (
-	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
-)
+import "context"
 
-func BrightnessCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("BrightnessCommand", "args", args)
-
-	var geometry imagick.GeometryInfo
-	imagick.ParseGeometry(args, &geometry)
-
-	return mw.BrightnessContrastImage(geometry.Rho, geometry.Sigma)
+func SepiaCommand(ctx context.Context, args string) error {
+	return nil
 }

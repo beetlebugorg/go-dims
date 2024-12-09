@@ -16,12 +16,12 @@ package dims
 
 import (
 	"fmt"
-	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/beetlebugorg/go-dims/internal/v4"
-	"github.com/beetlebugorg/go-dims/internal/v5"
-	"github.com/davidbyttow/govips/v2/vips"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"net/http"
+
+	"github.com/beetlebugorg/go-dims/internal/dims"
+	v4 "github.com/beetlebugorg/go-dims/internal/v4"
+	v5 "github.com/beetlebugorg/go-dims/internal/v5"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
@@ -31,7 +31,6 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
 
-	imagick.Initialize()
 	vips.Startup(nil)
 
 	// v4 endpoint
@@ -53,7 +52,6 @@ func NewHandler(debug bool, dev bool) http.Handler {
 		dims.Handler(request, config, w)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/dims/%s", v4Arguments), v4Handler)
-	mux.HandleFunc(fmt.Sprintf("/dims4/%s", v4Arguments), v4Handler)
 
 	// v5 endpoint
 	mux.HandleFunc("/v5/dims/{commands...}",

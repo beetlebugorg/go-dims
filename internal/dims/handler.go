@@ -23,7 +23,7 @@ import (
 func Handler(kernel Kernel, config Config, w http.ResponseWriter) {
 	// Verify signature.
 	if !config.DevelopmentMode {
-		if kernel.ValidateSignature() == false {
+		if kernel.ValidateSignature() {
 			kernel.SendError(w, 403, "verification failed.")
 
 			slog.Warn("verification failed.")

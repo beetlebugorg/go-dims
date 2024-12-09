@@ -1,12 +1,12 @@
 ARG ALPINE_VERSION=3.19
 
 # -- Alpine Base
-FROM alpine:${ALPINE_VERSION} as alpine-base
+FROM alpine:${ALPINE_VERSION} AS alpine-base
 
 RUN apk add --no-cache alpine-sdk xz zlib-dev zlib-static
 
 # -- Build libpng
-FROM alpine-base as libpng
+FROM alpine-base AS libpng
 
 ARG PREFIX=/usr/local/dims/libpng
 ARG PNG_VERSION=1.6.43
@@ -30,7 +30,7 @@ RUN tar xvf "libpng-${PNG_VERSION}.tar.xz" && \
     make install
 
 # -- Build libwebp
-FROM alpine-base as libwebp
+FROM alpine-base AS libwebp
 
 ARG PREFIX=/usr/local/dims/libwebp
 ARG WEBP_VERSION=1.2.1
@@ -51,7 +51,7 @@ RUN tar xzvf libwebp-${WEBP_VERSION}.tar.gz && \
     make install
 
 # -- Build libtiff
-FROM alpine-base as libtiff
+FROM alpine-base AS libtiff
 
 ARG PREFIX=/usr/local/dims
 ARG TIFF_VERSION=4.3.0
@@ -69,57 +69,22 @@ ADD --checksum="${TIFF_HASH}" \
 
 RUN tar xzvf tiff-${TIFF_VERSION}.tar.gz && \
     cd tiff-${TIFF_VERSION} && \
-    ./configure --prefix=$PREFIX/libtiff --enable-static \
+    ./configure --prefix=$PREFIX/libtiff --enable-static --disable-cxx \
         --with-webp-include-dir=$PREFIX/libwebp/include \
         --with-webp-lib-dir=$PREFIX/libwebp/lib && \
     make -j"$(nproc)" && \
-    make install
-
-# -- Build Imagemagick
-FROM alpine-base as imagemagick
-
-ARG PREFIX=/usr/local/dims
-ARG IMAGEMAGICK_VERSION=7.1.1-29
-ARG IMAGEMAGICK_HASH="sha256:f140465fbeb0b4724cba4394bc6f6fb32715731c1c62572d586f4f1c8b9b0685"
-
-WORKDIR /build
-
-RUN apk add --no-cache jpeg-dev libjpeg-turbo-static lcms2-dev lcms2-static bzip2-static
-
-COPY --from=libwebp ${PREFIX}/libwebp ${PREFIX}/libwebp
-COPY --from=libtiff ${PREFIX}/libtiff ${PREFIX}/libtiff
-COPY --from=libpng  ${PREFIX}/libpng  ${PREFIX}/libpng
-
-ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
-
-ADD --checksum="${IMAGEMAGICK_HASH}" \
-    https://imagemagick.org/archive/releases/ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz .
-
-RUN tar xvf ImageMagick-${IMAGEMAGICK_VERSION}.tar.xz && \
-    cd ImageMagick-${IMAGEMAGICK_VERSION} && \
-    ./configure --enable-opencl --with-openmp --with-magick-plus-plus=no \
-    --with-modules=no --enable-hdri=no --without-utilities --disable-dpc \
-    --enable-zero-configuration --with-threads --with-quantum-depth=8 \
-    --disable-docs --without-openexr --without-lqr --without-x --without-jbig \
-    --with-png=yes --with-jpeg=yes --with-xml=yes --with-webp=yes --with-tiff=yes \
-    --prefix=${PREFIX}/imagemagick && \
-    make -j"$(nproc)" && \
     make install && \
-    rm -rf ${PREFIX}/imagemagick/bin && \
-    rm -rf ${PREFIX}/imagemagick/etc && \
-    rm -rf ${PREFIX}/imagemagick/share
+    rm -rf $PREFIX/libtiff/bin $PREFIX/libtiff/share
 
 # -- Build glib-2.0
-FROM alpine-base as glib
+FROM alpine-base AS glib
 
 ARG PREFIX=/usr/local/dims
 ARG GLIB_MAJOR_MINOR_VERSION=2.80
 ARG GLIB_VERSION=2.80.0
 ARG GLIB_HASH="sha256:8228a92f92a412160b139ae68b6345bd28f24434a7b5af150ebe21ff587a561d"
 
-RUN apk add --no-cache meson py3-pip xz
+RUN apk add --no-cache meson py3-pip xz upx
 
 WORKDIR /build
 
@@ -129,14 +94,14 @@ ADD --checksum="${GLIB_HASH}" \
 
 RUN tar -xvf glib-${GLIB_VERSION}.tar.xz && \
     cd glib-${GLIB_VERSION} && \
-    meson setup build --prefix=${PREFIX}/glib-2.0 --default-library static --prefer-static \
-        -Dauto_features=disabled -Dbuildtype=release && \
+    meson setup build --prefix=${PREFIX}/glib-2.0 --default-library static --prefer-static --strip --buildtype release -Dauto_features=disabled && \
     cd build && \
     meson compile -j"$(nproc)" && \
-    meson install
+    meson install && \
+    upx --best --lzma ${PREFIX}/glib-2.0/bin/* || true
 
 # -- Build libvips
-FROM alpine-base as libvips
+FROM alpine-base AS libvips
 
 ARG PREFIX=/usr/local/dims
 ARG VIPS_VERSION=8.15.2
@@ -167,12 +132,13 @@ ADD --checksum="${VIPS_HASH}" \
 
 RUN tar -xf vips-${VIPS_VERSION}.tar.xz && \
     cd vips-${VIPS_VERSION} && \
-    meson setup build --prefix=${PREFIX}/libvips --default-library static --prefer-static \
+    meson setup build --prefix=${PREFIX}/libvips --default-library static --prefer-static --buildtype release \
         -Dauto_features=disabled -Djpeg=enabled -Dlcms=enabled -Dzlib=enabled \
         -Dpng=enabled -Dtiff=enabled -Dwebp=enabled -Ddeprecated=false && \
     cd build && \
     meson compile -j"$(nproc)" && \
-    meson install
+    meson install && \
+    rm -rf ${PREFIX}/libvips/bin
 
 # -- Build base
 FROM golang:1.22.0-alpine
@@ -184,13 +150,25 @@ ARG PREFIX=/usr/local/dims
 COPY --from=libpng      ${PREFIX}/libpng      ${PREFIX}/libpng
 COPY --from=libwebp     ${PREFIX}/libwebp     ${PREFIX}/libwebp
 COPY --from=libtiff     ${PREFIX}/libtiff     ${PREFIX}/libtiff
-COPY --from=imagemagick ${PREFIX}/imagemagick ${PREFIX}/imagemagick
 COPY --from=libvips     ${PREFIX}/libvips     ${PREFIX}/libvips
 COPY --from=glib        ${PREFIX}/glib-2.0     ${PREFIX}/glib-2.0
 
 ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/imagemagick/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libvips/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/glib-2.0/lib/pkgconfig
+
+RUN apk add --no-cache \
+        jpeg-dev libjpeg-turbo-static \
+        lcms2-dev lcms2-static \
+        giflib-dev giflib-static \
+        bzip2-static \
+        expat-dev expat-static \
+        zlib-dev zlib-static \
+        make alpine-sdk upx openjdk21-jre \
+        ca-certificates tzdata gcompat freetype fontconfig && \
+        update-ca-certificates wget && \
+        wget https://www.antlr.org/download/antlr-4.13.2-complete.jar && \
+        echo 'java -jar /build/antlr-4.13.2-complete.jar $@' > /usr/local/bin/antlr && \
+        chmod +x /usr/local/bin/antlr

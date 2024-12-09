@@ -12,22 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package operations
 
 import (
-	"github.com/sagikazarmark/slog-shim"
-	"strconv"
+	"context"
 )
 
-func QualityCommand(request *RequestV5, args string) error {
-	slog.Debug("QualityCommand", "args", args)
+type Command struct {
+	Name string
+	Args string
+}
 
-	quality, err := strconv.Atoi(args)
-	if err != nil {
-		return err
-	}
+type VipsOperation func(ctx context.Context, args string) error
 
-	request.exportJpegParams.Quality = quality
+type VipsCommand struct {
+	Command
+	Operation VipsOperation
+}
 
+func PassThroughCommand(ctx context.Context, args string) error {
 	return nil
 }

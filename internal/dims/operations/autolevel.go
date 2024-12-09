@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package operations
 
-import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
-)
+import "context"
 
-type VipsOperation func(request *RequestV5, args string) error
-
-type VipsCommand struct {
-	dims.Command
-	Operation VipsOperation
-}
-
-func PassThroughCommand(request *RequestV5, args string) error {
+func AutolevelCommand(ctx context.Context, args string) error {
 	return nil
 }

@@ -15,49 +15,19 @@
 package v5
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/davidbyttow/govips/v2/vips"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"log/slog"
 	"net/http"
-	"runtime/trace"
 	"strings"
-)
 
-var CommandsV5 = map[string]VipsOperation{
-	"crop":             CropCommand,
-	"resize":           ResizeCommand,
-	"strip":            StripMetadataCommand,
-	"format":           FormatCommand,
-	"quality":          QualityCommand,
-	"sharpen":          SharpenCommand,
-	"brightness":       BrightnessCommand,
-	"flipflop":         FlipFlopCommand,
-	"sepia":            SepiaCommand,
-	"grayscale":        GrayscaleCommand,
-	"autolevel":        AutolevelCommand,
-	"invert":           InvertCommand,
-	"rotate":           RotateCommand,
-	"thumbnail":        ThumbnailCommand,
-	"legacy_thumbnail": LegacyThumbnailCommand,
-}
+	"github.com/beetlebugorg/go-dims/internal/dims"
+)
 
 type RequestV5 struct {
 	dims.Request
-	format    *string
-	strip     bool
-	vipsImage *vips.ImageRef
-
-	// Format information
-	exportJpegParams *vips.JpegExportParams
-	exportPngParams  *vips.PngExportParams
-	exportWebpParams *vips.WebpExportParams
-	exportGifParams  *vips.GifExportParams
 }
 
 func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
@@ -76,12 +46,6 @@ func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
 			RawCommands: r.PathValue("commands"),
 			Signature:   r.URL.Query().Get("sig"),
 		},
-		format:           &config.OutputFormat.OutputFormat,
-		strip:            config.StripMetadata,
-		exportJpegParams: vips.NewJpegExportParams(),
-		exportPngParams:  vips.NewPngExportParams(),
-		exportWebpParams: vips.NewWebpExportParams(),
-		exportGifParams:  vips.NewGifExportParams(),
 	}
 }
 
@@ -116,125 +80,4 @@ func (r *RequestV5) Sign() []byte {
 	mac.Write([]byte(r.Request.ImageUrl))
 
 	return mac.Sum(nil)[0:31]
-}
-
-// ProcessImage will execute the commands on the image.
-func (r *RequestV5) ProcessImage() (string, []byte, error) {
-	slog.Debug("executeVips")
-
-	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
-	if err != nil {
-		return "", nil, err
-	}
-	importParams := vips.NewImportParams()
-	importParams.AutoRotate.Set(true)
-
-	requestedSize := r.requestedImageSize()
-	if requestedSize != nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
-		xs := image.Width() / int(requestedSize.Width)
-		ys := image.Height() / int(requestedSize.Height)
-
-		if (xs > 2) || (ys > 2) {
-			importParams.JpegShrinkFactor.Set(4)
-		}
-	}
-
-	image, err = vips.LoadImageFromBuffer(r.SourceImage.Bytes, importParams)
-	if err != nil {
-		return "", nil, err
-	}
-
-	r.vipsImage = image
-
-	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes), "strip", r.strip, "format", r.format)
-
-	// Execute the commands.
-	stripMetadata := r.Config.StripMetadata
-
-	ctx, task := trace.NewTask(context.Background(), "v5.ProcessImage")
-	defer task.End()
-
-	for _, command := range r.Commands() {
-		if command.Name == "strip" && command.Args == "true" {
-			stripMetadata = false
-		}
-
-		region := trace.StartRegion(ctx, command.Name)
-		if err := r.ProcessCommand(command); err != nil {
-			return "", nil, err
-		}
-		region.End()
-	}
-
-	if stripMetadata {
-		// set strip option in export options
-	}
-
-	if *r.format == "jpg" {
-		imageBytes, _, err := image.ExportJpeg(r.exportJpegParams)
-		if err != nil {
-			return "", nil, err
-		}
-
-		return vips.ImageTypes[vips.ImageTypeJPEG], imageBytes, nil
-	} else if *r.format == "png" {
-		imageBytes, _, err := image.ExportPng(r.exportPngParams)
-		if err != nil {
-			return "", nil, err
-		}
-
-		return vips.ImageTypes[vips.ImageTypePNG], imageBytes, nil
-	} else if *r.format == "webp" {
-		imageBytes, _, err := image.ExportWebp(r.exportWebpParams)
-		if err != nil {
-			return "", nil, err
-		}
-
-		return vips.ImageTypes[vips.ImageTypeWEBP], imageBytes, nil
-	} else if *r.format == "gif" {
-		imageBytes, _, err := image.ExportGIF(r.exportGifParams)
-		if err != nil {
-			return "", nil, err
-		}
-
-		return vips.ImageTypes[vips.ImageTypeGIF], imageBytes, nil
-	}
-
-	imageBytes, _, err := image.ExportNative()
-	if err != nil {
-		return "", nil, err
-	}
-
-	return vips.ImageTypes[image.Format()], imageBytes, nil
-}
-
-func (r *RequestV5) ProcessCommand(command dims.Command) error {
-	if operation, ok := CommandsV5[command.Name]; ok {
-		return operation(r, command.Args)
-	}
-
-	return fmt.Errorf("command not found: %s", command.Name)
-}
-
-// Parse through the requested commands and return requested image size for thumbnail and resize
-// operations.
-//
-// This is used while reading an image to improve performance when generating thumbnails from very
-// large images.
-func (r *RequestV5) requestedImageSize() *imagick.RectangleInfo {
-	for _, command := range r.Commands() {
-		if command.Name == "thumbnail" || command.Name == "resize" {
-			var rect imagick.RectangleInfo
-			flags := imagick.ParseAbsoluteGeometry(command.Args, &rect)
-
-			if (flags&imagick.WIDTHVALUE != 0) &&
-				(flags&imagick.HEIGHTVALUE != 0) &&
-				(flags&imagick.PERCENTVALUE == 0) {
-
-				return &rect
-			}
-		}
-	}
-
-	return nil
 }

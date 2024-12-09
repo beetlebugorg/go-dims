@@ -49,20 +49,21 @@ type Geometry struct {
 // "+50+50" - x offset 50, y offset 50, width and height are 100% of the rest of the image
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
 func parseGeometry(geometry string) Geometry {
-	stream := antlr.NewInputStream(geometry)
+	is := antlr.NewInputStream(geometry)
 
-	var errorListener = errorListener{}
+	var errorListener = errorListener{
+		Errors: make([]syntaxError, 32),
+	}
 
-	lexer := parser.NewGeometryLexer(stream)
+	lexer := parser.NewGeometryLexer(is)
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(&errorListener)
 
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	var p = parser.NewGeometryParser(tokens)
+	var p = parser.NewGeometryParser(stream)
 	p.RemoveErrorListeners()
 	p.AddErrorListener(&errorListener)
-
 	var g = &geometryListener{
 		Geometry: &Geometry{},
 	}
@@ -107,7 +108,7 @@ func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
 
 	g.Width, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
-	if c.Percent() != nil {
+	if c.PERCENT() != nil {
 		g.Flags.WidthPercent = true
 	}
 }
@@ -119,7 +120,7 @@ func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
 
 	g.Height, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
-	if c.Percent() != nil {
+	if c.PERCENT() != nil {
 		g.Flags.HeightPercent = true
 	}
 }
@@ -131,7 +132,7 @@ func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
 
 	g.X, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
-	if c.Percent() != nil {
+	if c.PERCENT() != nil {
 		g.Flags.OffsetXPercent = true
 	}
 }
@@ -143,7 +144,7 @@ func (g *geometryListener) ExitOffsety(c *parser.OffsetyContext) {
 
 	g.Y, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
 
-	if c.Percent() != nil {
+	if c.PERCENT() != nil {
 		g.Flags.OffsetYPercent = true
 	}
 }

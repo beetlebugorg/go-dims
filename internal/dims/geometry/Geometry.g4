@@ -4,12 +4,11 @@ grammar Geometry;
 start    : geometry EOF;
 geometry : dimension (offset)? flags?;
 dimension : (width ('x' height?)?) | ('x' height) ;
-width    : NUMBER (percent)? ;
-height   : NUMBER (percent)?  ;
-percent  : PERCENT ;
+width    : NUMBER (PERCENT)? ;
+height   : NUMBER (PERCENT)? ;
 offset   : PLUS (offsetx) (PLUS offsety)? ;
-offsetx  : NUMBER (percent)? ;
-offsety  : NUMBER (percent)? ;
+offsetx  : NUMBER (PERCENT)? ;
+offsety  : NUMBER (PERCENT)? ;
 flags    : BANG | GT | LT ;
 
 // Lexer Rules

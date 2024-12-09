@@ -1,3 +1,5 @@
+AWS_ACCOUNT_ID?=248890141166
+
 all:
 	go generate ./...
 	go build -o ./build/dims go-dims.go
@@ -27,6 +29,11 @@ docs-serve:
 docker: Dockerfile
 	docker buildx build --load -t beetlebugorg/go-dims:local .
 	docker images | grep beetlebugorg/go-dims
+
+builder:
+	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+	docker buildx build --platform linux/arm64,linux/amd64 -t 248890141166.dkr.ecr.us-east-1.amazonaws.com/beetlebugorg/go-dims:builder -f Dockerfile.builder .
+	docker push 248890141166.dkr.ecr.us-east-1.amazonaws.com/beetlebugorg/go-dims:builder
 
 devmedia:
 	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./devmedia:/usr/share/nginx/html:ro nginx:latest

@@ -1,10 +1,10 @@
-package v5
+package dims
 
 import (
 	"strings"
 )
 
-func FormatCommand(request *RequestV5, args string) error {
+func FormatCommand(request *Request, args string) error {
 	format := strings.ToLower(args)
 	request.format = &format
 	return nil

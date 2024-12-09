@@ -1,4 +1,4 @@
-package v5
+package dims
 
 import (
 	"strings"
@@ -6,7 +6,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 )
 
-func CropCommand(request *RequestV5, args string) error {
+func CropCommand(request *Request, args string) error {
 	sanitizedArgs := strings.ReplaceAll(args, " ", "+")
 	image := request.vipsImage
 

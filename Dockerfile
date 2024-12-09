@@ -1,4 +1,4 @@
-FROM ghcr.io/beetlebugorg/go-dims:builder as go-dims
+FROM 248890141166.dkr.ecr.us-east-1.amazonaws.com/beetlebugorg/go-dims:builder AS go-dims
 
 ENV USER=dims
 ENV UID=10001

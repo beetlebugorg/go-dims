@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
 import (
 	"errors"
-	"github.com/davidbyttow/govips/v2/vips"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"log/slog"
 	"strings"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func ThumbnailCommand(request *RequestV5, args string) error {
+func ThumbnailCommand(request *Request, args string) error {
 	slog.Debug("ThumbnailCommand", "args", args)
 
 	image := request.vipsImage
@@ -32,27 +33,28 @@ func ThumbnailCommand(request *RequestV5, args string) error {
 	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
 	// Parse Geometry
-	var rect imagick.RectangleInfo
+	var rect = geometry.ParseGeometry(resizedArgs)
 
 	rect.X = image.OffsetX()
 	rect.Y = image.OffsetY()
-	rect.Width = uint(image.Width())
-	rect.Height = uint(image.Height())
+	rect.Width = image.Width()
+	rect.Height = image.Height()
 
-	flags := imagick.ParseMetaGeometry(resizedArgs, &rect.X, &rect.Y, &rect.Width, &rect.Height)
-	if (flags & imagick.ALLVALUES) == 0 {
-		return errors.New("parsing thumbnail (resize) geometry failed")
+	// Parse Meta Geometry
+	rect = rect.ApplyMeta(image)
+	if rect.Width == 0 || rect.Height == 0 {
+		return errors.New("invalid geometry")
 	}
 
 	slog.Debug("ThumbnailCommand[resize]", "rect", rect)
 
-	if err := image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingAll); err != nil {
+	if err := image.Thumbnail(rect.Width, rect.Height, vips.InterestingAll); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func LegacyThumbnailCommand(request *RequestV5, args string) error {
+func LegacyThumbnailCommand(request *Request, args string) error {
 	return nil
 }

@@ -12,18 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package dims
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func BrightnessCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("BrightnessCommand", "args", args)
+func ResizeCommand(request *Request, args string) error {
+	slog.Debug("ResizeCommand", "args", args)
 
-	var geometry imagick.GeometryInfo
-	imagick.ParseGeometry(args, &geometry)
+	image := request.vipsImage
 
-	return mw.BrightnessContrastImage(geometry.Rho, geometry.Sigma)
+	// Parse Geometry
+	geo := geometry.ParseGeometry(args)
+	rect := geo.ApplyMeta(image)
+
+	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)
+
+	xr := float64(rect.Width) / float64(image.Width())
+	yr := float64(rect.Height) / float64(image.Height())
+
+	return image.ResizeWithVScale(xr, yr, vips.KernelLanczos3)
 }

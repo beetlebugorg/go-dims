@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package dims
 
 import (
-	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
+	"log/slog"
 )
 
-func AutolevelCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("AutolevelCommand", "args", args)
+func SharpenCommand(request *Request, args string) error {
+	slog.Debug("SharpenCommand", "args", args)
 
-	if args == "true" {
-		return mw.AutoLevelImage()
-	}
+	//var geometry imagick.GeometryInfo
+	//flags := imagick.ParseGeometry(args, &geometry)
+	//if (flags & imagick.SIGMAVALUE) == 0 {
+	//	geometry.Sigma = 1.0
+	//}
 
+	//slog.Info("SharpenCommand", "geometry", geometry)
+
+	//return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
 	return nil
 }

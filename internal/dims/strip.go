@@ -1,6 +1,6 @@
-package v5
+package dims
 
-func StripMetadataCommand(request *RequestV5, args string) error {
+func StripMetadataCommand(request *Request, args string) error {
 	request.exportJpegParams.StripMetadata = true
 	request.exportWebpParams.StripMetadata = true
 	request.exportPngParams.StripMetadata = true

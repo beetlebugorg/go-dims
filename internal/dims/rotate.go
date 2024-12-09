@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
 import (
-	"github.com/davidbyttow/govips/v2/vips"
 	"log/slog"
+	"strconv"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func FlipFlopCommand(request *RequestV5, args string) error {
-	image := request.vipsImage
-	slog.Debug("FlipFlopCommand", "args", args)
+func RotateCommand(request *Request, args string) error {
+	slog.Debug("RotateCommand", "args", args)
 
-	if args == "horizontal" {
-		return image.Flip(vips.DirectionHorizontal)
-	} else if args == "vertical" {
-		return image.Flip(vips.DirectionVertical)
+	degrees, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return request.vipsImage.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0)
 }

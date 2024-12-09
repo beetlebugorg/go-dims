@@ -46,5 +46,4 @@ require (
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/sagikazarmark/slog-shim v0.1.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	gopkg.in/gographics/imagick.v3 v3.5.2
 )

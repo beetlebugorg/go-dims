@@ -4,21 +4,19 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
+	"net/http/httptest"
+	"os"
+	"strconv"
+
 	"github.com/aws/aws-lambda-go/events"
 	awscfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/lambda"
-	"gopkg.in/gographics/imagick.v3/imagick"
-	"log/slog"
-	"net/http/httptest"
-	"os"
-	"strconv"
 )
 
 func NewLambdaFunctionURLHandler(devMode bool, debugMode bool) func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLResponse, error) {
-	imagick.Initialize()
-
 	environmentConfig := dims.ReadConfig()
 
 	config := dims.Config{
@@ -68,8 +66,6 @@ func handleLambdaFunctionURLRequest(_ context.Context, event *events.LambdaFunct
 }
 
 func NewLambdaS3ObjectHandler(devMode bool, debugMode bool) func(ctx context.Context, event *events.S3ObjectLambdaEvent) error {
-	imagick.Initialize()
-
 	environmentConfig := dims.ReadConfig()
 
 	config := dims.Config{

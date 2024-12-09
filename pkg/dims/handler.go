@@ -22,7 +22,6 @@ import (
 	v4 "github.com/beetlebugorg/go-dims/internal/v4"
 	v5 "github.com/beetlebugorg/go-dims/internal/v5"
 	"github.com/davidbyttow/govips/v2/vips"
-	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
@@ -32,7 +31,6 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
 
-	imagick.Initialize()
 	vips.Startup(nil)
 
 	// v4 endpoint

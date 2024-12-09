@@ -43,7 +43,6 @@ jobs:
               uses: aws-actions/configure-aws-credentials@v4
               with:
                 role-to-assume: arn:aws:iam::248890141166:role/github-actions-read-ecr
-                role-session-name: github-actions
                 aws-region: us-east-1
 
             - name: Set up QEMU

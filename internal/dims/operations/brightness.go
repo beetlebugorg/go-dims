@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package operations
 
 import (
-	"gopkg.in/gographics/imagick.v3/imagick"
+	"context"
 	"log/slog"
 )
 
-func SharpenCommand(request *RequestV5, args string) error {
-	slog.Debug("SharpenCommand", "args", args)
+func BrightnessCommand(ctx context.Context, args string) error {
+	slog.Debug("BrightnessCommand", "args", args)
 
-	var geometry imagick.GeometryInfo
-	flags := imagick.ParseGeometry(args, &geometry)
-	if (flags & imagick.SIGMAVALUE) == 0 {
-		geometry.Sigma = 1.0
-	}
+	//image := request.vipsImage
 
-	slog.Info("SharpenCommand", "geometry", geometry)
+	//var geometry imagick.GeometryInfo
+	//imagick.ParseGeometry(args, &geometry)
 
-	return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
+	//return image.Linear([]float64{geometry.Rho}, []float64{geometry.Sigma})
+	return nil
 }

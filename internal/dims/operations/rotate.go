@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package operations
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
-	"gopkg.in/gographics/imagick.v3/imagick"
+	"context"
+	"log/slog"
+	"strconv"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type MagickOperation func(mw *imagick.MagickWand, args string) error
+func RotateCommand(ctx context.Context, args string) error {
+	slog.Debug("RotateCommand", "args", args)
 
-type MagickCommand struct {
-	dims.Command
-	Operation MagickOperation
+	image := ctx.Value("image").(*vips.ImageRef)
+
+	degrees, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
+	}
+
+	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0)
 }

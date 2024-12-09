@@ -12,10 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package operations
 
-import "github.com/davidbyttow/govips/v2/vips"
+import (
+	"context"
+	"log/slog"
+)
 
-func GrayscaleCommand(request *RequestV5, args string) error {
-	return request.vipsImage.ToColorSpace(vips.InterpretationBW)
+func SharpenCommand(ctx context.Context, args string) error {
+	slog.Debug("SharpenCommand", "args", args)
+
+	//var geometry imagick.GeometryInfo
+	//flags := imagick.ParseGeometry(args, &geometry)
+	//if (flags & imagick.SIGMAVALUE) == 0 {
+	//	geometry.Sigma = 1.0
+	//}
+
+	//slog.Info("SharpenCommand", "geometry", geometry)
+
+	//return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
+	return nil
 }

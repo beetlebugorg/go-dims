@@ -12,19 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package operations
 
 import (
+	"context"
+	"strconv"
+
 	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
 )
 
-func AutolevelCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("AutolevelCommand", "args", args)
+func QualityCommand(ctx context.Context, args string) error {
+	slog.Debug("QualityCommand", "args", args)
 
-	if args == "true" {
-		return mw.AutoLevelImage()
+	quality, err := strconv.Atoi(args)
+	if err != nil {
+		return err
 	}
+
+	_ = quality
 
 	return nil
 }

@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package operations
 
 import (
-	"github.com/davidbyttow/govips/v2/vips"
+	"context"
 	"log/slog"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func FlipFlopCommand(request *RequestV5, args string) error {
-	image := request.vipsImage
+func FlipFlopCommand(ctx context.Context, args string) error {
 	slog.Debug("FlipFlopCommand", "args", args)
+
+	image := ctx.Value("image").(*vips.ImageRef)
 
 	if args == "horizontal" {
 		return image.Flip(vips.DirectionHorizontal)

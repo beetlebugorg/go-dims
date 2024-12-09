@@ -1,4 +1,4 @@
-FROM ghcr.io/beetlebugorg/go-dims:builder as go-dims
+FROM 248890141166.dkr.ecr.us-east-1.amazonaws.com/beetlebugorg/go-dims:builder AS go-dims
 
 ENV USER=dims
 ENV UID=10001
@@ -13,17 +13,6 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     "${USER}"
-
-RUN apk add --no-cache \
-        jpeg-dev libjpeg-turbo-static \
-        lcms2-dev lcms2-static \
-        giflib-dev giflib-static \
-        bzip2-static \
-        expat-dev expat-static \
-        zlib-dev zlib-static \
-        make alpine-sdk upx \
-        ca-certificates tzdata gcompat freetype fontconfig && \
-        update-ca-certificates
 
 RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
     cd go-dims && \

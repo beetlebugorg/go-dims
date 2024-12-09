@@ -158,3 +158,17 @@ ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libvips/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/glib-2.0/lib/pkgconfig
+
+RUN apk add --no-cache \
+        jpeg-dev libjpeg-turbo-static \
+        lcms2-dev lcms2-static \
+        giflib-dev giflib-static \
+        bzip2-static \
+        expat-dev expat-static \
+        zlib-dev zlib-static \
+        make alpine-sdk upx openjdk21-jre \
+        ca-certificates tzdata gcompat freetype fontconfig && \
+        update-ca-certificates wget && \
+        wget https://www.antlr.org/download/antlr-4.13.2-complete.jar && \
+        echo "java -jar /build/antlr-4.13.2-complete.jar" > /usr/local/bin/antlr && \
+        chmod +x /usr/local/bin/antlr

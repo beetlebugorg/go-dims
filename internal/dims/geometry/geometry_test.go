@@ -43,7 +43,7 @@ func TestGeometry(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.geometry, func(t *testing.T) {
-			value := parseGeometry(test.geometry)
+			value := ParseGeometry(test.geometry)
 
 			if value != test.expected && test.success {
 				t.Errorf("expected %v, got %v => '%s'", test.expected, value, test.geometry)
@@ -70,7 +70,7 @@ func FuzzParseGeometry(f *testing.F) {
 	f.Fuzz(func(t *testing.T, geometry string) {
 		fmt.Println(geometry)
 		// Call the function with the fuzzed input
-		_ = parseGeometry(geometry)
+		_ = ParseGeometry(geometry)
 	})
 }
 
@@ -99,7 +99,7 @@ func BenchmarkParseGeometry(b *testing.B) {
 	for _, geometry := range geometries {
 		b.Run(geometry, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				parseGeometry(geometry)
+				ParseGeometry(geometry)
 			}
 		})
 	}

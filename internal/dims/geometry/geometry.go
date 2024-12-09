@@ -1,10 +1,12 @@
 package geometry
 
 import (
+	"log/slog"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry/parser"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type Flags struct {
@@ -18,10 +20,10 @@ type Flags struct {
 }
 
 type Geometry struct {
-	Width  int64
-	Height int64
-	X      int64
-	Y      int64
+	Width  int
+	Height int
+	X      int
+	Y      int
 	Flags  Flags
 }
 
@@ -48,12 +50,10 @@ type Geometry struct {
 // "100x200+50+50%" - width 100, height 200, x offset 50, y offset 50%
 // "+50+50" - x offset 50, y offset 50, width and height are 100% of the rest of the image
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
-func parseGeometry(geometry string) Geometry {
+func ParseGeometry(geometry string) Geometry {
 	is := antlr.NewInputStream(geometry)
 
-	var errorListener = errorListener{
-		Errors: make([]syntaxError, 32),
-	}
+	var errorListener = errorListener{}
 
 	lexer := parser.NewGeometryLexer(is)
 	lexer.RemoveErrorListeners()
@@ -77,6 +77,85 @@ func parseGeometry(geometry string) Geometry {
 	return *g.Geometry
 }
 
+// ApplyMeta returns a geometry that is modified as determined
+// by the meta characters:  %, !, <, >, in relation to the provided image.
+//
+// Final image dimensions are adjusted so as to preserve the aspect ratio as
+// much as possible, while generating a integer (pixel) size, and fitting the
+// image within the specified geometry width and height.
+//
+// Flags are interpreted...
+//
+//	%   geometry size is given percentage of original width and height given
+//	!   do not try to preserve aspect ratio
+//	<   only enlarge images smaller that geometry
+//	>   only shrink images larger than geometry
+//
+// A description of each parameter follows:
+//
+//	o geometry:  The geometry string (e.g. "100x100+10+10").
+//	o x,y:  The x and y offset, set according to the geometry specification.
+//	o width,height:  The width and height of original image, modified by
+//	  the given geometry specification.
+func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
+	// Copy the original geometry
+	var meta = *g
+
+	// Get original image dimensions
+	origWidth := image.Width()
+	origHeight := image.Height()
+
+	// Apply width and height percentage if specified
+	if g.Flags.WidthPercent {
+		meta.Width = int(float64(origWidth) * float64(g.Width) / 100.0)
+	}
+	if g.Flags.HeightPercent {
+		meta.Height = int(float64(origHeight) * float64(g.Height) / 100.0)
+	}
+
+	// Apply aspect ratio if not forced
+	if !g.Flags.Force {
+		if meta.Width == 0 && meta.Height != 0 {
+			meta.Width = int(float64(meta.Height) * float64(origWidth) / float64(origHeight))
+		} else if meta.Height == 0 && meta.Width != 0 {
+			meta.Height = int(float64(meta.Width) * float64(origHeight) / float64(origWidth))
+		} else if meta.Width != 0 && meta.Height != 0 {
+			ratio := float64(origWidth) / float64(origHeight)
+			if float64(meta.Width)/float64(meta.Height) > ratio {
+				meta.Width = int(float64(meta.Height) * ratio)
+			} else {
+				meta.Height = int(float64(meta.Width) / ratio)
+			}
+		}
+	}
+
+	// Apply enlarge smaller images flag
+	if g.Flags.OnlyGrow && (origWidth < meta.Width || origHeight < meta.Height) {
+		if origWidth < meta.Width {
+			meta.Width = origWidth
+		}
+		if origHeight < meta.Height {
+			meta.Height = origHeight
+		}
+	}
+
+	// Apply shrink larger images flag
+	if g.Flags.OnlyShrink && (origWidth > meta.Width || origHeight > meta.Height) {
+		if origWidth > meta.Width {
+			meta.Width = origWidth
+		}
+		if origHeight > meta.Height {
+			meta.Height = origHeight
+		}
+	}
+
+	// Apply x and y offsets
+	meta.X = g.X
+	meta.Y = g.Y
+
+	return meta
+}
+
 //-- ErrorListener
 
 type syntaxError struct {
@@ -92,6 +171,8 @@ type errorListener struct {
 
 func (g *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	g.Errors = append(g.Errors, syntaxError{line, column, msg})
+
+	slog.Error("SyntaxError", "line", line, "column", column, "msg", msg)
 }
 
 //-- GeometryListener
@@ -106,7 +187,7 @@ func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
 		return
 	}
 
-	g.Width, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
+	g.Width, _ = strconv.Atoi(c.NUMBER().GetText())
 
 	if c.PERCENT() != nil {
 		g.Flags.WidthPercent = true
@@ -118,7 +199,7 @@ func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
 		return
 	}
 
-	g.Height, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
+	g.Height, _ = strconv.Atoi(c.NUMBER().GetText())
 
 	if c.PERCENT() != nil {
 		g.Flags.HeightPercent = true
@@ -130,7 +211,7 @@ func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
 		return
 	}
 
-	g.X, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
+	g.X, _ = strconv.Atoi(c.NUMBER().GetText())
 
 	if c.PERCENT() != nil {
 		g.Flags.OffsetXPercent = true
@@ -142,7 +223,7 @@ func (g *geometryListener) ExitOffsety(c *parser.OffsetyContext) {
 		return
 	}
 
-	g.Y, _ = strconv.ParseInt(c.NUMBER().GetText(), 10, 64)
+	g.Y, _ = strconv.Atoi(c.NUMBER().GetText())
 
 	if c.PERCENT() != nil {
 		g.Flags.OffsetYPercent = true

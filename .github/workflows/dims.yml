@@ -22,15 +22,12 @@ env:
   RELEASE_TAG: ${{ github.ref_name }}
   TRACKING_TAG: ${{ github.ref == 'refs/heads/main' && 'edge' || 'latest' }}
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
     docker:
         permissions:
           contents: read
           packages: write
+          id-token: write
 
         runs-on: "ubuntu-latest"
         steps:

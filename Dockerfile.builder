@@ -170,5 +170,5 @@ RUN apk add --no-cache \
         ca-certificates tzdata gcompat freetype fontconfig && \
         update-ca-certificates wget && \
         wget https://www.antlr.org/download/antlr-4.13.2-complete.jar && \
-        echo "java -jar /build/antlr-4.13.2-complete.jar $@" > /usr/local/bin/antlr && \
+        echo 'java -jar /build/antlr-4.13.2-complete.jar $@' > /usr/local/bin/antlr && \
         chmod +x /usr/local/bin/antlr

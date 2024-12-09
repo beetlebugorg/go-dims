@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package dims
 
 import (
-	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
-	"strconv"
+	"log/slog"
 )
 
-func RotateCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("RotateCommand", "args", args)
+func BrightnessCommand(request *Request, args string) error {
+	slog.Debug("BrightnessCommand", "args", args)
 
-	degrees, err := strconv.ParseFloat(args, 64)
-	if err != nil {
-		return err
-	}
+	//image := request.vipsImage
 
-	return mw.RotateImage(imagick.NewPixelWand(), degrees)
+	//var geometry imagick.GeometryInfo
+	//imagick.ParseGeometry(args, &geometry)
+
+	//return image.Linear([]float64{geometry.Rho}, []float64{geometry.Sigma})
+	return nil
 }

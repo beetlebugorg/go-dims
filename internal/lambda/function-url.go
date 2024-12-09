@@ -17,30 +17,30 @@ package lambda
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/beetlebugorg/go-dims/internal/dims"
-	v4 "github.com/beetlebugorg/go-dims/internal/v4"
-	v5 "github.com/beetlebugorg/go-dims/internal/v5"
 	"log/slog"
 	"net/url"
 	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/beetlebugorg/go-dims/internal/dims"
+	v5 "github.com/beetlebugorg/go-dims/internal/v5"
 )
 
-var CommandsLambda = map[string]v4.MagickOperation{
-	"crop":       v4.CropCommand,
-	"resize":     v4.ResizeCommand,
-	"strip":      v4.StripMetadataCommand,
-	"format":     v4.FormatCommand,
-	"quality":    v4.QualityCommand,
-	"sharpen":    v4.SharpenCommand,
-	"brightness": v4.BrightnessCommand,
-	"flipflop":   v4.FlipFlopCommand,
-	"sepia":      v4.SepiaCommand,
-	"grayscale":  v4.GrayscaleCommand,
-	"autolevel":  v4.AutolevelCommand,
-	"invert":     v4.InvertCommand,
-	"rotate":     v4.RotateCommand,
-	"thumbnail":  v4.ThumbnailCommand,
+var CommandsLambda = map[string]dims.VipsOperation{
+	"crop":       dims.CropCommand,
+	"resize":     dims.ResizeCommand,
+	"strip":      dims.StripMetadataCommand,
+	"format":     dims.FormatCommand,
+	"quality":    dims.QualityCommand,
+	"sharpen":    dims.SharpenCommand,
+	"brightness": dims.BrightnessCommand,
+	"flipflop":   dims.FlipFlopCommand,
+	"sepia":      dims.SepiaCommand,
+	"grayscale":  dims.GrayscaleCommand,
+	"autolevel":  dims.AutolevelCommand,
+	"invert":     dims.InvertCommand,
+	"rotate":     dims.RotateCommand,
+	"thumbnail":  dims.ThumbnailCommand,
 }
 
 type RequestLambdaFunctionURL struct {

@@ -12,19 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package dims
 
-import (
-	"github.com/sagikazarmark/slog-shim"
-	"gopkg.in/gographics/imagick.v3/imagick"
-)
-
-func InvertCommand(mw *imagick.MagickWand, args string) error {
-	slog.Debug("InvertCommand", "args", args)
-
-	if args == "true" {
-		return mw.NegateImage(false)
-	}
-
-	return nil
+func InvertCommand(request *Request, args string) error {
+	return request.vipsImage.Invert()
 }

@@ -18,3 +18,14 @@ type Command struct {
 	Name string
 	Args string
 }
+
+type VipsOperation func(request *Request, args string) error
+
+type VipsCommand struct {
+	Command
+	Operation VipsOperation
+}
+
+func PassThroughCommand(request *Request, args string) error {
+	return nil
+}

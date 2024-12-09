@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
+	"log/slog"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type VipsOperation func(request *RequestV5, args string) error
+func FlipFlopCommand(request *Request, args string) error {
+	image := request.vipsImage
+	slog.Debug("FlipFlopCommand", "args", args)
 
-type VipsCommand struct {
-	dims.Command
-	Operation VipsOperation
-}
+	if args == "horizontal" {
+		return image.Flip(vips.DirectionHorizontal)
+	} else if args == "vertical" {
+		return image.Flip(vips.DirectionVertical)
+	}
 
-func PassThroughCommand(request *RequestV5, args string) error {
 	return nil
 }

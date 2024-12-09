@@ -12,10 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
-import "github.com/davidbyttow/govips/v2/vips"
+import (
+	"strconv"
 
-func GrayscaleCommand(request *RequestV5, args string) error {
-	return request.vipsImage.ToColorSpace(vips.InterpretationBW)
+	"github.com/sagikazarmark/slog-shim"
+)
+
+func QualityCommand(request *Request, args string) error {
+	slog.Debug("QualityCommand", "args", args)
+
+	quality, err := strconv.Atoi(args)
+	if err != nil {
+		return err
+	}
+
+	request.exportJpegParams.Quality = quality
+
+	return nil
 }

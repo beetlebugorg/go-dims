@@ -12,22 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
-import (
-	"github.com/sagikazarmark/slog-shim"
-	"strconv"
-)
-
-func QualityCommand(request *RequestV5, args string) error {
-	slog.Debug("QualityCommand", "args", args)
-
-	quality, err := strconv.Atoi(args)
-	if err != nil {
-		return err
-	}
-
-	request.exportJpegParams.Quality = quality
-
+func SepiaCommand(request *Request, args string) error {
 	return nil
 }

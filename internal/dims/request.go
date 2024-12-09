@@ -15,6 +15,7 @@
 package dims
 
 import (
+	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"errors"
@@ -26,9 +27,13 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"runtime/trace"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type Request struct {
@@ -41,6 +46,34 @@ type Request struct {
 	RawCommands            string // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Error                  bool   // Whether the error image is being served.
 	SourceImage            Image  // The source image.
+
+	format    *string
+	strip     bool
+	vipsImage *vips.ImageRef
+
+	// Format information
+	exportJpegParams *vips.JpegExportParams
+	exportPngParams  *vips.PngExportParams
+	exportWebpParams *vips.WebpExportParams
+	exportGifParams  *vips.GifExportParams
+}
+
+var VipsCommands = map[string]VipsOperation{
+	"crop":             CropCommand,
+	"resize":           ResizeCommand,
+	"strip":            StripMetadataCommand,
+	"format":           FormatCommand,
+	"quality":          QualityCommand,
+	"sharpen":          SharpenCommand,
+	"brightness":       BrightnessCommand,
+	"flipflop":         FlipFlopCommand,
+	"sepia":            SepiaCommand,
+	"grayscale":        GrayscaleCommand,
+	"autolevel":        AutolevelCommand,
+	"invert":           InvertCommand,
+	"rotate":           RotateCommand,
+	"thumbnail":        ThumbnailCommand,
+	"legacy_thumbnail": LegacyThumbnailCommand,
 }
 
 // FetchImage downloads the image from the given URL.
@@ -94,6 +127,96 @@ func _fetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	slog.Info("downloadImage", "status", sourceImage.Status, "edgeControl", sourceImage.EdgeControl, "cacheControl", sourceImage.CacheControl, "lastModified", sourceImage.LastModified, "etag", sourceImage.Etag, "format", sourceImage.Format)
 
 	return &sourceImage, nil
+}
+
+// ProcessImage will execute the commands on the image.
+func (r *Request) ProcessImage() (string, []byte, error) {
+	slog.Debug("executeVips")
+
+	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
+	if err != nil {
+		return "", nil, err
+	}
+	importParams := vips.NewImportParams()
+	importParams.AutoRotate.Set(true)
+
+	requestedSize, err := r.requestedImageSize()
+	if err == nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
+		xs := image.Width() / int(requestedSize.Width)
+		ys := image.Height() / int(requestedSize.Height)
+
+		if (xs > 2) || (ys > 2) {
+			importParams.JpegShrinkFactor.Set(4)
+		}
+	}
+
+	image, err = vips.LoadImageFromBuffer(r.SourceImage.Bytes, importParams)
+	if err != nil {
+		return "", nil, err
+	}
+
+	r.vipsImage = image
+
+	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes), "strip", r.strip, "format", r.format)
+
+	// Execute the commands.
+	stripMetadata := r.Config.StripMetadata
+
+	ctx, task := trace.NewTask(context.Background(), "v5.ProcessImage")
+	defer task.End()
+
+	for _, command := range r.Commands() {
+		if command.Name == "strip" && command.Args == "true" {
+			stripMetadata = false
+		}
+
+		region := trace.StartRegion(ctx, command.Name)
+		if err := r.ProcessCommand(command); err != nil {
+			return "", nil, err
+		}
+		region.End()
+	}
+
+	if stripMetadata {
+		// set strip option in export options
+	}
+
+	if *r.format == "jpg" {
+		imageBytes, _, err := image.ExportJpeg(r.exportJpegParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeJPEG], imageBytes, nil
+	} else if *r.format == "png" {
+		imageBytes, _, err := image.ExportPng(r.exportPngParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypePNG], imageBytes, nil
+	} else if *r.format == "webp" {
+		imageBytes, _, err := image.ExportWebp(r.exportWebpParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeWEBP], imageBytes, nil
+	} else if *r.format == "gif" {
+		imageBytes, _, err := image.ExportGIF(r.exportGifParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeGIF], imageBytes, nil
+	}
+
+	imageBytes, _, err := image.ExportNative()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return vips.ImageTypes[image.Format()], imageBytes, nil
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {
@@ -240,4 +363,32 @@ func sourceMaxAge(header string) (int, error) {
 	}
 
 	return 0, errors.New("max-age not found in header")
+}
+
+func (r *Request) ProcessCommand(command Command) error {
+	if operation, ok := VipsCommands[command.Name]; ok {
+		return operation(r, command.Args)
+	}
+
+	return fmt.Errorf("command not found: %s", command.Name)
+}
+
+// Parse through the requested commands and return requested image size for thumbnail and resize
+// operations.
+//
+// This is used while reading an image to improve performance when generating thumbnails from very
+// large images.
+func (r *Request) requestedImageSize() (geometry.Geometry, error) {
+	for _, command := range r.Commands() {
+		if command.Name == "thumbnail" || command.Name == "resize" {
+			var rect = geometry.ParseGeometry(command.Args)
+
+			if rect.Width > 0 && rect.Height > 0 {
+				return rect, nil
+			}
+
+		}
+	}
+
+	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
 }

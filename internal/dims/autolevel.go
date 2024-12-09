@@ -12,16 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v4
+package dims
 
-import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
-	"gopkg.in/gographics/imagick.v3/imagick"
-)
-
-type MagickOperation func(mw *imagick.MagickWand, args string) error
-
-type MagickCommand struct {
-	dims.Command
-	Operation MagickOperation
+func AutolevelCommand(request *Request, args string) error {
+	return nil
 }

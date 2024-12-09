@@ -35,6 +35,13 @@ jobs:
               with:
                 submodules: recursive
 
+            - name: configure aws credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: github-actions-read-ecr
+                role-session-name: github-actions
+                aws-region: us-east-1
+
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
 

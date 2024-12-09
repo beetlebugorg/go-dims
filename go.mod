@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/alecthomas/kong v0.8.1
+	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/aws/aws-lambda-go v1.46.0
 	github.com/aws/aws-sdk-go-v2 v1.25.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.7
@@ -13,9 +14,6 @@ require (
 )
 
 require (
-	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
-	github.com/antlr4-go/antlr v0.0.0-20230518091524-98b52378c522 // indirect
-	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.3 // indirect

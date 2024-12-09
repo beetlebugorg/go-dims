@@ -1,14 +1,17 @@
-package dims
+package operations
 
 import (
+	"context"
 	"strings"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func CropCommand(request *Request, args string) error {
+func CropCommand(ctx context.Context, args string) error {
 	sanitizedArgs := strings.ReplaceAll(args, " ", "+")
-	image := request.vipsImage
+
+	image := ctx.Value("image").(*vips.ImageRef)
 
 	// Parse Geometry
 	rect := geometry.ParseGeometry(sanitizedArgs)

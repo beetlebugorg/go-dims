@@ -12,22 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
 import (
+	"context"
 	"log/slog"
-	"strconv"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func RotateCommand(request *Request, args string) error {
-	slog.Debug("RotateCommand", "args", args)
+func FlipFlopCommand(ctx context.Context, args string) error {
+	slog.Debug("FlipFlopCommand", "args", args)
 
-	degrees, err := strconv.ParseFloat(args, 64)
-	if err != nil {
-		return err
+	image := ctx.Value("image").(*vips.ImageRef)
+
+	if args == "horizontal" {
+		return image.Flip(vips.DirectionHorizontal)
+	} else if args == "vertical" {
+		return image.Flip(vips.DirectionVertical)
 	}
 
-	return request.vipsImage.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0)
+	return nil
 }

@@ -14,13 +14,18 @@
 
 package dims
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/operations"
+)
 
 type Kernel interface {
 	ValidateSignature() bool
 	FetchImage() error
 	ProcessImage() (string, []byte, error)
-	ProcessCommand(command Command) error
+	ProcessCommand(ctx context.Context, command operations.Command) error
 	SendHeaders(w http.ResponseWriter)
 	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
 	SendError(w http.ResponseWriter, status int, message string)
@@ -35,5 +40,5 @@ type ImageProcessor interface {
 }
 
 type Commands interface {
-	Commands(cmds string) []Command
+	Commands(cmds string) []operations.Command
 }

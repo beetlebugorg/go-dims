@@ -73,11 +73,6 @@ func (r *RequestV4) ValidateSignature() bool {
 	return false
 }
 
-// ProcessImage will execute the commands on the image.
-func (r *RequestV4) ProcessImage() (string, []byte, error) {
-	return "", nil, nil
-}
-
 // Sign returns a signed string using the MD5 algorithm.
 func (r *RequestV4) Sign() string {
 	sanitizedCommands := strings.ReplaceAll(r.Request.RawCommands, " ", "+")

@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-type Command struct {
-	Name string
-	Args string
-}
+import (
+	"context"
+	"log/slog"
+)
 
-type VipsOperation func(request *Request, args string) error
+func SharpenCommand(ctx context.Context, args string) error {
+	slog.Debug("SharpenCommand", "args", args)
 
-type VipsCommand struct {
-	Command
-	Operation VipsOperation
-}
+	//var geometry imagick.GeometryInfo
+	//flags := imagick.ParseGeometry(args, &geometry)
+	//if (flags & imagick.SIGMAVALUE) == 0 {
+	//	geometry.Sigma = 1.0
+	//}
 
-func PassThroughCommand(request *Request, args string) error {
+	//slog.Info("SharpenCommand", "geometry", geometry)
+
+	//return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
 	return nil
 }

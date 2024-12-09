@@ -12,8 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-func SepiaCommand(request *Request, args string) error {
+import (
+	"context"
+)
+
+type Command struct {
+	Name string
+	Args string
+}
+
+type VipsOperation func(ctx context.Context, args string) error
+
+type VipsCommand struct {
+	Command
+	Operation VipsOperation
+}
+
+func PassThroughCommand(ctx context.Context, args string) error {
 	return nil
 }

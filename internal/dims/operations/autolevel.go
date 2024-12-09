@@ -12,23 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-import (
-	"log/slog"
+import "context"
 
-	"github.com/davidbyttow/govips/v2/vips"
-)
-
-func FlipFlopCommand(request *Request, args string) error {
-	image := request.vipsImage
-	slog.Debug("FlipFlopCommand", "args", args)
-
-	if args == "horizontal" {
-		return image.Flip(vips.DirectionHorizontal)
-	} else if args == "vertical" {
-		return image.Flip(vips.DirectionVertical)
-	}
-
+func AutolevelCommand(ctx context.Context, args string) error {
 	return nil
 }

@@ -12,23 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
 import (
-	"strconv"
+	"context"
 
+	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/sagikazarmark/slog-shim"
 )
 
-func QualityCommand(request *Request, args string) error {
-	slog.Debug("QualityCommand", "args", args)
+func ResizeCommand(ctx context.Context, args string) error {
+	slog.Debug("ResizeCommand", "args", args)
 
-	quality, err := strconv.Atoi(args)
-	if err != nil {
-		return err
-	}
+	image := ctx.Value("image").(*vips.ImageRef)
 
-	request.exportJpegParams.Quality = quality
+	// Parse Geometry
+	geo := geometry.ParseGeometry(args)
+	rect := geo.ApplyMeta(image)
 
-	return nil
+	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)
+
+	xr := float64(rect.Width) / float64(image.Width())
+	yr := float64(rect.Height) / float64(image.Height())
+
+	return image.ResizeWithVScale(xr, yr, vips.KernelLanczos3)
 }

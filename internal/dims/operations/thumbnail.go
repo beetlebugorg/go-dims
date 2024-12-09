@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"strings"
@@ -23,10 +24,10 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func ThumbnailCommand(request *Request, args string) error {
+func ThumbnailCommand(ctx context.Context, args string) error {
 	slog.Debug("ThumbnailCommand", "args", args)
 
-	image := request.vipsImage
+	image := ctx.Value("image").(*vips.ImageRef)
 
 	// Remove any symbols and add a trailing '^' to the geometry. This ensures
 	// that the image will be at least as large as requested.
@@ -55,6 +56,6 @@ func ThumbnailCommand(request *Request, args string) error {
 	return nil
 }
 
-func LegacyThumbnailCommand(request *Request, args string) error {
+func LegacyThumbnailCommand(ctx context.Context, args string) error {
 	return nil
 }

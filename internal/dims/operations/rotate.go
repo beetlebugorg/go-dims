@@ -12,8 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-func AutolevelCommand(request *Request, args string) error {
-	return nil
+import (
+	"context"
+	"log/slog"
+	"strconv"
+
+	"github.com/davidbyttow/govips/v2/vips"
+)
+
+func RotateCommand(ctx context.Context, args string) error {
+	slog.Debug("RotateCommand", "args", args)
+
+	image := ctx.Value("image").(*vips.ImageRef)
+
+	degrees, err := strconv.ParseFloat(args, 64)
+	if err != nil {
+		return err
+	}
+
+	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0)
 }

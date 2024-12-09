@@ -14,8 +14,10 @@
 
 package dims
 
+import "github.com/beetlebugorg/go-dims/internal/dims/operations"
+
 type UrlSigner interface {
 	SignUrl() (string, error)
 	ImageUrl() string
-	Commands() []Command
+	Commands() []operations.Command
 }

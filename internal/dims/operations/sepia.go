@@ -12,23 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-import (
-	"log/slog"
-)
+import "context"
 
-func SharpenCommand(request *Request, args string) error {
-	slog.Debug("SharpenCommand", "args", args)
-
-	//var geometry imagick.GeometryInfo
-	//flags := imagick.ParseGeometry(args, &geometry)
-	//if (flags & imagick.SIGMAVALUE) == 0 {
-	//	geometry.Sigma = 1.0
-	//}
-
-	//slog.Info("SharpenCommand", "geometry", geometry)
-
-	//return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
+func SepiaCommand(ctx context.Context, args string) error {
 	return nil
 }

@@ -12,10 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
-import "github.com/davidbyttow/govips/v2/vips"
+import (
+	"context"
+	"log/slog"
+)
 
-func GrayscaleCommand(request *Request, args string) error {
-	return request.vipsImage.ToColorSpace(vips.InterpretationBW)
+func BrightnessCommand(ctx context.Context, args string) error {
+	slog.Debug("BrightnessCommand", "args", args)
+
+	//image := request.vipsImage
+
+	//var geometry imagick.GeometryInfo
+	//imagick.ParseGeometry(args, &geometry)
+
+	//return image.Linear([]float64{geometry.Rho}, []float64{geometry.Sigma})
+	return nil
 }

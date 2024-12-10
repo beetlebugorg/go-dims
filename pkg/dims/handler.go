@@ -31,32 +31,8 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.Startup(nil)
 
-	// v4 endpoint
-	v4Arguments := "{clientId}/{signature}/{timestamp}/{commands...}"
-	v4Handler := func(w http.ResponseWriter, r *http.Request) {
-		config := dims.Config{
-			EnvironmentConfig: environmentConfig,
-			DevelopmentMode:   dev,
-			DebugMode:         debug,
-			EtagAlgorithm:     "md5",
-		}
-
-		if debug {
-			fmt.Printf("config: %+v\n", config)
-		}
-
-		request, err := dims.ParseAndValidV4Request(r, config)
-		if err != nil {
-			// send error
-			return
-		}
-
-		dims.Handler(*request, config, w)
-	}
-	mux.HandleFunc(fmt.Sprintf("/v4/dims/%s", v4Arguments), v4Handler)
-
 	// v5 endpoint
-	mux.HandleFunc("/v5/dims/{commands...}",
+	mux.HandleFunc("/v5/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
 			config := dims.Config{
 				EnvironmentConfig: environmentConfig,
@@ -78,7 +54,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 			dims.Handler(*request, config, w)
 		})
 
-	mux.HandleFunc("/dims-status",
+	mux.HandleFunc("/status",
 		func(w http.ResponseWriter, r *http.Request) {
 			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
 		})

@@ -5,9 +5,9 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./build/dims serve --debug --dev"
-  cmd = "go build -o ./build/dims -ldflags '-compressdwarf=false -linkmode internal'"
+  cmd = "make"
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "internal/dims/geometry/parser"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false

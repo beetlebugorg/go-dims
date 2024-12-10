@@ -1,12 +1,13 @@
 AWS_ACCOUNT_ID?=248890141166
+VERSION?=v4.0.0
 
 all:
 	go generate ./...
-	go build -o ./build/dims go-dims.go
+	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.Version=${VERSION}'" go-dims.go
 
 static:
 	go generate ./...
-	go build -o ./build/dims -ldflags "-linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif'" go-dims.go
+	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif'" go-dims.go
 
 publish-lambda: docker
 	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com

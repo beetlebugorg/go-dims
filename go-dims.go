@@ -15,13 +15,12 @@
 package main
 
 import (
-	"fmt"
-	"github.com/alecthomas/kong"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/beetlebugorg/go-dims/pkg/dims"
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/alecthomas/kong"
+	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 
 // - dims serve
@@ -51,59 +50,8 @@ func (s *ServeCmd) Run() error {
 	return nil
 }
 
-//-- dims sign
-
-type SignCmd struct {
-	Dev      bool   `help:"Enable development mode." default:"false"`
-	ImageURL string `arg:"" name:"imageUrl" help:"Image URL to sign. For v4 urls place any value in the signature position in the URL."`
-}
-
-func (s *SignCmd) Run() error {
-	signedUrl, err := dims.SignUrl(s.ImageURL, s.Dev)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("\n%s\n", signedUrl)
-
-	return nil
-}
-
-//-- dims lambda function-url
-
-type FunctionUrlCmd struct {
-	Debug bool `help:"Enable debug mode." default:"false"`
-	Dev   bool `help:"Enable development mode." default:"false"`
-}
-
-func (f *FunctionUrlCmd) Run() error {
-	lambda.Start(dims.NewLambdaFunctionURLHandler(f.Dev, f.Debug))
-
-	return nil
-}
-
-//-- dims lambda s3-object
-
-type S3ObjectCmd struct {
-	Debug bool `help:"Enable debug mode." default:"false"`
-	Dev   bool `help:"Enable development mode." default:"false"`
-}
-
-func (s *S3ObjectCmd) Run() error {
-	lambda.Start(dims.NewLambdaS3ObjectHandler(s.Dev, s.Debug))
-
-	return nil
-}
-
-type LambdaCmd struct {
-	FunctionUrl FunctionUrlCmd `cmd:"" help:"Implementation of AWS Lamdba Function URL."`
-	S3Object    S3ObjectCmd    `cmd:"" help:"Implementation of AWS S3 Object Lambda." name:"s3-object"`
-}
-
 var CLI struct {
-	Serve  ServeCmd  `cmd:"" help:"Runs the DIMS service."`
-	Sign   SignCmd   `cmd:"" help:"Signs the given image URL."`
-	Lambda LambdaCmd `cmd:"" help:"AWS Lambda functions."`
+	Serve ServeCmd `cmd:"" help:"Runs the DIMS service."`
 }
 
 func main() {

@@ -41,8 +41,9 @@ type ImageProcessor interface {
 	ProcessImage() (string, []byte, error)
 }
 
-type Commands interface {
-	Commands(cmds string) []operations.Command
+type Signer interface {
+	ValidateSignature(request Request) bool
+	Sign(request Request) string
 }
 
 type Request struct {
@@ -54,6 +55,7 @@ type Request struct {
 	SendContentDisposition bool   // The content disposition of the request.
 	RawCommands            string // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Error                  bool   // Whether the error image is being served.
+	Timestamp              int64  // The timestamp of the request
 	SourceImage            Image  // The source image.
 }
 

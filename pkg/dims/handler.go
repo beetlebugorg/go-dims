@@ -19,8 +19,6 @@ import (
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	v4 "github.com/beetlebugorg/go-dims/internal/v4"
-	v5 "github.com/beetlebugorg/go-dims/internal/v5"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -47,9 +45,13 @@ func NewHandler(debug bool, dev bool) http.Handler {
 			fmt.Printf("config: %+v\n", config)
 		}
 
-		request := v4.NewRequest(r, config)
+		request, err := dims.ParseAndValidV4Request(r, config)
+		if err != nil {
+			// send error
+			return
+		}
 
-		dims.Handler(request, config, w)
+		dims.Handler(*request, config, w)
 	}
 	mux.HandleFunc(fmt.Sprintf("/v4/dims/%s", v4Arguments), v4Handler)
 
@@ -67,9 +69,13 @@ func NewHandler(debug bool, dev bool) http.Handler {
 				fmt.Printf("config: %+v\n", config)
 			}
 
-			request := v5.NewRequest(r, config)
+			request, err := dims.ParseAndValidV5Request(r, config)
+			if err != nil {
+				// send error
+				return
+			}
 
-			dims.Handler(request, config, w)
+			dims.Handler(*request, config, w)
 		})
 
 	mux.HandleFunc("/dims-status",

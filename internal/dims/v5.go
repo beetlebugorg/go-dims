@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v5
+package dims
 
 import (
 	"crypto/hmac"
@@ -22,39 +22,38 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"github.com/beetlebugorg/go-dims/internal/dims"
 )
 
-type RequestV5 struct {
-	dims.Request
-}
-
-func NewRequest(r *http.Request, config dims.Config) *RequestV5 {
+func ParseAndValidV5Request(r *http.Request, config Config) (*Request, error) {
 	h := sha256.New()
 	h.Write([]byte(r.PathValue("clientId")))
 	h.Write([]byte(r.PathValue("commands")))
 	h.Write([]byte(r.URL.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	return &RequestV5{
-		Request: dims.Request{
-			Id:          requestHash,
-			Config:      config,
-			ClientId:    r.URL.Query().Get("clientId"),
-			ImageUrl:    r.URL.Query().Get("url"),
-			RawCommands: r.PathValue("commands"),
-			Signature:   r.URL.Query().Get("sig"),
-		},
+	request := Request{
+		Id:          requestHash,
+		Config:      config,
+		ClientId:    r.URL.Query().Get("clientId"),
+		ImageUrl:    r.URL.Query().Get("url"),
+		RawCommands: r.PathValue("commands"),
+		Signature:   r.URL.Query().Get("sig"),
 	}
+
+	// Validate signature
+	if !config.DevelopmentMode && !ValidateSignature(request) {
+		return nil, fmt.Errorf("signature mismatch")
+	}
+
+	return &request, nil
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
-func (r *RequestV5) ValidateSignature() bool {
-	slog.Debug("verifySignature", "url", r.ImageUrl())
+func ValidateSignature(request Request) bool {
+	slog.Debug("verifySignature", "url", request.ImageUrl)
 
-	expectedSignature := r.Sign()
-	gotSignature, err := hex.DecodeString(r.Signature)
+	expectedSignature := Sign_HmacSha256_128(request)
+	gotSignature, err := hex.DecodeString(request.Signature)
 	if err != nil {
 		slog.Error("verifySignature failed.", "error", err)
 		return false
@@ -66,18 +65,18 @@ func (r *RequestV5) ValidateSignature() bool {
 
 	slog.Error("verifySignature failed.",
 		"expected", hex.EncodeToString(expectedSignature),
-		"got", r.Signature)
+		"got", request.Signature)
 
 	return false
 }
 
 // Sign returns a signed string using HMAC-SHA256-128.
-func (r *RequestV5) Sign() []byte {
-	sanitizedArgs := strings.ReplaceAll(r.Request.RawCommands, " ", "+")
+func Sign_HmacSha256_128(request Request) []byte {
+	sanitizedArgs := strings.ReplaceAll(request.RawCommands, " ", "+")
 
-	mac := hmac.New(sha256.New, []byte(r.Config.SigningKey))
+	mac := hmac.New(sha256.New, []byte(request.Config.SigningKey))
 	mac.Write([]byte(sanitizedArgs))
-	mac.Write([]byte(r.Request.ImageUrl))
+	mac.Write([]byte(request.ImageUrl))
 
 	return mac.Sum(nil)[0:31]
 }

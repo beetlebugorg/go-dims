@@ -15,6 +15,7 @@
 				"golang.go",
 				"vscodevim.vim",
 				"ms-vscode.makefile-tools",
+				"github.vscode-github-actions",
 				"GitHub.copilot"
 			]
 		}

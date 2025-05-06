@@ -1,12 +1,12 @@
 module github.com/beetlebugorg/go-dims
 
-go 1.22.0
+go 1.24.2
 
 require (
 	github.com/alecthomas/kong v1.6.0
 	github.com/antlr4-go/antlr/v4 v4.13.1
 	github.com/caarlos0/env/v10 v10.0.0
-	github.com/davidbyttow/govips/v2 v2.15.0
+	github.com/davidbyttow/govips/v2 v2.16.0
 )
 
 require (

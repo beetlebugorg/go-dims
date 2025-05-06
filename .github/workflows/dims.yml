@@ -126,3 +126,15 @@ jobs:
             -t ghcr.io/beetlebugorg/go-dims:${{ steps.tag.outputs.release_tag }} \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-amd64 \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-arm64
+
+  release:
+    name: Release
+    if: ${{ startsWith(github.ref_name, 'v*') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Create Release
+        run: gh release create ${{ github.ref }} --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

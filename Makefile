@@ -6,7 +6,7 @@ all:
 
 static:
 	go generate ./...
-	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif'" go-dims.go
+	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif -lsharpyuv'" go-dims.go
 
 docs:
 	mdbook build docs

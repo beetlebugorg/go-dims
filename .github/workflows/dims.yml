@@ -46,7 +46,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') }}
+        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') && 0 }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -54,7 +54,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Build and Push (Release)
-        if: ${{ startsWith(env.RELEASE_TAG, 'v') }}
+        if: ${{ startsWith(env.RELEASE_TAG, 'v') || 1}}
         uses: docker/build-push-action@v5
         id: build
         with:
@@ -80,7 +80,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') }}
+        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') && 0 }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -88,7 +88,7 @@ jobs:
           platforms: linux/arm64
 
       - name: Build and Push (Release)
-        if: ${{ startsWith(env.RELEASE_TAG, 'v') }}
+        if: ${{ startsWith(env.RELEASE_TAG, 'v') || 1 }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -97,7 +97,7 @@ jobs:
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-arm64
 
   manifest:
-    if: ${{ startsWith(github.env.RELEASE_TAG, 'v') }}
+    if: ${{ startsWith(github.env.RELEASE_TAG, 'v') || 1 }}
     needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     steps:

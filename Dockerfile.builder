@@ -174,6 +174,7 @@ RUN apk add --no-cache \
         lcms2-dev lcms2-static \
         giflib-dev giflib-static \
         bzip2-static \
+        libsharpyuv \
         expat-dev expat-static \
         zlib-dev zlib-static \
         make alpine-sdk upx openjdk21-jre \

@@ -19,7 +19,6 @@ on:
       - 'Dockerfile.builder'
 
 env:
-  RELEASE_TAG: ${{ github.ref_name }}
   TRACKING_TAG: ${{ github.ref == 'refs/heads/main' && 'edge' || 'latest' }}
 
 permissions:
@@ -28,7 +27,6 @@ permissions:
   id-token: write
 
 jobs:
-
   build-amd64:
     runs-on: ubuntu-24.04
     steps:
@@ -46,7 +44,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') && 0 }}
+        if: github.event_name == 'pull_request' && 0
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -54,7 +52,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Build and Push (Release)
-        if: ${{ startsWith(env.RELEASE_TAG, 'v') || 1}}
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v5
         id: build
         with:
@@ -80,7 +78,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') && 0 }}
+        if: github.event_name == 'pull_request' && 0
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -88,7 +86,7 @@ jobs:
           platforms: linux/arm64
 
       - name: Build and Push (Release)
-        if: ${{ startsWith(env.RELEASE_TAG, 'v') || 1 }}
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -97,10 +95,20 @@ jobs:
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-arm64
 
   manifest:
-    if: ${{ startsWith(github.env.RELEASE_TAG, 'v') || 1 }}
+    if: github.event_name == 'pull_request'
     needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     steps:
+      - name: Compute RELEASE_TAG
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "release_tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(git rev-parse --short=8 HEAD)
+            echo "release_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -112,6 +120,6 @@ jobs:
         run: |
           docker buildx imagetools create \
             -t ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }} \
-            -t ghcr.io/beetlebugorg/go-dims:${{ env.RELEASE_TAG }} \
+            -t ghcr.io/beetlebugorg/go-dims:${{ steps.tag.outputs.release_tag }} \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-amd64 \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-arm64

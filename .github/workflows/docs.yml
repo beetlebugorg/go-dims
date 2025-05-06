@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'docs/**'
+      - '.github/workflows/docs.yml'
       - '!.github/workflows/dims.yml'
       - '!.github/workflows/build.yml'
     branches:
@@ -11,6 +12,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/workflows/docs.yml'
       - '!.github/workflows/dims.yml'
       - '!.github/workflows/build.yml'
 

@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'docs/**'
+      - '.github/workflows/docs.yml'
       - '!.github/workflows/dims.yml'
       - '!.github/workflows/build.yml'
     branches:
@@ -11,6 +12,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/workflows/docs.yml'
       - '!.github/workflows/dims.yml'
       - '!.github/workflows/build.yml'
 
@@ -18,6 +20,8 @@ jobs:
   go-dims-docs:
     permissions:
         contents: write
+        id-token: write
+        pages: write
 
     runs-on: ubuntu-24.04
     concurrency:
@@ -32,9 +36,15 @@ jobs:
 
       - run: mdbook build docs
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
         if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/book
+          path: './docs/book'
+
+      - name: Deploy to GitHub Pages
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/deploy-pages@v4

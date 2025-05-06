@@ -129,7 +129,7 @@ jobs:
 
   release:
     name: Release
-    if: ${{ startsWith(github.ref_name, 'v*') }}
+    if: ${{ startsWith(github.ref_name, 'v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

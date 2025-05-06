@@ -22,7 +22,7 @@ env:
   TRACKING_TAG: ${{ github.ref == 'refs/heads/main' && 'edge' || 'latest' }}
 
 permissions:
-  contents: read
+  contents: write
   packages: write
   id-token: write
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Compute RELEASE_TAG
         id: tag
@@ -134,6 +134,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Create Release
         run: gh release create ${{ github.ref }} --generate-notes
         env:

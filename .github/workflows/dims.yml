@@ -44,7 +44,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: github.event_name == 'pull_request' && 0
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -52,7 +52,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Build and Push (Release)
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         id: build
         with:
@@ -78,7 +78,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Only (Branches)
-        if: github.event_name == 'pull_request' && 0
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -86,7 +86,7 @@ jobs:
           platforms: linux/arm64
 
       - name: Build and Push (Release)
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -95,7 +95,7 @@ jobs:
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-arm64
 
   manifest:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'pull_request'
     needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     steps:

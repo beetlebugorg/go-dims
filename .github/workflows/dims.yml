@@ -22,56 +22,96 @@ env:
   RELEASE_TAG: ${{ github.ref_name }}
   TRACKING_TAG: ${{ github.ref == 'refs/heads/main' && 'edge' || 'latest' }}
 
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
 jobs:
-    docker:
-        permissions:
-          contents: read
-          packages: write
-          id-token: write
 
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2
-              with:
-                submodules: recursive
+  build-amd64:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Login to GitHub Container Registry
-              uses: docker/login-action@v3
-              with:
-                registry: ghcr.io
-                username: ${{github.actor}}
-                password: ${{secrets.GITHUB_TOKEN}}
+      - name: Build Only (Branches)
+        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          platforms: linux/amd64
 
-            - name: Build and Push (Main)
-              uses: docker/build-push-action@v5
-              if: ${{ env.RELEASE_TAG == 'main' }}
-              with:
-                context: .
-                push: true
-                platforms: linux/amd64,linux/arm64
-                tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}
+      - name: Build and Push (Release)
+        if: ${{ startsWith(env.RELEASE_TAG, 'v') }}
+        uses: docker/build-push-action@v5
+        id: build
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-amd64
 
-            - name: Build and Push (Release)
-              uses: docker/build-push-action@v5
-              if: ${{ startsWith(env.RELEASE_TAG, 'v') }}
-              with:
-                context: .
-                push: true
-                platforms: linux/amd64,linux/arm64
-                tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }},
-                      ghcr.io/beetlebugorg/go-dims:${{ env.RELEASE_TAG }}
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-            - name: Build Only (Branches)
-              uses: docker/build-push-action@v5
-              if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') }}
-              with:
-                context: .
-                push: false
-                platforms: linux/amd64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Only (Branches)
+        if: ${{ env.RELEASE_TAG != 'main' && !startsWith(env.RELEASE_TAG, 'v') }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          platforms: linux/arm64
+
+      - name: Build and Push (Release)
+        if: ${{ startsWith(env.RELEASE_TAG, 'v') }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-arm64
+
+  manifest:
+    if: ${{ startsWith(github.env.RELEASE_TAG, 'v') }}
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          docker buildx imagetools create \
+            -t ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }} \
+            -t ghcr.io/beetlebugorg/go-dims:${{ env.RELEASE_TAG }} \
+            ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-amd64 \
+            ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-arm64

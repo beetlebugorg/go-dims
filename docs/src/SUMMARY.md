@@ -25,8 +25,6 @@
 # API Reference
 
 - [Endpoints]()
-    - [/v4]()
-      - [/v4/dims](endpoints/dims4.md)
     - [/v5]()
       - [/v5/dims](endpoints/dims5.md)
     - [/status](endpoints/status.md)

@@ -15,12 +15,11 @@ docs-serve:
 	mdbook serve docs
 
 docker: Dockerfile
-	docker buildx build --load -t beetlebugorg/go-dims:local .
-	docker images | grep beetlebugorg/go-dims
+	docker buildx build --load -t ghcr.io/beetlebugorg/go-dims:local .
+	docker images | grep ghcr.io/beetlebugorg/go-dims
 
 builder:
-	docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/beetlebugorg/go-dims:builder -f Dockerfile.builder .
-	docker push ghcr.io/beetlebugorg/go-dims:builder
+	docker buildx build --push --platform linux/amd64,linux/arm64 -t ghcr.io/beetlebugorg/go-dims:builder -f Dockerfile.builder .
 
 devmedia:
 	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./devmedia:/usr/share/nginx/html:ro nginx:latest

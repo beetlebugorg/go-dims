@@ -1,4 +1,4 @@
-ARG ALPINE_VERSION=3.19
+ARG ALPINE_VERSION=3.21
 
 # -- Alpine Base
 FROM alpine:${ALPINE_VERSION} AS alpine-base
@@ -6,11 +6,12 @@ FROM alpine:${ALPINE_VERSION} AS alpine-base
 RUN apk add --no-cache alpine-sdk xz zlib-dev zlib-static
 
 # -- Build libpng
+# http://www.libpng.org/pub/png/libpng.html
 FROM alpine-base AS libpng
 
 ARG PREFIX=/usr/local/dims/libpng
-ARG PNG_VERSION=1.6.43
-ARG PNG_HASH="sha256:6a5ca0652392a2d7c9db2ae5b40210843c0bbc081cbd410825ab00cc59f14a6c"
+ARG PNG_VERSION=1.6.48
+ARG PNG_HASH="sha256:46fd06ff37db1db64c0dc288d78a3f5efd23ad9ac41561193f983e20937ece03"
 
 ENV PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 ENV LD_LIBRARY_PATH=${PREFIX}/lib
@@ -30,11 +31,12 @@ RUN tar xvf "libpng-${PNG_VERSION}.tar.xz" && \
     make install
 
 # -- Build libwebp
+# https://storage.googleapis.com/downloads.webmproject.org/releases/webp/index.html
 FROM alpine-base AS libwebp
 
 ARG PREFIX=/usr/local/dims/libwebp
-ARG WEBP_VERSION=1.2.1
-ARG WEBP_HASH="sha256:808b98d2f5b84e9b27fdef6c5372dac769c3bda4502febbfa5031bd3c4d7d018"
+ARG WEBP_VERSION=1.5.0
+ARG WEBP_HASH="sha256:7d6fab70cf844bf6769077bd5d7a74893f8ffd4dfb42861745750c63c2a5c92c"
 
 WORKDIR /build
 
@@ -51,11 +53,12 @@ RUN tar xzvf libwebp-${WEBP_VERSION}.tar.gz && \
     make install
 
 # -- Build libtiff
+# https://libtiff.gitlab.io/libtiff/
 FROM alpine-base AS libtiff
 
 ARG PREFIX=/usr/local/dims
-ARG TIFF_VERSION=4.3.0
-ARG TIFF_HASH="sha256:0e46e5acb087ce7d1ac53cf4f56a09b221537fc86dfc5daaad1c2e89e1b37ac8"
+ARG TIFF_VERSION=4.7.0
+ARG TIFF_HASH="sha256:67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb6ba976"
 
 WORKDIR /build
 
@@ -77,19 +80,20 @@ RUN tar xzvf tiff-${TIFF_VERSION}.tar.gz && \
     rm -rf $PREFIX/libtiff/bin $PREFIX/libtiff/share
 
 # -- Build glib-2.0
+# https://docs.gtk.org/glib/
 FROM alpine-base AS glib
 
 ARG PREFIX=/usr/local/dims
-ARG GLIB_MAJOR_MINOR_VERSION=2.80
-ARG GLIB_VERSION=2.80.0
-ARG GLIB_HASH="sha256:8228a92f92a412160b139ae68b6345bd28f24434a7b5af150ebe21ff587a561d"
+ARG GLIB_MAJOR_MINOR_VERSION=2.84
+ARG GLIB_VERSION=2.84.1
+ARG GLIB_HASH="sha256:2b4bc2ec49611a5fc35f86aca855f2ed0196e69e53092bab6bb73396bf30789a"
 
 RUN apk add --no-cache meson py3-pip xz upx
 
 WORKDIR /build
 
 ADD --checksum="${GLIB_HASH}" \
-    "https://download.gnome.org/sources/glib/2.80/glib-2.80.0.tar.xz" \
+    "https://download.gnome.org/sources/glib/${GLIB_MAJOR_MINOR_VERSION}/glib-${GLIB_VERSION}.tar.xz" \
     glib-${GLIB_VERSION}.tar.xz
 
 RUN tar -xvf glib-${GLIB_VERSION}.tar.xz && \
@@ -101,11 +105,12 @@ RUN tar -xvf glib-${GLIB_VERSION}.tar.xz && \
     upx --best --lzma ${PREFIX}/glib-2.0/bin/* || true
 
 # -- Build libvips
+# https://www.libvips.org/
 FROM alpine-base AS libvips
 
 ARG PREFIX=/usr/local/dims
-ARG VIPS_VERSION=8.15.2
-ARG VIPS_HASH="sha256:a2ab15946776ca7721d11cae3215f20f1f097b370ff580cd44fc0f19387aee84"
+ARG VIPS_VERSION=8.16.1
+ARG VIPS_HASH="sha256:d114d7c132ec5b45f116d654e17bb4af84561e3041183cd4bfd79abfb85cf724"
 
 WORKDIR /build
 
@@ -141,7 +146,7 @@ RUN tar -xf vips-${VIPS_VERSION}.tar.xz && \
     rm -rf ${PREFIX}/libvips/bin
 
 # -- Build base
-FROM golang:1.22.0-alpine
+FROM golang:1.24.2-alpine
 
 WORKDIR /build
 
@@ -151,13 +156,18 @@ COPY --from=libpng      ${PREFIX}/libpng      ${PREFIX}/libpng
 COPY --from=libwebp     ${PREFIX}/libwebp     ${PREFIX}/libwebp
 COPY --from=libtiff     ${PREFIX}/libtiff     ${PREFIX}/libtiff
 COPY --from=libvips     ${PREFIX}/libvips     ${PREFIX}/libvips
-COPY --from=glib        ${PREFIX}/glib-2.0     ${PREFIX}/glib-2.0
+COPY --from=glib        ${PREFIX}/glib-2.0    ${PREFIX}/glib-2.0
 
 ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libvips/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/glib-2.0/lib/pkgconfig
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libpng/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libtiff/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libvips/lib
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/glib-2.0/lib
 
 RUN apk add --no-cache \
         jpeg-dev libjpeg-turbo-static \

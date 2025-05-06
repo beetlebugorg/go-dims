@@ -26,6 +26,8 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
 # -- Final
 FROM scratch
 
+LABEL org.opencontainers.image.description "On-the-fly dynamic image resizing server."
+
 COPY --from=go-dims /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=go-dims /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=go-dims /build/go-dims/build/dims /dims

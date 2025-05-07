@@ -15,7 +15,6 @@
 package operations
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"strings"
@@ -24,10 +23,8 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func ThumbnailCommand(ctx context.Context, args string) error {
+func ThumbnailCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("ThumbnailCommand", "args", args)
-
-	image := ctx.Value("image").(*vips.ImageRef)
 
 	// Remove any symbols and add a trailing '^' to the geometry. This ensures
 	// that the image will be at least as large as requested.
@@ -56,6 +53,6 @@ func ThumbnailCommand(ctx context.Context, args string) error {
 	return nil
 }
 
-func LegacyThumbnailCommand(ctx context.Context, args string) error {
+func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
 	return nil
 }

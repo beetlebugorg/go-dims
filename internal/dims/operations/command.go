@@ -16,6 +16,8 @@ package operations
 
 import (
 	"context"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type Command struct {
@@ -23,11 +25,22 @@ type Command struct {
 	Args string
 }
 
-type VipsOperation func(ctx context.Context, args string) error
+// Context passed to commands.
+type ExportOptions struct {
+	vips.ImageType
+	*vips.JpegExportParams
+	*vips.PngExportParams
+	*vips.WebpExportParams
+	*vips.GifExportParams
+	*vips.TiffExportParams
+}
 
-type VipsCommand struct {
+type VipsTransformOperation func(image *vips.ImageRef, args string) error
+type VipsExportOperation func(image *vips.ImageRef, args string, opts *ExportOptions) error
+
+type VipsCommand[T any] struct {
 	Command
-	Operation VipsOperation
+	Operation T
 }
 
 func PassThroughCommand(ctx context.Context, args string) error {

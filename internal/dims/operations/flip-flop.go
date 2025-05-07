@@ -15,16 +15,13 @@
 package operations
 
 import (
-	"context"
 	"log/slog"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func FlipFlopCommand(ctx context.Context, args string) error {
+func FlipFlopCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("FlipFlopCommand", "args", args)
-
-	image := ctx.Value("image").(*vips.ImageRef)
 
 	if args == "horizontal" {
 		return image.Flip(vips.DirectionHorizontal)

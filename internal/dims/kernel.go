@@ -59,12 +59,9 @@ type Request struct {
 	SourceImage            Image  // The source image.
 }
 
-var VipsCommands = map[string]operations.VipsOperation{
+var VipsTransformCommands = map[string]operations.VipsTransformOperation{
 	"crop":             operations.CropCommand,
 	"resize":           operations.ResizeCommand,
-	"strip":            operations.StripMetadataCommand,
-	"format":           operations.FormatCommand,
-	"quality":          operations.QualityCommand,
 	"sharpen":          operations.SharpenCommand,
 	"brightness":       operations.BrightnessCommand,
 	"flipflop":         operations.FlipFlopCommand,
@@ -75,6 +72,12 @@ var VipsCommands = map[string]operations.VipsOperation{
 	"rotate":           operations.RotateCommand,
 	"thumbnail":        operations.ThumbnailCommand,
 	"legacy_thumbnail": operations.LegacyThumbnailCommand,
+}
+
+var VipsExportCommands = map[string]operations.VipsExportOperation{
+	"strip":   operations.StripMetadataCommand,
+	"format":  operations.FormatCommand,
+	"quality": operations.QualityCommand,
 }
 
 // FetchImage downloads the image from the given URL.
@@ -168,57 +171,82 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes))
 
 	// Execute the commands.
-	stripMetadata := r.Config.StripMetadata
-
 	ctx, task := trace.NewTask(ctx, "v5.ProcessImage")
 	defer task.End()
 
+	opts := operations.ExportOptions{
+		JpegExportParams: vips.NewJpegExportParams(),
+		PngExportParams:  vips.NewPngExportParams(),
+		WebpExportParams: vips.NewWebpExportParams(),
+		GifExportParams:  vips.NewGifExportParams(),
+		TiffExportParams: vips.NewTiffExportParams(),
+	}
+
+	stripMetadata := r.Config.StripMetadata
+	opts.JpegExportParams.StripMetadata = stripMetadata
+	opts.PngExportParams.StripMetadata = stripMetadata
+	opts.WebpExportParams.StripMetadata = stripMetadata
+	opts.GifExportParams.StripMetadata = stripMetadata
+	opts.TiffExportParams.StripMetadata = stripMetadata
+
 	for _, command := range r.Commands() {
-		if command.Name == "strip" && command.Args == "true" {
-			stripMetadata = false
+		region := trace.StartRegion(ctx, command.Name)
+
+		if operation, ok := VipsTransformCommands[command.Name]; ok {
+			slog.Debug("executeTransformCommand", "command", command.Name, "args", command.Args)
+			if err := operation(image, command.Args); err != nil {
+				return "", nil, err
+			}
 		}
 
-		region := trace.StartRegion(ctx, command.Name)
-		if err := r.ProcessCommand(ctx, command); err != nil {
-			return "", nil, err
+		if operation, ok := VipsExportCommands[command.Name]; ok {
+			slog.Debug("executeExportCommand", "command", command.Name, "args", command.Args)
+			if err := operation(image, command.Args, &opts); err != nil {
+				return "", nil, err
+			}
 		}
+
 		region.End()
 	}
 
-	if stripMetadata {
-		// set strip option in export options
-	}
-
-	format := ctx.Value("format")
-
-	if format == "jpg" {
-		imageBytes, _, err := image.ExportJpeg(vips.NewJpegExportParams())
+	switch opts.ImageType {
+	case vips.ImageTypeJPEG:
+		imageBytes, _, err := image.ExportJpeg(opts.JpegExportParams)
 		if err != nil {
 			return "", nil, err
 		}
 
 		return vips.ImageTypes[vips.ImageTypeJPEG], imageBytes, nil
-	} else if format == "png" {
-		imageBytes, _, err := image.ExportPng(vips.NewPngExportParams())
+
+	case vips.ImageTypePNG:
+		imageBytes, _, err := image.ExportPng(opts.PngExportParams)
 		if err != nil {
 			return "", nil, err
 		}
 
 		return vips.ImageTypes[vips.ImageTypePNG], imageBytes, nil
-	} else if format == "webp" {
-		imageBytes, _, err := image.ExportWebp(vips.NewWebpExportParams())
+
+	case vips.ImageTypeWEBP:
+		imageBytes, _, err := image.ExportWebp(opts.WebpExportParams)
 		if err != nil {
 			return "", nil, err
 		}
 
 		return vips.ImageTypes[vips.ImageTypeWEBP], imageBytes, nil
-	} else if format == "gif" {
-		imageBytes, _, err := image.ExportGIF(vips.NewGifExportParams())
+	case vips.ImageTypeGIF:
+		imageBytes, _, err := image.ExportGIF(opts.GifExportParams)
 		if err != nil {
 			return "", nil, err
 		}
 
 		return vips.ImageTypes[vips.ImageTypeGIF], imageBytes, nil
+	case vips.ImageTypeTIFF:
+		imageBytes, _, err := image.ExportTiff(opts.TiffExportParams)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return vips.ImageTypes[vips.ImageTypeTIFF], imageBytes, nil
 	}
 
 	imageBytes, _, err := image.ExportNative()
@@ -369,14 +397,6 @@ func sourceMaxAge(header string) (int, error) {
 	}
 
 	return 0, errors.New("max-age not found in header")
-}
-
-func (r *Request) ProcessCommand(ctx context.Context, command operations.Command) error {
-	if operation, ok := VipsCommands[command.Name]; ok {
-		return operation(ctx, command.Args)
-	}
-
-	return fmt.Errorf("command not found: %s", command.Name)
 }
 
 // Parse through the requested commands and return requested image size for thumbnail and resize

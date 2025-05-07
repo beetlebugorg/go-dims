@@ -14,8 +14,8 @@
 
 package operations
 
-import "context"
+import "github.com/davidbyttow/govips/v2/vips"
 
-func SepiaCommand(ctx context.Context, args string) error {
+func SepiaCommand(image *vips.ImageRef, args string) error {
 	return nil
 }

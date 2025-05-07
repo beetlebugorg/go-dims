@@ -1,9 +1,6 @@
 {
 	"name": "go-dims",
-	"build": {
-		"dockerfile": "../Dockerfile.builder",
-		"context": ".."
-	},
+	"image": "ghcr.io/beetlebugorg/go-dims:builder",
 
 	"containerUser": "root",
 	"remoteUser": "root",

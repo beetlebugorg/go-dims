@@ -15,11 +15,12 @@
 package operations
 
 import (
-	"context"
 	"log/slog"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func BrightnessCommand(ctx context.Context, args string) error {
+func BrightnessCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("BrightnessCommand", "args", args)
 
 	//image := request.vipsImage

@@ -15,17 +15,13 @@
 package operations
 
 import (
-	"context"
-
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/sagikazarmark/slog-shim"
 )
 
-func ResizeCommand(ctx context.Context, args string) error {
+func ResizeCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("ResizeCommand", "args", args)
-
-	image := ctx.Value("image").(*vips.ImageRef)
 
 	// Parse Geometry
 	geo := geometry.ParseGeometry(args)

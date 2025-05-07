@@ -15,12 +15,9 @@
 package operations
 
 import (
-	"context"
-
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func InvertCommand(ctx context.Context, args string) error {
-	image := ctx.Value("image").(*vips.ImageRef)
+func InvertCommand(image *vips.ImageRef, args string) error {
 	return image.Invert()
 }

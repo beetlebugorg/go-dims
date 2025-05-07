@@ -15,17 +15,14 @@
 package operations
 
 import (
-	"context"
 	"log/slog"
 	"strconv"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func RotateCommand(ctx context.Context, args string) error {
+func RotateCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("RotateCommand", "args", args)
-
-	image := ctx.Value("image").(*vips.ImageRef)
 
 	degrees, err := strconv.ParseFloat(args, 64)
 	if err != nil {

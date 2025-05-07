@@ -14,8 +14,10 @@
 
 package operations
 
-import "context"
+import (
+	"github.com/davidbyttow/govips/v2/vips"
+)
 
-func AutolevelCommand(ctx context.Context, args string) error {
+func AutolevelCommand(image *vips.ImageRef, args string) error {
 	return nil
 }

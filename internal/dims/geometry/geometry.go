@@ -20,8 +20,8 @@ type Flags struct {
 }
 
 type Geometry struct {
-	Width  int
-	Height int
+	Width  float64
+	Height float64
 	X      int
 	Y      int
 	Flags  Flags
@@ -102,29 +102,29 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	var meta = *g
 
 	// Get original image dimensions
-	origWidth := image.Width()
-	origHeight := image.Height()
+	origWidth := float64(image.Width())
+	origHeight := float64(image.Height())
 
 	// Apply width and height percentage if specified
 	if g.Flags.WidthPercent {
-		meta.Width = int(float64(origWidth) * float64(g.Width) / 100.0)
+		meta.Width = float64(origWidth) * float64(g.Width) / 100.0
 	}
 	if g.Flags.HeightPercent {
-		meta.Height = int(float64(origHeight) * float64(g.Height) / 100.0)
+		meta.Height = float64(origHeight) * float64(g.Height) / 100.0
 	}
 
 	// Apply aspect ratio if not forced
 	if !g.Flags.Force {
 		if meta.Width == 0 && meta.Height != 0 {
-			meta.Width = int(float64(meta.Height) * float64(origWidth) / float64(origHeight))
+			meta.Width = float64(meta.Height) * float64(origWidth) / float64(origHeight)
 		} else if meta.Height == 0 && meta.Width != 0 {
-			meta.Height = int(float64(meta.Width) * float64(origHeight) / float64(origWidth))
+			meta.Height = float64(meta.Width) * float64(origHeight) / float64(origWidth)
 		} else if meta.Width != 0 && meta.Height != 0 {
 			ratio := float64(origWidth) / float64(origHeight)
 			if float64(meta.Width)/float64(meta.Height) > ratio {
-				meta.Width = int(float64(meta.Height) * ratio)
+				meta.Width = float64(meta.Height) * ratio
 			} else {
-				meta.Height = int(float64(meta.Width) / ratio)
+				meta.Height = float64(meta.Width) / ratio
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
 		return
 	}
 
-	g.Width, _ = strconv.Atoi(c.NUMBER().GetText())
+	g.Width, _ = strconv.ParseFloat(c.NUMBER().GetText(), 64)
 
 	if c.PERCENT() != nil {
 		g.Flags.WidthPercent = true
@@ -199,7 +199,7 @@ func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
 		return
 	}
 
-	g.Height, _ = strconv.Atoi(c.NUMBER().GetText())
+	g.Height, _ = strconv.ParseFloat(c.NUMBER().GetText(), 64)
 
 	if c.PERCENT() != nil {
 		g.Flags.HeightPercent = true

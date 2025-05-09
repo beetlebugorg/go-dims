@@ -207,6 +207,7 @@ COPY --from=libvips     ${PREFIX}/libvips     ${PREFIX}/libvips
 COPY --from=glib        ${PREFIX}/glib-2.0    ${PREFIX}/glib-2.0
 COPY --from=mozjpeg     ${PREFIX}/mozjpeg     ${PREFIX}/mozjpeg
 COPY --from=liblcms2    ${PREFIX}/lcms2       ${PREFIX}/lcms2
+COPY scripts/air-install.sh .
 
 ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
@@ -234,6 +235,7 @@ RUN apk add --no-cache \
         make alpine-sdk upx openjdk21-jre-headless \
         ca-certificates tzdata gcompat && \
         update-ca-certificates wget vim && \
+        cat air-install.sh | sh -s -- -b $(go env GOPATH)/bin && \
         wget https://www.antlr.org/download/antlr-4.13.2-complete.jar && \
         echo 'java -jar /build/antlr-4.13.2-complete.jar $@' > /usr/local/bin/antlr && \
         chmod +x /usr/local/bin/antlr

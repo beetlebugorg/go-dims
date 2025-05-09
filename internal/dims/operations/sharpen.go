@@ -17,20 +17,21 @@ package operations
 import (
 	"log/slog"
 
+	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func SharpenCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("SharpenCommand", "args", args)
 
-	//var geometry imagick.GeometryInfo
-	//flags := imagick.ParseGeometry(args, &geometry)
-	//if (flags & imagick.SIGMAVALUE) == 0 {
-	//	geometry.Sigma = 1.0
-	//}
+	geo := geometry.ParseGeometry(args)
+	x1 := geo.Width
+	m2 := geo.Height * 2
+	if m2 == 0 {
+		m2 = 2.0
+	}
 
-	//slog.Info("SharpenCommand", "geometry", geometry)
+	slog.Debug("SharpenCommand", "m2", m2, "x1", x1)
 
-	//return request.vipsImage.Sharpen(geometry.Sigma, geometry.Rho, geometry.Rho)
-	return nil
+	return image.Sharpen(float64(0.5), x1, m2)
 }

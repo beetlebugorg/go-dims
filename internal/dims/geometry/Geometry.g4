@@ -12,14 +12,16 @@ offsety  : NUMBER (PERCENT)? ;
 flags    : BANG | GT | LT ;
 
 // Lexer Rules
-NUMBER   : INT | MINUS INT;
+NUMBER   : INT | FLOAT;
 
 // Fragments
-fragment INT : [0-9]+ ;
+INT : MINUS? [0-9]+ ;
+FLOAT : MINUS? INT DOT INT ;
 
-GT : '>' ;
+GT : '>';
 LT : '<' ;
 BANG : '!' ;
 PLUS : '+' ;
 PERCENT : '%' ;
 MINUS : '-' ;
+DOT : '.' ;

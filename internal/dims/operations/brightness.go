@@ -75,7 +75,7 @@ func applyPolynomial(img *vips.ImageRef, coeffs []float64) (*vips.ImageRef, erro
 		return nil, err
 	}
 
-	if err := img.Linear([]float64{1.0 / 255.0}, []float64{0}); err != nil {
+	if err := img.Linear1(1.0/255.0, 0); err != nil {
 		return nil, err
 	}
 

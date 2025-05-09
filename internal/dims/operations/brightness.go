@@ -64,49 +64,49 @@ func computeIMCoefficients(brightness, contrast float64) []float64 {
 	return []float64{slope, intercept}
 }
 
-// applyPolynomialContrast applies a polynomial tone curve like ImageMagick's PolynomialFunction.
-func applyPolynomial(img *vips.ImageRef, coeffs []float64) (*vips.ImageRef, error) {
+// applyPolynomial applies a polynomial tone curve like ImageMagick's PolynomialFunction.
+func applyPolynomial(image *vips.ImageRef, coeffs []float64) (*vips.ImageRef, error) {
 	if len(coeffs) == 0 {
 		return nil, fmt.Errorf("no coefficients provided")
 	}
 
 	// 1. Convert to float and normalize to [0,1]
-	if err := img.Cast(vips.BandFormatFloat); err != nil {
+	if err := image.Cast(vips.BandFormatFloat); err != nil {
 		return nil, err
 	}
 
-	if err := img.Linear1(1.0/255.0, 0); err != nil {
+	if err := image.Linear1(1.0/255.0, 0); err != nil {
 		return nil, err
 	}
 
 	// 2. Evaluate polynomial using Horner's method
 	// Start with 0 image (effectively: result = 0)
-	acc, err := vips.Black(img.Width(), img.Height())
+	adjustedImage, err := vips.Black(image.Width(), image.Height())
 	if err != nil {
 		return nil, err
 	}
 
 	for _, coeff := range coeffs {
 		// acc = acc * img
-		if err := acc.Multiply(img); err != nil {
+		if err := adjustedImage.Multiply(image); err != nil {
 			return nil, err
 		}
 
 		// acc = acc + coeff
-		if err := acc.Linear1(1.0, coeff); err != nil {
+		if err := adjustedImage.Linear1(1.0, coeff); err != nil {
 			return nil, err
 		}
 	}
 
 	// 3. Rescale back to [0,255]
-	if err := acc.Linear1(255.0, 0); err != nil {
+	if err := adjustedImage.Linear1(255.0, 0); err != nil {
 		return nil, err
 	}
 
 	// 4. Cast to 8-bit uchar
-	if err := acc.Cast(vips.BandFormatUchar); err != nil {
+	if err := adjustedImage.Cast(vips.BandFormatUchar); err != nil {
 		return nil, err
 	}
 
-	return acc, nil
+	return adjustedImage, nil
 }

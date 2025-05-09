@@ -175,6 +175,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	defer task.End()
 
 	opts := operations.ExportOptions{
+		ImageType:        image.Format(),
 		JpegExportParams: vips.NewJpegExportParams(),
 		PngExportParams:  vips.NewPngExportParams(),
 		WebpExportParams: vips.NewWebpExportParams(),
@@ -184,6 +185,11 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 	stripMetadata := r.Config.StripMetadata
 	opts.JpegExportParams.StripMetadata = stripMetadata
+	opts.JpegExportParams.SubsampleMode = vips.VipsForeignSubsampleAuto
+	opts.JpegExportParams.OptimizeCoding = true
+	opts.JpegExportParams.OptimizeScans = true
+	opts.JpegExportParams.TrellisQuant = true
+
 	opts.PngExportParams.StripMetadata = stripMetadata
 	opts.WebpExportParams.StripMetadata = stripMetadata
 	opts.GifExportParams.StripMetadata = stripMetadata

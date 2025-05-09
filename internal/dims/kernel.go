@@ -175,6 +175,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	defer task.End()
 
 	opts := operations.ExportOptions{
+		ImageType:        image.Format(),
 		JpegExportParams: vips.NewJpegExportParams(),
 		PngExportParams:  vips.NewPngExportParams(),
 		WebpExportParams: vips.NewWebpExportParams(),

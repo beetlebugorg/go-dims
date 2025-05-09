@@ -33,10 +33,13 @@ func ThumbnailCommand(image *vips.ImageRef, args string) error {
 	// Parse Geometry
 	var rect = geometry.ParseGeometry(resizedArgs)
 
+	width := image.Width()
+	height := image.Height()
+
 	rect.X = image.OffsetX()
 	rect.Y = image.OffsetY()
-	rect.Width = image.Width()
-	rect.Height = image.Height()
+	rect.Width = float64(width)
+	rect.Height = float64(height)
 
 	// Parse Meta Geometry
 	rect = rect.ApplyMeta(image)
@@ -46,7 +49,7 @@ func ThumbnailCommand(image *vips.ImageRef, args string) error {
 
 	slog.Debug("ThumbnailCommand[resize]", "rect", rect)
 
-	if err := image.Thumbnail(rect.Width, rect.Height, vips.InterestingAll); err != nil {
+	if err := image.Thumbnail(width, height, vips.InterestingAll); err != nil {
 		return err
 	}
 

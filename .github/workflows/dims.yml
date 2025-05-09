@@ -122,8 +122,8 @@ jobs:
       - name: Create and push manifest
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }} \
             -t ghcr.io/beetlebugorg/go-dims:${{ steps.tag.outputs.release_tag }} \
+            -t ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }} \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-amd64 \
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-arm64
 

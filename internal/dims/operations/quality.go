@@ -29,18 +29,11 @@ func QualityCommand(image *vips.ImageRef, args string, opts *ExportOptions) erro
 		return err
 	}
 
-	switch image.Format() {
-	case vips.ImageTypeJPEG:
-		opts.JpegExportParams.Quality = quality
-	case vips.ImageTypePNG:
-		opts.PngExportParams.Quality = quality
-	case vips.ImageTypeWEBP:
-		opts.WebpExportParams.Quality = quality
-	case vips.ImageTypeTIFF:
-		opts.TiffExportParams.Quality = quality
-	case vips.ImageTypeGIF:
-		opts.GifExportParams.Quality = quality
-	}
+	opts.JpegExportParams.Quality = quality
+	opts.PngExportParams.Quality = quality
+	opts.WebpExportParams.Quality = quality
+	opts.TiffExportParams.Quality = quality
+	opts.GifExportParams.Quality = quality
 
 	return nil
 }

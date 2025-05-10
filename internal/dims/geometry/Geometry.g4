@@ -9,7 +9,7 @@ height   : NUMBER (PERCENT)? ;
 offset   : PLUS (offsetx) (PLUS offsety)? ;
 offsetx  : NUMBER (PERCENT)? ;
 offsety  : NUMBER (PERCENT)? ;
-flags    : BANG | GT | LT ;
+flags    : BANG | GT | LT | HAT;
 
 // Lexer Rules
 NUMBER   : INT | FLOAT;
@@ -25,3 +25,4 @@ PLUS : '+' ;
 PERCENT : '%' ;
 MINUS : '-' ;
 DOT : '.' ;
+HAT : '^' ;

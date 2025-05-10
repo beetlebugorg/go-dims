@@ -2,6 +2,7 @@ package geometry
 
 import (
 	"log/slog"
+	"math"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -17,6 +18,7 @@ type Flags struct {
 	Force          bool
 	OnlyGrow       bool
 	OnlyShrink     bool
+	Fill           bool
 }
 
 type Geometry struct {
@@ -40,6 +42,8 @@ type Geometry struct {
 // The '<' flag only allows the image to be resized if it is smaller than the specified dimensions.
 //
 // The '>' flag only allows the image to be resized if it is larger than the specified dimensions.
+//
+// The '^' flag forces the image to fill the smallest dimension of the specified dimensions.
 //
 // Examples:
 //
@@ -78,7 +82,7 @@ func ParseGeometry(geometry string) Geometry {
 }
 
 // ApplyMeta returns a geometry that is modified as determined
-// by the meta characters:  %, !, <, >, in relation to the provided image.
+// by the meta characters:  %, !, <, >, ^ in relation to the provided image.
 //
 // Final image dimensions are adjusted so as to preserve the aspect ratio as
 // much as possible, while generating a integer (pixel) size, and fitting the
@@ -90,6 +94,7 @@ func ParseGeometry(geometry string) Geometry {
 //	!   do not try to preserve aspect ratio
 //	<   only enlarge images smaller that geometry
 //	>   only shrink images larger than geometry
+//	^   fill given area
 //
 // A description of each parameter follows:
 //
@@ -146,6 +151,20 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 		if origHeight > meta.Height {
 			meta.Height = origHeight
+		}
+	}
+
+	if g.Flags.Fill {
+		if meta.Width > 0 && meta.Height > 0 {
+			scaleX := meta.Width / origWidth
+			scaleY := meta.Height / origHeight
+			scale := math.Max(scaleX, scaleY)
+
+			scaledWidth := origWidth * scale
+			scaledHeight := origHeight * scale
+
+			meta.Width = scaledWidth
+			meta.Height = scaledHeight
 		}
 	}
 
@@ -241,5 +260,9 @@ func (g *geometryListener) ExitFlags(c *parser.FlagsContext) {
 
 	if c.LT() != nil {
 		g.Flags.OnlyShrink = true
+	}
+
+	if c.HAT() != nil {
+		g.Flags.Fill = true
 	}
 }

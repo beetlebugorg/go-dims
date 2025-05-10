@@ -15,8 +15,8 @@
 package operations
 
 import (
-	"errors"
 	"log/slog"
+	"math"
 	"strings"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
@@ -24,32 +24,13 @@ import (
 )
 
 func ThumbnailCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("ThumbnailCommand", "args", args)
+	slog.Debug("LegacyThumbnailCommand", "args", args)
 
-	// Remove any symbols and add a trailing '^' to the geometry. This ensures
-	// that the image will be at least as large as requested.
 	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
-	// Parse Geometry
 	var rect = geometry.ParseGeometry(resizedArgs)
 
-	width := image.Width()
-	height := image.Height()
-
-	rect.X = image.OffsetX()
-	rect.Y = image.OffsetY()
-	rect.Width = float64(width)
-	rect.Height = float64(height)
-
-	// Parse Meta Geometry
-	rect = rect.ApplyMeta(image)
-	if rect.Width == 0 || rect.Height == 0 {
-		return errors.New("invalid geometry")
-	}
-
-	slog.Debug("ThumbnailCommand[resize]", "rect", rect)
-
-	if err := image.Thumbnail(width, height, vips.InterestingAll); err != nil {
+	if err := image.ThumbnailWithSize(int(rect.Width), int(rect.Height), vips.InterestingLow, vips.SizeUp); err != nil {
 		return err
 	}
 
@@ -57,5 +38,36 @@ func ThumbnailCommand(image *vips.ImageRef, args string) error {
 }
 
 func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
-	return nil
+	slog.Debug("LegacyThumbnailCommand", "args", args)
+
+	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
+
+	// Parse Geometry (with fill)
+	var rect = geometry.ParseGeometry(resizedArgs)
+	rect = rect.ApplyMeta(image)
+
+	if err := image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingAll); err != nil {
+		return err
+	}
+
+	// Parse Geometry (actual requested size)
+	rect = geometry.ParseGeometry(args)
+
+	width := image.Width()
+	height := image.Height()
+	cropWidth := int(math.Min(rect.Width, float64(width)))
+	cropHeight := int(math.Min(rect.Height, float64(height)))
+
+	x := int(math.Max(0, math.Floor(float64(width-cropWidth)/2)))
+	y := int(math.Max(0, math.Floor(float64(height-cropHeight)/2)))
+
+	// Clamp if crop area would exceed image bounds
+	if x+cropWidth > width || cropWidth == 0 {
+		cropWidth = width - x
+	}
+	if y+cropHeight > height || cropHeight == 0 {
+		cropHeight = height - y
+	}
+
+	return image.Crop(x, y, cropWidth, cropHeight)
 }

@@ -15,13 +15,13 @@ func CropCommand(image *vips.ImageRef, args string) error {
 
 	height := rect.X + int(rect.Width)
 	if height > image.Width() {
-		height = image.Width()
+		rect.Height = float64(image.Width())
 	}
 
 	width := rect.Y + int(rect.Height)
 	if width > image.Height() {
-		width = image.Height()
+		rect.Width = float64(image.Height())
 	}
 
-	return image.Crop(rect.X, rect.Y, width, height)
+	return image.Crop(rect.X, rect.Y, int(rect.Width), int(rect.Height))
 }

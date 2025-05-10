@@ -38,8 +38,7 @@ type Error struct {
 }
 
 type Signing struct {
-	SigningKey    string `env:"DIMS_SIGNING_KEY,notEmpty"`
-	EtagAlgorithm string
+	SigningKey string `env:"DIMS_SIGNING_KEY,notEmpty"`
 }
 
 type OutputFormat struct {

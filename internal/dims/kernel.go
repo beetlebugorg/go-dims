@@ -20,6 +20,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/beetlebugorg/go-dims/internal/dims/operations"
+	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -304,9 +305,9 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	}
 
 	// Set etag header.
-	if r.SourceImage.Etag != "" || r.SourceImage.LastModified != "" {
+	if r.SourceImage.Etag != "" {
 		var h hash.Hash
-		if r.Config.Signing.EtagAlgorithm == "md5" {
+		if r.Config.EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()
@@ -315,13 +316,17 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 		h.Write([]byte(r.Id))
 		if r.SourceImage.Etag != "" {
 			h.Write([]byte(r.SourceImage.Etag))
-		} else if r.SourceImage.LastModified != "" {
-			h.Write([]byte(r.SourceImage.LastModified))
 		}
 
 		etag := fmt.Sprintf("%x", h.Sum(nil))
 
-		w.Header().Set("Etag", etag)
+		w.Header().Set("ETag", etag)
+	}
+
+	if r.SourceImage.LastModified != "" {
+		slog.Debug("sendImage", "lastModified", r.SourceImage.LastModified)
+
+		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
 	}
 }
 
@@ -352,6 +357,60 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	slog.Info("sendError", "status", status, "message", message)
+
+	// Create blank image with error background color.
+	// Run error command through commands
+	// Call sendImage()
+
+	errorImage, err := vips.Black(2048, 2048)
+	if err != nil {
+		slog.Error("createErrorImage failed.", "error", err)
+		return
+	}
+
+	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
+		slog.Error("BandjoinConst failed", "error", err)
+		return
+	}
+
+	backgroundColor, err := colorx.ParseHexColor(r.Config.Error.Background)
+	if err != nil {
+		slog.Error("parseHexColor failed.", "error", err)
+		return
+	}
+
+	red, green, blue, _ := backgroundColor.RGBA()
+	redI := float64(red) / 65535 * 255
+	greenI := float64(green) / 65535 * 255
+	blueI := float64(blue) / 65535 * 255
+
+	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
+		return
+	}
+
+	// Export blank image to JPG.
+	exportOptions := vips.NewJpegExportParams()
+	exportOptions.Quality = 1
+
+	imageBytes, _, err := errorImage.ExportJpeg(exportOptions)
+	if err != nil {
+		slog.Error("exportJpeg failed.", "error", err)
+		return
+	}
+
+	r.SourceImage.Bytes = imageBytes
+	r.SourceImage.Format = "jpg"
+
+	imageType, imageBlob, err := r.ProcessImage()
+	if err != nil {
+		// If processing failed because of a bad command then return the image as-is.
+		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
+
+		r.SendImage(w, status, "jpg", imageBytes)
+		return
+	}
+
+	r.SendImage(w, status, imageType, imageBlob)
 }
 
 func (r *Request) Commands() []operations.Command {
@@ -365,8 +424,6 @@ func (r *Request) Commands() []operations.Command {
 			Name: command,
 			Args: args,
 		})
-
-		slog.Debug("parsedCommand", "command", command, "args", args)
 	}
 
 	return commands

@@ -32,6 +32,29 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.Startup(nil)
 
+	// v4 endpoint
+	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
+		func(w http.ResponseWriter, r *http.Request) {
+			config := core.Config{
+				EnvironmentConfig: environmentConfig,
+				DevelopmentMode:   dev,
+				DebugMode:         debug,
+				EtagAlgorithm:     "md5",
+			}
+
+			if debug {
+				fmt.Printf("config: %+v\n", config)
+			}
+
+			request, err := dims.ParseAndValidateV4Request(r, config)
+			if err != nil {
+				request.SendError(w, 400, "Signature Mismatch")
+				return
+			}
+
+			dims.Handler(*request, config, w)
+		})
+
 	// v5 endpoint
 	mux.HandleFunc("/v5/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -46,16 +69,16 @@ func NewHandler(debug bool, dev bool) http.Handler {
 				fmt.Printf("config: %+v\n", config)
 			}
 
-			request, err := dims.ParseAndValidV5Request(r, config)
+			request, err := dims.ParseAndValidateV5Request(r, config)
 			if err != nil {
-				// send error
+				request.SendError(w, 400, "Signature Mismatch")
 				return
 			}
 
 			dims.Handler(*request, config, w)
 		})
 
-	mux.HandleFunc("/status",
+	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
 			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
 		})

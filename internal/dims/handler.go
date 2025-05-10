@@ -47,6 +47,7 @@ func Handler(request Request, config core.Config, w http.ResponseWriter) {
 	slog.Info("kernel.ProcessImage()", "duration", time.Since(start).Milliseconds())
 
 	// Serve the image.
+	request.SendHeaders(w)
 	start = time.Now()
 	if err := request.SendImage(w, 200, imageType, imageBlob); err != nil {
 		slog.Error("serveImage failed.", "error", err)

@@ -14,6 +14,15 @@
 
 package core
 
+import (
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"time"
+)
+
 type Image struct {
 	Bytes        []byte // The downloaded image.
 	Size         int    // The original image size in bytes.
@@ -23,4 +32,45 @@ type Image struct {
 	EdgeControl  string // The edge control headers from the downloaded image.
 	LastModified string // The last modified header from the downloaded image.
 	Etag         string // The etag header from the downloaded image.
+}
+
+func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
+	_, err := url.ParseRequestURI(imageUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest("GET", imageUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Set("User-Agent", fmt.Sprintf("pixeljet/%s", Version))
+
+	http.DefaultClient.Timeout = timeout
+	image, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	imageSize := int(image.ContentLength)
+	imageBytes, err := io.ReadAll(image.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceImage := Image{
+		Status:       image.StatusCode,
+		EdgeControl:  image.Header.Get("Edge-Control"),
+		CacheControl: image.Header.Get("Cache-Control"),
+		LastModified: image.Header.Get("Last-Modified"),
+		Etag:         image.Header.Get("Etag"),
+		Format:       image.Header.Get("Content-Type"),
+		Size:         imageSize,
+		Bytes:        imageBytes,
+	}
+
+	slog.Info("downloadImage", "status", sourceImage.Status, "edgeControl", sourceImage.EdgeControl, "cacheControl", sourceImage.CacheControl, "lastModified", sourceImage.LastModified, "etag", sourceImage.Etag, "format", sourceImage.Format)
+
+	return &sourceImage, nil
 }

@@ -389,7 +389,10 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	}
 
 	// Export blank image to JPG.
-	imageBytes, _, err := errorImage.ExportJpeg(vips.NewJpegExportParams())
+	exportOptions := vips.NewJpegExportParams()
+	exportOptions.Quality = 1
+
+	imageBytes, _, err := errorImage.ExportJpeg(exportOptions)
 	if err != nil {
 		slog.Error("exportJpeg failed.", "error", err)
 		return
@@ -401,7 +404,7 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	imageType, imageBlob, err := r.ProcessImage()
 	if err != nil {
 		// If processing failed because of a bad command then return the image as-is.
-		imageBytes, _, _ := errorImage.ExportJpeg(vips.NewJpegExportParams())
+		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
 
 		r.SendImage(w, status, "jpg", imageBytes)
 		return

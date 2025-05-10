@@ -156,8 +156,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	opts.JpegExportParams.OptimizeScans = true
 	opts.JpegExportParams.TrellisQuant = true
 
-	opts.PngExportParams.StripMetadata = stripMetadata
 	opts.WebpExportParams.StripMetadata = stripMetadata
+	opts.WebpExportParams.ReductionEffort = 6
+
+	opts.PngExportParams.StripMetadata = stripMetadata
 	opts.GifExportParams.StripMetadata = stripMetadata
 	opts.TiffExportParams.StripMetadata = stripMetadata
 
@@ -167,6 +169,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
 				command.Args = adjustCropAfterShrink(command.Args, shrinkFactor)
+			}
+
+			if command.Name == "strip" && command.Args == "false" {
+				stripMetadata = false
 			}
 
 			slog.Debug("executeTransformCommand", "command", command.Name, "args", command.Args)
@@ -189,6 +195,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		}
 
 		region.End()
+	}
+
+	if stripMetadata {
+		image.RemoveMetadata()
 	}
 
 	switch opts.ImageType {

@@ -50,7 +50,7 @@ func ParseAndValidateV4Request(r *http.Request, config core.Config) (*Request, e
 
 	// Validate signature
 	if !config.DevelopmentMode && !validateSignatureV4(request) {
-		return nil, fmt.Errorf("signature mismatch")
+		return &request, fmt.Errorf("signature mismatch")
 	}
 
 	return &request, nil

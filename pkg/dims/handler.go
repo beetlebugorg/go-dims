@@ -48,6 +48,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 			request, err := dims.ParseAndValidateV4Request(r, config)
 			if err != nil {
+				request.SendError(w, 400, "Signature Mismatch")
 				return
 			}
 
@@ -70,7 +71,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 			request, err := dims.ParseAndValidateV5Request(r, config)
 			if err != nil {
-				// send error
+				request.SendError(w, 400, "Signature Mismatch")
 				return
 			}
 

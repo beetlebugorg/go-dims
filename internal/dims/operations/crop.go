@@ -13,14 +13,14 @@ func CropCommand(image *vips.ImageRef, args string) error {
 	// Parse Geometry
 	rect := geometry.ParseGeometry(sanitizedArgs)
 
-	height := rect.X + int(rect.Width)
+	height := rect.X + int(rect.Height)
 	if height > image.Width() {
-		rect.Height = float64(image.Width())
+		rect.Height = float64(image.Height())
 	}
 
-	width := rect.Y + int(rect.Height)
+	width := rect.Y + int(rect.Width)
 	if width > image.Height() {
-		rect.Width = float64(image.Height())
+		rect.Width = float64(image.Width())
 	}
 
 	return image.Crop(rect.X, rect.Y, int(rect.Width), int(rect.Height))

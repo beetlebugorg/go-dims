@@ -115,6 +115,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
+	shrinkFactor := 1
 	requestedSize, err := r.requestedImageSize()
 	if err == nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
 		xs := image.Width() / int(requestedSize.Width)
@@ -122,6 +123,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 		if (xs > 2) || (ys > 2) {
 			importParams.JpegShrinkFactor.Set(4)
+			shrinkFactor = 4
 		}
 	}
 
@@ -163,6 +165,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		region := trace.StartRegion(ctx, command.Name)
 
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
+			if command.Name == "crop" {
+				command.Args = adjustCropAfterShrink(command.Args, shrinkFactor)
+			}
+
 			slog.Debug("executeTransformCommand", "command", command.Name, "args", command.Args)
 			if err := operation(image, command.Args); err != nil {
 				return "", nil, err
@@ -393,4 +399,19 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	}
 
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
+}
+
+func adjustCropAfterShrink(args string, factor int) string {
+	var rect = geometry.ParseGeometry(args)
+
+	rect.X = int(float64(rect.X) / float64(factor))
+	rect.Y = int(float64(rect.Y) / float64(factor))
+	rect.Width = float64(rect.Width) / float64(factor)
+	rect.Height = float64(rect.Height) / float64(factor)
+
+	return fmt.Sprintf("%dx%d+%d+%d",
+		int(rect.Width),
+		int(rect.Height),
+		int(rect.X),
+		int(rect.Y))
 }

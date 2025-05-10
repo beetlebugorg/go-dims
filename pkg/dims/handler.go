@@ -78,7 +78,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 			dims.Handler(*request, config, w)
 		})
 
-	mux.HandleFunc("/status",
+	mux.HandleFunc("/dims-status",
 		func(w http.ResponseWriter, r *http.Request) {
 			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
 		})

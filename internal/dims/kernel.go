@@ -400,7 +400,10 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 
 	imageType, imageBlob, err := r.ProcessImage()
 	if err != nil {
-		slog.Error("processImage failed.", "error", err)
+		// If processing failed because of a bad command then return the image as-is.
+		imageBytes, _, _ := errorImage.ExportJpeg(vips.NewJpegExportParams())
+
+		r.SendImage(w, status, "jpg", imageBytes)
 		return
 	}
 

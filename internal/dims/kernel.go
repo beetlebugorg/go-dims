@@ -20,6 +20,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/beetlebugorg/go-dims/internal/dims/operations"
+	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -356,6 +357,54 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	slog.Info("sendError", "status", status, "message", message)
+
+	// Create blank image with error background color.
+	// Run error command through commands
+	// Call sendImage()
+
+	errorImage, err := vips.Black(2048, 2048)
+	if err != nil {
+		slog.Error("createErrorImage failed.", "error", err)
+		return
+	}
+
+	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
+		slog.Error("BandjoinConst failed", "error", err)
+		return
+	}
+
+	backgroundColor, err := colorx.ParseHexColor(r.Config.Error.Background)
+	if err != nil {
+		slog.Error("parseHexColor failed.", "error", err)
+		return
+	}
+
+	red, green, blue, _ := backgroundColor.RGBA()
+	redI := float64(red) / 65535 * 255
+	greenI := float64(green) / 65535 * 255
+	blueI := float64(blue) / 65535 * 255
+
+	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
+		return
+	}
+
+	// Export blank image to JPG.
+	imageBytes, _, err := errorImage.ExportJpeg(vips.NewJpegExportParams())
+	if err != nil {
+		slog.Error("exportJpeg failed.", "error", err)
+		return
+	}
+
+	r.SourceImage.Bytes = imageBytes
+	r.SourceImage.Format = "jpg"
+
+	imageType, imageBlob, err := r.ProcessImage()
+	if err != nil {
+		slog.Error("processImage failed.", "error", err)
+		return
+	}
+
+	r.SendImage(w, status, imageType, imageBlob)
 }
 
 func (r *Request) Commands() []operations.Command {

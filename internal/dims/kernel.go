@@ -130,7 +130,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		return "", nil, err
 	}
 
-	ctx := context.WithValue(context.Background(), "image", image)
+	ctx := context.Background()
 
 	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes))
 

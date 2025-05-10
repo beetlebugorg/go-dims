@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/beetlebugorg/go-dims/internal/dims/operations"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -47,16 +48,17 @@ type Signer interface {
 }
 
 type Request struct {
-	Id                     string // The hash of the request -> hash(clientId + commands + imageUrl).
-	Signature              string // The signature of the request.
-	Config                 Config // The global configuration.
-	ClientId               string // The client ID of this request.
-	ImageUrl               string // The image URL that is being manipulated.
-	SendContentDisposition bool   // The content disposition of the request.
-	RawCommands            string // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	Error                  bool   // Whether the error image is being served.
-	Timestamp              int64  // The timestamp of the request
-	SourceImage            Image  // The source image.
+	HttpRequest            *http.Request
+	Id                     string      // The hash of the request -> hash(clientId + commands + imageUrl).
+	Signature              string      // The signature of the request.
+	Config                 core.Config // The global configuration.
+	ClientId               string      // The client ID of this request.
+	ImageUrl               string      // The image URL that is being manipulated.
+	SendContentDisposition bool        // The content disposition of the request.
+	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	Error                  bool        // Whether the error image is being served.
+	Timestamp              int64       // The timestamp of the request
+	SourceImage            core.Image  // The source image.
 }
 
 var VipsTransformCommands = map[string]operations.VipsTransformOperation{
@@ -80,6 +82,10 @@ var VipsExportCommands = map[string]operations.VipsExportOperation{
 	"quality": operations.QualityCommand,
 }
 
+var VipsRequestCommands = map[string]operations.VipsRequestOperation{
+	"watermark": operations.Watermark,
+}
+
 // FetchImage downloads the image from the given URL.
 func (r *Request) FetchImage() error {
 	slog.Info("downloadImage", "url", r.ImageUrl)
@@ -99,7 +105,7 @@ func (r *Request) FetchImage() error {
 	return nil
 }
 
-func _fetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
+func _fetchImage(imageUrl string, timeout time.Duration) (*core.Image, error) {
 	_, err := url.ParseRequestURI(imageUrl)
 	if err != nil {
 		return nil, err
@@ -124,7 +130,7 @@ func _fetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 		return nil, err
 	}
 
-	sourceImage := Image{
+	sourceImage := core.Image{
 		Status:       image.StatusCode,
 		EdgeControl:  image.Header.Get("Edge-Control"),
 		CacheControl: image.Header.Get("Cache-Control"),
@@ -203,11 +209,17 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 			if err := operation(image, command.Args); err != nil {
 				return "", nil, err
 			}
-		}
-
-		if operation, ok := VipsExportCommands[command.Name]; ok {
+		} else if operation, ok := VipsExportCommands[command.Name]; ok {
 			slog.Debug("executeExportCommand", "command", command.Name, "args", command.Args)
 			if err := operation(image, command.Args, &opts); err != nil {
+				return "", nil, err
+			}
+		} else if operation, ok := VipsRequestCommands[command.Name]; ok {
+			slog.Debug("executeRequestCommand", "command", command.Name, "args", command.Args)
+			if err := operation(image, command.Args, operations.RequestOperation{
+				Request: *r.HttpRequest,
+				Config:  r.Config,
+			}); err != nil {
 				return "", nil, err
 			}
 		}

@@ -1,4 +1,4 @@
-// Copyright 2024 Jeremy Collins. All rights reserved.
+// Copyright 2025 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package operations
 
 import (
-	"net/http"
+	"log/slog"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func HandleDimsStatus(config core.EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
+	slog.Debug("Watermark", "overlay_url", data.Request.URL.Query().Get("overlay_url"))
+
+	return nil
 }

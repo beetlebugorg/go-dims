@@ -19,11 +19,12 @@ import (
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func NewHandler(debug bool, dev bool) http.Handler {
-	environmentConfig := dims.ReadConfig()
+	environmentConfig := core.ReadConfig()
 
 	mux := http.NewServeMux()
 
@@ -34,7 +35,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v5 endpoint
 	mux.HandleFunc("/v5/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			config := dims.Config{
+			config := core.Config{
 				EnvironmentConfig: environmentConfig,
 				DevelopmentMode:   dev,
 				DebugMode:         debug,

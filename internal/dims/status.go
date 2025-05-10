@@ -16,9 +16,11 @@ package dims
 
 import (
 	"net/http"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func HandleDimsStatus(config EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
+func HandleDimsStatus(config core.EnvironmentConfig, debug bool, dev bool, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	w.Write([]byte("ALIVE"))
 }

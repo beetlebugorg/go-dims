@@ -22,9 +22,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func ParseAndValidV5Request(r *http.Request, config Config) (*Request, error) {
+func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, error) {
 	h := sha256.New()
 	h.Write([]byte(r.PathValue("clientId")))
 	h.Write([]byte(r.PathValue("commands")))
@@ -32,6 +34,7 @@ func ParseAndValidV5Request(r *http.Request, config Config) (*Request, error) {
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	request := Request{
+		HttpRequest: *r,
 		Id:          requestHash,
 		Config:      config,
 		ClientId:    r.URL.Query().Get("clientId"),
@@ -77,6 +80,18 @@ func Sign_HmacSha256_128(request Request) []byte {
 	mac := hmac.New(sha256.New, []byte(request.Config.SigningKey))
 	mac.Write([]byte(sanitizedArgs))
 	mac.Write([]byte(request.ImageUrl))
+
+	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	signatureKeys := request.HttpRequest.URL.Query().Get("_keys")
+	if signatureKeys != "" {
+		keys := strings.Split(signatureKeys, ",")
+		for _, key := range keys {
+			value := request.HttpRequest.URL.Query().Get(key)
+			if value != "" {
+				mac.Write([]byte(value))
+			}
+		}
+	}
 
 	return mac.Sum(nil)[0:31]
 }

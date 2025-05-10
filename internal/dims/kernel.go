@@ -304,9 +304,9 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	}
 
 	// Set etag header.
-	if r.SourceImage.Etag != "" || r.SourceImage.LastModified != "" {
+	if r.SourceImage.Etag != "" {
 		var h hash.Hash
-		if r.Config.Signing.EtagAlgorithm == "md5" {
+		if r.Config.EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()
@@ -315,13 +315,17 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 		h.Write([]byte(r.Id))
 		if r.SourceImage.Etag != "" {
 			h.Write([]byte(r.SourceImage.Etag))
-		} else if r.SourceImage.LastModified != "" {
-			h.Write([]byte(r.SourceImage.LastModified))
 		}
 
 		etag := fmt.Sprintf("%x", h.Sum(nil))
 
-		w.Header().Set("Etag", etag)
+		w.Header().Set("ETag", etag)
+	}
+
+	if r.SourceImage.LastModified != "" {
+		slog.Debug("sendImage", "lastModified", r.SourceImage.LastModified)
+
+		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
 	}
 }
 
@@ -365,8 +369,6 @@ func (r *Request) Commands() []operations.Command {
 			Name: command,
 			Args: args,
 		})
-
-		slog.Debug("parsedCommand", "command", command, "args", args)
 	}
 
 	return commands

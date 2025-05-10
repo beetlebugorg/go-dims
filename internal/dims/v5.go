@@ -33,12 +33,24 @@ func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, erro
 	h.Write([]byte(r.URL.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
+	url := r.URL.Query().Get("url")
+	eurl := r.URL.Query().Get("eurl")
+	if eurl != "" {
+		decryptedUrl, err := DecryptURL(config.SigningKey, eurl)
+		if err != nil {
+			slog.Error("DecryptURL failed.", "error", err)
+			return nil, fmt.Errorf("DecryptURL failed: %w", err)
+		}
+
+		url = decryptedUrl
+	}
+
 	request := Request{
 		HttpRequest: *r,
 		Id:          requestHash,
 		Config:      config,
 		ClientId:    r.URL.Query().Get("clientId"),
-		ImageUrl:    r.URL.Query().Get("url"),
+		ImageUrl:    url,
 		RawCommands: r.PathValue("commands"),
 		Signature:   r.URL.Query().Get("sig"),
 	}

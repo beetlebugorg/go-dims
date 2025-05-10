@@ -26,7 +26,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, error) {
+func ParseAndValidateV5Request(r *http.Request, config core.Config) (*Request, error) {
 	h := sha256.New()
 	h.Write([]byte(r.PathValue("clientId")))
 	h.Write([]byte(r.PathValue("commands")))
@@ -56,7 +56,7 @@ func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, erro
 	}
 
 	// Validate signature
-	if !config.DevelopmentMode && !ValidateSignature(request) {
+	if !config.DevelopmentMode && !validateSignatureV5(request) {
 		return nil, fmt.Errorf("signature mismatch")
 	}
 
@@ -64,7 +64,7 @@ func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, erro
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
-func ValidateSignature(request Request) bool {
+func validateSignatureV5(request Request) bool {
 	slog.Debug("verifySignature", "url", request.ImageUrl)
 
 	expectedSignature := Sign_HmacSha256_128(request)

@@ -22,9 +22,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func ParseAndValidV5Request(r *http.Request, config Config) (*Request, error) {
+func ParseAndValidV5Request(r *http.Request, config core.Config) (*Request, error) {
 	h := sha256.New()
 	h.Write([]byte(r.PathValue("clientId")))
 	h.Write([]byte(r.PathValue("commands")))
@@ -32,6 +34,7 @@ func ParseAndValidV5Request(r *http.Request, config Config) (*Request, error) {
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	request := Request{
+		HttpRequest: r,
 		Id:          requestHash,
 		Config:      config,
 		ClientId:    r.URL.Query().Get("clientId"),

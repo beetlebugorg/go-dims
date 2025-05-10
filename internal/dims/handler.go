@@ -18,9 +18,11 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func Handler(request Request, config Config, w http.ResponseWriter) {
+func Handler(request Request, config core.Config, w http.ResponseWriter) {
 	// Download image.
 	start := time.Now()
 	if err := request.FetchImage(); err != nil {

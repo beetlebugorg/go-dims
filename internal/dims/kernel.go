@@ -47,7 +47,7 @@ type Signer interface {
 }
 
 type Request struct {
-	HttpRequest            *http.Request
+	HttpRequest            http.Request
 	Id                     string      // The hash of the request -> hash(clientId + commands + imageUrl).
 	Signature              string      // The signature of the request.
 	Config                 core.Config // The global configuration.
@@ -175,7 +175,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok {
 			slog.Debug("executeRequestCommand", "command", command.Name, "args", command.Args)
 			if err := operation(image, command.Args, operations.RequestOperation{
-				Request: *r.HttpRequest,
+				Request: r.HttpRequest,
 				Config:  r.Config,
 			}); err != nil {
 				return "", nil, err

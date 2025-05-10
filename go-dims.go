@@ -15,11 +15,14 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/alecthomas/kong"
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 
@@ -50,8 +53,52 @@ func (s *ServeCmd) Run() error {
 	return nil
 }
 
+type EncryptionCmd struct {
+	URL string `arg:"" help:"The URL to encrypt."`
+}
+
+func (e *EncryptionCmd) Run() error {
+	if e.URL == "" {
+		return errors.New("URL is required")
+	}
+
+	config := core.ReadConfig()
+
+	result, err := dims.EncryptURL(config.SigningKey, e.URL)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt: %w", err)
+	}
+
+	fmt.Println("Encrypted URL:", result)
+
+	return nil
+}
+
+type DecryptionCmd struct {
+	URL string `arg:"" help:"The URL to decrypt."`
+}
+
+func (e *DecryptionCmd) Run() error {
+	if e.URL == "" {
+		return errors.New("URL is required")
+	}
+
+	config := core.ReadConfig()
+
+	result, err := dims.DecryptURL(config.SigningKey, e.URL)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt: %w", err)
+	}
+
+	fmt.Println("Decrypted URL:", result)
+
+	return nil
+}
+
 var CLI struct {
-	Serve ServeCmd `cmd:"" help:"Runs the DIMS service."`
+	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
+	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
+	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
 }
 
 func main() {

@@ -16,7 +16,6 @@ package operations
 
 import (
 	"fmt"
-	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -27,8 +26,6 @@ import (
 )
 
 func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
-	slog.Debug("Watermark", "overlay_url", data.Request.URL.Query().Get("overlay"))
-
 	url := data.Request.URL.Query().Get("overlay")
 	if url == "" {
 		return fmt.Errorf("missing required query parameter 'overlay'")
@@ -42,8 +39,6 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	if err != nil {
 		return err
 	}
-
-	slog.Debug("Watermark", "opacity", opacity, "size", size, "gravity", gravity)
 
 	// Download overlay image
 	timeout := time.Duration(data.Config.Timeout.Download) * time.Millisecond

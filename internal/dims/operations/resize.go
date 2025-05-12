@@ -17,17 +17,14 @@ package operations
 import (
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/sagikazarmark/slog-shim"
 )
 
 func ResizeCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("ResizeCommand", "args", args)
-
-	// Parse Geometry
-	geo := geometry.ParseGeometry(args)
+	geo, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return err
+	}
 	rect := geo.ApplyMeta(image)
-
-	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)
 
 	xr := float64(rect.Width) / float64(image.Width())
 	yr := float64(rect.Height) / float64(image.Height())

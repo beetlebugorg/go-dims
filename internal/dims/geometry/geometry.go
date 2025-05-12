@@ -1,7 +1,7 @@
 package geometry
 
 import (
-	"log/slog"
+	"fmt"
 	"math"
 	"strconv"
 
@@ -54,7 +54,7 @@ type Geometry struct {
 // "100x200+50+50%" - width 100, height 200, x offset 50, y offset 50%
 // "+50+50" - x offset 50, y offset 50, width and height are 100% of the rest of the image
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
-func ParseGeometry(geometry string) Geometry {
+func ParseGeometry(geometry string) (Geometry, error) {
 	is := antlr.NewInputStream(geometry)
 
 	var errorListener = errorListener{}
@@ -75,10 +75,10 @@ func ParseGeometry(geometry string) Geometry {
 	antlr.ParseTreeWalkerDefault.Walk(g, p.Start_())
 
 	if len(errorListener.Errors) > 0 {
-		return Geometry{}
+		return Geometry{}, errorListener.Errors[0]
 	}
 
-	return *g.Geometry
+	return *g.Geometry, nil
 }
 
 // ApplyMeta returns a geometry that is modified as determined
@@ -109,6 +109,17 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	// Get original image dimensions
 	origWidth := float64(image.Width())
 	origHeight := float64(image.Height())
+	requestedWidth := meta.Width
+	requestedHeight := meta.Height
+
+	// Set width and height to original image dimensions if not specified
+	if meta.Width == 0 {
+		meta.Width = float64(origWidth)
+	}
+
+	if meta.Height == 0 {
+		meta.Height = float64(origHeight)
+	}
 
 	// Apply width and height percentage if specified
 	if g.Flags.WidthPercent {
@@ -118,13 +129,37 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		meta.Height = float64(origHeight) * float64(g.Height) / 100.0
 	}
 
+	// Apply offset x and y percentage if specified
+	if g.Flags.OffsetXPercent {
+		meta.X = int(float64(origWidth) * float64(g.X) / 100.0)
+	}
+
+	if g.Flags.OffsetYPercent {
+		meta.Y = int(float64(origHeight) * float64(g.Y) / 100.0)
+	}
+
+	if g.Flags.Fill {
+		scaleX := meta.Width / origWidth
+		scaleY := meta.Height / origHeight
+		scale := math.Max(scaleX, scaleY)
+
+		scaledWidth := origWidth * scale
+		scaledHeight := origHeight * scale
+
+		meta.Width = scaledWidth
+		meta.Height = scaledHeight
+	}
+
 	// Apply aspect ratio if not forced
 	if !g.Flags.Force {
-		if meta.Width == 0 && meta.Height != 0 {
-			meta.Width = float64(meta.Height) * float64(origWidth) / float64(origHeight)
-		} else if meta.Height == 0 && meta.Width != 0 {
-			meta.Height = float64(meta.Width) * float64(origHeight) / float64(origWidth)
-		} else if meta.Width != 0 && meta.Height != 0 {
+		if requestedWidth == 0 && requestedHeight != 0 {
+			// Fill the width from the height
+			meta.Width = origWidth
+		} else if requestedHeight == 0 && requestedWidth != 0 {
+			// Fill the height from the width
+			meta.Height = origHeight
+		} else if requestedWidth != 0 && requestedHeight != 0 {
+			// Fill the width and height from the original image ratio
 			ratio := float64(origWidth) / float64(origHeight)
 			if float64(meta.Width)/float64(meta.Height) > ratio {
 				meta.Width = float64(meta.Height) * ratio
@@ -154,24 +189,6 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 	}
 
-	if g.Flags.Fill {
-		if meta.Width > 0 && meta.Height > 0 {
-			scaleX := meta.Width / origWidth
-			scaleY := meta.Height / origHeight
-			scale := math.Max(scaleX, scaleY)
-
-			scaledWidth := origWidth * scale
-			scaledHeight := origHeight * scale
-
-			meta.Width = scaledWidth
-			meta.Height = scaledHeight
-		}
-	}
-
-	// Apply x and y offsets
-	meta.X = g.X
-	meta.Y = g.Y
-
 	return meta
 }
 
@@ -183,6 +200,10 @@ type syntaxError struct {
 	msg    string
 }
 
+func (e syntaxError) Error() string {
+	return fmt.Sprintf("syntax error at column %d: %s", e.column, e.msg)
+}
+
 type errorListener struct {
 	*antlr.DefaultErrorListener
 	Errors []syntaxError
@@ -190,8 +211,6 @@ type errorListener struct {
 
 func (g *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	g.Errors = append(g.Errors, syntaxError{line, column, msg})
-
-	slog.Error("SyntaxError", "line", line, "column", column, "msg", msg)
 }
 
 //-- GeometryListener

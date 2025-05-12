@@ -15,59 +15,28 @@
 package operations
 
 import (
-	"log/slog"
-	"math"
-	"strings"
-
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func ThumbnailCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("LegacyThumbnailCommand", "args", args)
-
-	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
-
-	var rect = geometry.ParseGeometry(resizedArgs)
-
-	if err := image.ThumbnailWithSize(int(rect.Width), int(rect.Height), vips.InterestingLow, vips.SizeUp); err != nil {
+	rect, err := geometry.ParseGeometry(args)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	if rect.Flags.Force {
+		return ResizeCommand(image, args)
+	}
+
+	return image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingLow)
 }
 
 func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("LegacyThumbnailCommand", "args", args)
-
-	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
-
-	// Parse Geometry (with fill)
-	var rect = geometry.ParseGeometry(resizedArgs)
-	rect = rect.ApplyMeta(image)
-
-	if err := image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingAll); err != nil {
+	rect, err := geometry.ParseGeometry(args)
+	if err != nil {
 		return err
 	}
 
-	// Parse Geometry (actual requested size)
-	rect = geometry.ParseGeometry(args)
-
-	width := image.Width()
-	height := image.Height()
-	cropWidth := int(math.Min(rect.Width, float64(width)))
-	cropHeight := int(math.Min(rect.Height, float64(height)))
-
-	x := int(math.Max(0, math.Floor(float64(width-cropWidth)/2)))
-	y := int(math.Max(0, math.Floor(float64(height-cropHeight)/2)))
-
-	// Clamp if crop area would exceed image bounds
-	if x+cropWidth > width || cropWidth == 0 {
-		cropWidth = width - x
-	}
-	if y+cropHeight > height || cropHeight == 0 {
-		cropHeight = height - y
-	}
-
-	return image.Crop(x, y, cropWidth, cropHeight)
+	return image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingCentre)
 }

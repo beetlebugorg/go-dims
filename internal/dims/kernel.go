@@ -88,8 +88,6 @@ var VipsRequestCommands = map[string]operations.VipsRequestOperation{
 
 // FetchImage downloads the image from the given URL.
 func (r *Request) FetchImage() error {
-	slog.Info("downloadImage", "url", r.ImageUrl)
-
 	timeout := time.Duration(r.Config.Timeout.Download) * time.Millisecond
 	sourceImage, err := core.FetchImage(r.ImageUrl, timeout)
 	if err != nil {
@@ -107,8 +105,6 @@ func (r *Request) FetchImage() error {
 
 // ProcessImage will execute the commands on the image.
 func (r *Request) ProcessImage() (string, []byte, error) {
-	slog.Debug("executeVips")
-
 	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
 	if err != nil {
 		return "", nil, err
@@ -134,8 +130,6 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	}
 
 	ctx := context.Background()
-
-	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes))
 
 	// Execute the commands.
 	ctx, task := trace.NewTask(ctx, "v5.ProcessImage")
@@ -169,7 +163,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
-				command.Args = adjustCropAfterShrink(command.Args, shrinkFactor)
+				command.Args, err = adjustCropAfterShrink(image, command.Args, shrinkFactor)
+				if err != nil {
+					return "", nil, err
+				}
 			}
 
 			if command.Name == "strip" && command.Args == "false" {
@@ -279,8 +276,6 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 
 	// Set cache headers.
 	if maxAge > 0 {
-		slog.Debug("sendImage", "maxAge", maxAge)
-
 		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
 		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
 	}
@@ -298,8 +293,6 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 		}
 
 		filename := filepath.Base(u.Path)
-
-		slog.Debug("sendImage", "sendContentDisposition", r.SendContentDisposition, "filename", filename)
 
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	}
@@ -324,15 +317,11 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	}
 
 	if r.SourceImage.LastModified != "" {
-		slog.Debug("sendImage", "lastModified", r.SourceImage.LastModified)
-
 		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
 	}
 }
 
 func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error {
-	slog.Info("SendImage", "status", status, "format", imageFormat, "size", len(imageBlob))
-
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
 	}
@@ -356,8 +345,6 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 }
 
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
-	slog.Info("sendError", "status", status, "message", message)
-
 	// Create blank image with error background color.
 	// Run error command through commands
 	// Call sendImage()
@@ -456,7 +443,10 @@ func sourceMaxAge(header string) (int, error) {
 func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	for _, command := range r.Commands() {
 		if command.Name == "thumbnail" || command.Name == "resize" {
-			var rect = geometry.ParseGeometry(command.Args)
+			rect, err := geometry.ParseGeometry(command.Args)
+			if err != nil {
+				return geometry.Geometry{}, err
+			}
 
 			if rect.Width > 0 && rect.Height > 0 {
 				return rect, nil
@@ -468,17 +458,37 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
 }
 
-func adjustCropAfterShrink(args string, factor int) string {
-	var rect = geometry.ParseGeometry(args)
+func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) (string, error) {
+	rect, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return "", err
+	}
 
 	rect.X = int(float64(rect.X) / float64(factor))
 	rect.Y = int(float64(rect.Y) / float64(factor))
-	rect.Width = float64(rect.Width) / float64(factor)
-	rect.Height = float64(rect.Height) / float64(factor)
 
-	return fmt.Sprintf("%dx%d+%d+%d",
-		int(rect.Width),
-		int(rect.Height),
-		int(rect.X),
-		int(rect.Y))
+	if rect.Width > 0 {
+		rect.Width = float64(rect.Width) / float64(factor)
+	}
+
+	if rect.Height > 0 {
+		rect.Height = float64(rect.Height) / float64(factor)
+	}
+
+	// Output full geometry
+	if rect.Y > 0 {
+		return fmt.Sprintf("%dx%d+%d+%d", int(rect.Width), int(rect.Height), int(rect.X), int(rect.Y)), nil
+	}
+
+	// Output geometry without Y
+	if rect.X > 0 {
+		return fmt.Sprintf("%dx%d+%d", int(rect.Width), int(rect.Height), int(rect.X)), nil
+	}
+
+	// Output geometry without offsets
+	if rect.Height > 0 {
+		return fmt.Sprintf("%dx%d", int(rect.Width), int(rect.Height)), nil
+	}
+
+	return fmt.Sprintf("%dx", int(rect.Width)), nil
 }

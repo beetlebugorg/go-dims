@@ -18,6 +18,8 @@ ENV LD_LIBRARY_PATH=${PREFIX}/lib
 
 WORKDIR /build
 
+RUN apk add --no-cache alpine-sdk xz zlib-dev zlib-static
+
 ADD --checksum="${PNG_HASH}" \
     https://versaweb.dl.sourceforge.net/project/libpng/libpng16/${PNG_VERSION}/libpng-${PNG_VERSION}.tar.xz \
     libpng-${PNG_VERSION}.tar.xz
@@ -28,34 +30,6 @@ RUN tar xvf "libpng-${PNG_VERSION}.tar.xz" && \
     make -j"$(nproc)" && \
     make install
 
-# -- Build mozjpeg
-# https://github.com/mozilla/mozjpeg
-FROM alpine-base AS mozjpeg
-
-ARG PREFIX=/usr/local/dims
-ARG MOZJPEG_VERSION=4.1.1
-ARG MOZJPEG_HASH="sha256:66b1b8d6b55d263f35f27f55acaaa3234df2a401232de99b6d099e2bb0a9d196"
-
-ENV CMAKE_PREFIX_PATH=/usr/local/dims/libpng
-ENV CMAKE_INSTALL_PREFIX=/usr/local/dims/mozjpeg
-
-WORKDIR /build
-
-RUN apk add --no-cache cmake nasm
-
-COPY --from=libpng  ${PREFIX}/libpng  ${PREFIX}/libpng
-
-ADD --checksum="${MOZJPEG_HASH}" \
-    https://github.com/mozilla/mozjpeg/archive/refs/tags/v4.1.1.tar.gz \
-    mozjpeg-v${MOZJPEG_VERSION}.tar.gz
-
-RUN tar xvf "mozjpeg-v${MOZJPEG_VERSION}.tar.gz" && \
-    cd "mozjpeg-${MOZJPEG_VERSION}" && \
-    mkdir build && cd build && \
-    cmake -G"Unix Makefiles" ../ -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_PREFIX}/lib && \
-    make -j"$(nproc)" && \
-    make install && echo ""
-
 # -- Build libwebp
 # https://storage.googleapis.com/downloads.webmproject.org/releases/webp/index.html
 FROM alpine-base AS libwebp
@@ -65,6 +39,8 @@ ARG WEBP_VERSION=1.5.0
 ARG WEBP_HASH="sha256:7d6fab70cf844bf6769077bd5d7a74893f8ffd4dfb42861745750c63c2a5c92c"
 
 WORKDIR /build
+
+RUN apk add --no-cache alpine-sdk
 
 ADD --checksum="${WEBP_HASH}" \
     https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${WEBP_VERSION}.tar.gz \
@@ -86,8 +62,9 @@ ARG TIFF_HASH="sha256:67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb
 
 WORKDIR /build
 
+RUN apk add --no-cache jpeg-dev libjpeg-turbo-static
+
 COPY --from=libwebp ${PREFIX}/libwebp ${PREFIX}/libwebp
-COPY --from=mozjpeg ${PREFIX}/mozjpeg ${PREFIX}/mozjpeg
 
 ADD --checksum="${TIFF_HASH}" \
     https://download.osgeo.org/libtiff/tiff-${TIFF_VERSION}.tar.gz \
@@ -97,9 +74,7 @@ RUN tar xzvf tiff-${TIFF_VERSION}.tar.gz && \
     cd tiff-${TIFF_VERSION} && \
     ./configure --prefix=$PREFIX/libtiff --enable-static --disable-cxx \
         --with-webp-include-dir=$PREFIX/libwebp/include \
-        --with-webp-lib-dir=$PREFIX/libwebp/lib \
-        --with-jpeg-include-dir=$PREFIX/mozjpeg/include \
-        --with-jpeg-lib-dir=$PREFIX/mozjpeg/lib && \
+        --with-webp-lib-dir=$PREFIX/libwebp/lib && \
     make -j"$(nproc)" && \
     make install && \
     rm -rf $PREFIX/libtiff/bin $PREFIX/libtiff/share
@@ -113,7 +88,7 @@ ARG GLIB_MAJOR_MINOR_VERSION=2.84
 ARG GLIB_VERSION=2.84.1
 ARG GLIB_HASH="sha256:2b4bc2ec49611a5fc35f86aca855f2ed0196e69e53092bab6bb73396bf30789a"
 
-RUN apk add --no-cache meson py3-pip upx
+RUN apk add --no-cache meson py3-pip xz upx
 
 WORKDIR /build
 
@@ -129,30 +104,6 @@ RUN tar -xvf glib-${GLIB_VERSION}.tar.xz && \
     meson install && \
     upx --best --lzma ${PREFIX}/glib-2.0/bin/* || true
 
-# -- Build lcms2
-# https://github.com/mm2/Little-CMS
-FROM alpine-base AS liblcms2
-
-ARG PREFIX=/usr/local/dims
-ARG LCMS_VERSION=2.17
-ARG LCMS_HASH="sha256:d11af569e42a1baa1650d20ad61d12e41af4fead4aa7964a01f93b08b53ab074"
-
-WORKDIR /build
-
-COPY --from=mozjpeg ${PREFIX}/mozjpeg ${PREFIX}/mozjpeg
-
-ADD --checksum="${LCMS_HASH}" \
-    "https://github.com/mm2/Little-CMS/releases/download/lcms2.17/lcms2-2.17.tar.gz" \
-    lcms2-${LCMS_VERSION}.tar.gz
-
-RUN tar -xvf lcms2-${LCMS_VERSION}.tar.gz && \
-    cd lcms2-${LCMS_VERSION} && \
-    ./configure --prefix=${PREFIX}/lcms2 \
-        --with-jpeg=$PREFIX/mozjpeg \
-        --enable-static && \
-    make -j"$(nproc)" && \
-    make install
-
 # -- Build libvips
 # https://www.libvips.org/
 FROM alpine-base AS libvips
@@ -163,21 +114,22 @@ ARG VIPS_HASH="sha256:d114d7c132ec5b45f116d654e17bb4af84561e3041183cd4bfd79abfb8
 
 WORKDIR /build
 
-RUN apk add --no-cache bzip2-static expat-dev expat-static meson py3-pip
+RUN apk add --no-cache \
+        jpeg-dev libjpeg-turbo-static \
+        lcms2-dev lcms2-static \
+        bzip2-static \
+        expat-dev expat-static \
+        meson py3-pip
 
-COPY --from=libwebp  ${PREFIX}/libwebp  ${PREFIX}/libwebp
-COPY --from=libtiff  ${PREFIX}/libtiff  ${PREFIX}/libtiff
-COPY --from=libpng   ${PREFIX}/libpng   ${PREFIX}/libpng
-COPY --from=glib     ${PREFIX}/glib-2.0 ${PREFIX}/glib-2.0
-COPY --from=mozjpeg  ${PREFIX}/mozjpeg  ${PREFIX}/mozjpeg
-COPY --from=liblcms2 ${PREFIX}/lcms2    ${PREFIX}/lcms2
+COPY --from=libwebp ${PREFIX}/libwebp ${PREFIX}/libwebp
+COPY --from=libtiff ${PREFIX}/libtiff ${PREFIX}/libtiff
+COPY --from=libpng  ${PREFIX}/libpng  ${PREFIX}/libpng
+COPY --from=glib  ${PREFIX}/glib-2.0  ${PREFIX}/glib-2.0
 
 ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/glib-2.0/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/mozjpeg/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/lcms2/lib/pkgconfig
 
 ADD --checksum="${VIPS_HASH}" \
     https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz \
@@ -205,8 +157,6 @@ COPY --from=libwebp     ${PREFIX}/libwebp     ${PREFIX}/libwebp
 COPY --from=libtiff     ${PREFIX}/libtiff     ${PREFIX}/libtiff
 COPY --from=libvips     ${PREFIX}/libvips     ${PREFIX}/libvips
 COPY --from=glib        ${PREFIX}/glib-2.0    ${PREFIX}/glib-2.0
-COPY --from=mozjpeg     ${PREFIX}/mozjpeg     ${PREFIX}/mozjpeg
-COPY --from=liblcms2    ${PREFIX}/lcms2       ${PREFIX}/lcms2
 COPY scripts/air-install.sh .
 
 ENV PKG_CONFIG_PATH=${PREFIX}/libwebp/lib/pkgconfig
@@ -214,19 +164,15 @@ ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libpng/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libtiff/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libvips/lib/pkgconfig
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/glib-2.0/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/mozjpeg/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/lcms2/lib/pkgconfig
-ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX}/libwebp/lib/pkgconfig
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libpng/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libtiff/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libvips/lib
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/glib-2.0/lib
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/mozjpeg/lib
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/lcms2/lib
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PREFIX}/libwebp/lib
 
 RUN apk add --no-cache \
+        jpeg-dev libjpeg-turbo-static \
+        lcms2-dev lcms2-static \
         giflib-dev giflib-static \
         bzip2-static \
         libsharpyuv \

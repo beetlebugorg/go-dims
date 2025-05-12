@@ -30,8 +30,6 @@ func ResizeCommand(image *vips.ImageRef, args string) error {
 	}
 	rect := geo.ApplyMeta(image)
 
-	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)
-
 	xr := float64(rect.Width) / float64(image.Width())
 	yr := float64(rect.Height) / float64(image.Height())
 

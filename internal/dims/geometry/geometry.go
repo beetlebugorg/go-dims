@@ -109,6 +109,17 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	// Get original image dimensions
 	origWidth := float64(image.Width())
 	origHeight := float64(image.Height())
+	requestedWidth := meta.Width
+	requestedHeight := meta.Height
+
+	// Set width and height to original image dimensions if not specified
+	if meta.Width == 0 {
+		meta.Width = float64(origWidth)
+	}
+
+	if meta.Height == 0 {
+		meta.Height = float64(origHeight)
+	}
 
 	// Apply width and height percentage if specified
 	if g.Flags.WidthPercent {
@@ -127,13 +138,28 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		meta.Y = int(float64(origHeight) * float64(g.Y) / 100.0)
 	}
 
+	if g.Flags.Fill {
+		scaleX := meta.Width / origWidth
+		scaleY := meta.Height / origHeight
+		scale := math.Max(scaleX, scaleY)
+
+		scaledWidth := origWidth * scale
+		scaledHeight := origHeight * scale
+
+		meta.Width = scaledWidth
+		meta.Height = scaledHeight
+	}
+
 	// Apply aspect ratio if not forced
 	if !g.Flags.Force {
-		if meta.Width == 0 && meta.Height != 0 {
-			meta.Width = float64(meta.Height) * float64(origWidth) / float64(origHeight)
-		} else if meta.Height == 0 && meta.Width != 0 {
-			meta.Height = float64(meta.Width) * float64(origHeight) / float64(origWidth)
-		} else if meta.Width != 0 && meta.Height != 0 {
+		if requestedWidth == 0 && requestedHeight != 0 {
+			// Fill the width from the height
+			meta.Width = origWidth
+		} else if requestedHeight == 0 && requestedWidth != 0 {
+			// Fill the height from the width
+			meta.Height = origHeight
+		} else if requestedWidth != 0 && requestedHeight != 0 {
+			// Fill the width and height from the original image ratio
 			ratio := float64(origWidth) / float64(origHeight)
 			if float64(meta.Width)/float64(meta.Height) > ratio {
 				meta.Width = float64(meta.Height) * ratio
@@ -160,20 +186,6 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 		if origHeight > meta.Height {
 			meta.Height = origHeight
-		}
-	}
-
-	if g.Flags.Fill {
-		if meta.Width > 0 && meta.Height > 0 {
-			scaleX := meta.Width / origWidth
-			scaleY := meta.Height / origHeight
-			scale := math.Max(scaleX, scaleY)
-
-			scaledWidth := origWidth * scale
-			scaledHeight := origHeight * scale
-
-			meta.Width = scaledWidth
-			meta.Height = scaledHeight
 		}
 	}
 

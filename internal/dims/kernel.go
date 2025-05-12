@@ -480,16 +480,31 @@ func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) (strin
 		return "", err
 	}
 
-	rect = rect.ApplyMeta(image)
-
 	rect.X = int(float64(rect.X) / float64(factor))
 	rect.Y = int(float64(rect.Y) / float64(factor))
-	rect.Width = float64(rect.Width) / float64(factor)
-	rect.Height = float64(rect.Height) / float64(factor)
 
-	return fmt.Sprintf("%dx%d+%d+%d",
-		int(rect.Width),
-		int(rect.Height),
-		int(rect.X),
-		int(rect.Y)), nil
+	if rect.Width > 0 {
+		rect.Width = float64(rect.Width) / float64(factor)
+	}
+
+	if rect.Height > 0 {
+		rect.Height = float64(rect.Height) / float64(factor)
+	}
+
+	// Output full geometry
+	if rect.Y > 0 {
+		return fmt.Sprintf("%dx%d+%d+%d", int(rect.Width), int(rect.Height), int(rect.X), int(rect.Y)), nil
+	}
+
+	// Output geometry without Y
+	if rect.X > 0 {
+		return fmt.Sprintf("%dx%d+%d", int(rect.Width), int(rect.Height), int(rect.X)), nil
+	}
+
+	// Output geometry without offsets
+	if rect.Height > 0 {
+		return fmt.Sprintf("%dx%d", int(rect.Width), int(rect.Height)), nil
+	}
+
+	return fmt.Sprintf("%dx", int(rect.Width)), nil
 }

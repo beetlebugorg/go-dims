@@ -24,16 +24,6 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type Kernel interface {
-	ValidateSignature() bool
-	FetchImage() error
-	ProcessImage() (string, []byte, error)
-	ProcessCommand(ctx context.Context, command operations.Command) error
-	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
-	SendError(w http.ResponseWriter, status int, message string)
-}
-
 type ErrorImageGenerator interface {
 	GenerateErrorImage(w http.ResponseWriter, status int, message string)
 }

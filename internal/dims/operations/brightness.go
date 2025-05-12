@@ -16,7 +16,6 @@ package operations
 
 import (
 	"fmt"
-	"log/slog"
 	"math"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
@@ -24,8 +23,6 @@ import (
 )
 
 func BrightnessCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("BrightnessCommand", "args", args)
-
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
 		return err
@@ -33,8 +30,6 @@ func BrightnessCommand(image *vips.ImageRef, args string) error {
 
 	brightness := float64(geo.Width)
 	contrast := float64(geo.Height)
-
-	slog.Debug("BrightnessCommand", "brightness", brightness, "contrast", contrast)
 
 	coefficients := computeIMCoefficients(brightness, contrast)
 

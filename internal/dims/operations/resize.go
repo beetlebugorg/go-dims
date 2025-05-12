@@ -17,13 +17,9 @@ package operations
 import (
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/sagikazarmark/slog-shim"
 )
 
 func ResizeCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("ResizeCommand", "args", args)
-
-	// Parse Geometry
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
 		return err

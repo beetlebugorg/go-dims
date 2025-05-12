@@ -18,12 +18,9 @@ import (
 	"strconv"
 
 	"github.com/davidbyttow/govips/v2/vips"
-	"github.com/sagikazarmark/slog-shim"
 )
 
 func QualityCommand(image *vips.ImageRef, args string, opts *ExportOptions) error {
-	slog.Debug("QualityCommand", "args", args)
-
 	quality, err := strconv.Atoi(args)
 	if err != nil {
 		return err

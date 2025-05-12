@@ -35,6 +35,8 @@ type Image struct {
 }
 
 func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
+	slog.Debug("downloadImage", "url", imageUrl)
+
 	_, err := url.ParseRequestURI(imageUrl)
 	if err != nil {
 		return nil, err
@@ -45,7 +47,7 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 		return nil, err
 	}
 
-	request.Header.Set("User-Agent", fmt.Sprintf("pixeljet/%s", Version))
+	request.Header.Set("User-Agent", fmt.Sprintf("go-dims/%s", Version))
 
 	http.DefaultClient.Timeout = timeout
 	image, err := http.DefaultClient.Do(request)
@@ -69,8 +71,6 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 		Size:         imageSize,
 		Bytes:        imageBytes,
 	}
-
-	slog.Info("downloadImage", "status", sourceImage.Status, "edgeControl", sourceImage.EdgeControl, "cacheControl", sourceImage.CacheControl, "lastModified", sourceImage.LastModified, "etag", sourceImage.Etag, "format", sourceImage.Format)
 
 	return &sourceImage, nil
 }

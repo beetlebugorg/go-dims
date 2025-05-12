@@ -15,15 +15,11 @@
 package operations
 
 import (
-	"log/slog"
-
 	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func SharpenCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("SharpenCommand", "args", args)
-
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
 		return err
@@ -34,8 +30,6 @@ func SharpenCommand(image *vips.ImageRef, args string) error {
 	if m2 == 0 {
 		m2 = 2.0
 	}
-
-	slog.Debug("SharpenCommand", "m2", m2, "x1", x1)
 
 	return image.Sharpen(float64(0.5), x1, m2)
 }

@@ -30,6 +30,8 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -102,10 +104,11 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	// Construct golden file name
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	testName = strings.TrimPrefix(testName, "TestImage_")
+	env := getEnvironment()
 	ext := format.FileExt()
 
-	goldenPath := fmt.Sprintf("%s%s.%s.golden%s", goldenImageDir, base, testName, ext)
-	failedPath := fmt.Sprintf("%s%s.%s.failed%s", goldenImageDir, base, testName, ext)
+	goldenPath := fmt.Sprintf("%s%s.%s-%s.golden%s", goldenImageDir, base, testName, env, ext)
+	failedPath := fmt.Sprintf("%s%s.%s-%s.failed%s", goldenImageDir, base, testName, env, ext)
 
 	// Check for existing golden file
 	golden, err := os.ReadFile(goldenPath)
@@ -127,4 +130,25 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	if err := os.WriteFile(goldenPath, buf, 0644); err != nil {
 		t.Fatalf("assertGoldenMatch: failed to write golden file: %v", err)
 	}
+}
+
+func getEnvironment() string {
+	switch runtime.GOOS {
+	case "linux":
+		out, _ := exec.Command("lsb_release", "-cs").Output()
+		if out == nil {
+			// Fallback to /etc/os-release if lsb_release is not available
+			out, err := exec.Command("sh", "-c", "source /etc/os-release && echo $ID").Output()
+			if err != nil {
+				return "linux-unknown_" + runtime.GOARCH
+			}
+
+			return "linux-" + strings.TrimSpace(string(out)) + "_" + runtime.GOARCH
+		}
+
+		strout := strings.TrimSuffix(string(out), "\n")
+		return "linux-" + strout + "_" + runtime.GOARCH
+	}
+	// default to unknown assets otherwise
+	return "ignore"
 }

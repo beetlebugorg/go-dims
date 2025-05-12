@@ -152,13 +152,7 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 
 	// Apply aspect ratio if not forced
 	if !g.Flags.Force {
-		if requestedWidth == 0 && requestedHeight != 0 {
-			// Fill the width from the height
-			meta.Width = origWidth
-		} else if requestedHeight == 0 && requestedWidth != 0 {
-			// Fill the height from the width
-			meta.Height = origHeight
-		} else if requestedWidth != 0 && requestedHeight != 0 {
+		if requestedWidth != 0 || requestedHeight != 0 {
 			// Fill the width and height from the original image ratio
 			ratio := float64(origWidth) / float64(origHeight)
 			if float64(meta.Width)/float64(meta.Height) > ratio {
@@ -190,6 +184,10 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	}
 
 	return meta
+}
+
+func (g Geometry) String() string {
+	return fmt.Sprintf("%.0fx%0.f+%d+%d", g.Width, g.Height, g.X, g.Y)
 }
 
 //-- ErrorListener

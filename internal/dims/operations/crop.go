@@ -9,7 +9,7 @@ import (
 )
 
 func CropCommand(image *vips.ImageRef, args string) error {
-	sanitizedArgs := strings.ReplaceAll(args, " ", "+")
+	sanitizedArgs := strings.ReplaceAll(args, " ", "+") + "!"
 
 	rect, err := geometry.ParseGeometry(sanitizedArgs)
 	if err != nil {

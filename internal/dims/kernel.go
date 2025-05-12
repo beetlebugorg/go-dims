@@ -169,7 +169,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
-				command.Args = adjustCropAfterShrink(command.Args, shrinkFactor)
+				command.Args = adjustCropAfterShrink(image, command.Args, shrinkFactor)
 			}
 
 			if command.Name == "strip" && command.Args == "false" {
@@ -468,8 +468,9 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
 }
 
-func adjustCropAfterShrink(args string, factor int) string {
+func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) string {
 	var rect = geometry.ParseGeometry(args)
+	rect = rect.ApplyMeta(image)
 
 	rect.X = int(float64(rect.X) / float64(factor))
 	rect.Y = int(float64(rect.Y) / float64(factor))

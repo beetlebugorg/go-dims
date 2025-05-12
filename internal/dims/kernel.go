@@ -169,7 +169,10 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
-				command.Args = adjustCropAfterShrink(image, command.Args, shrinkFactor)
+				command.Args, err = adjustCropAfterShrink(image, command.Args, shrinkFactor)
+				if err != nil {
+					return "", nil, err
+				}
 			}
 
 			if command.Name == "strip" && command.Args == "false" {
@@ -456,7 +459,10 @@ func sourceMaxAge(header string) (int, error) {
 func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	for _, command := range r.Commands() {
 		if command.Name == "thumbnail" || command.Name == "resize" {
-			var rect = geometry.ParseGeometry(command.Args)
+			rect, err := geometry.ParseGeometry(command.Args)
+			if err != nil {
+				return geometry.Geometry{}, err
+			}
 
 			if rect.Width > 0 && rect.Height > 0 {
 				return rect, nil
@@ -468,8 +474,12 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
 }
 
-func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) string {
-	var rect = geometry.ParseGeometry(args)
+func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) (string, error) {
+	rect, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return "", err
+	}
+
 	rect = rect.ApplyMeta(image)
 
 	rect.X = int(float64(rect.X) / float64(factor))
@@ -481,5 +491,5 @@ func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) string
 		int(rect.Width),
 		int(rect.Height),
 		int(rect.X),
-		int(rect.Y))
+		int(rect.Y)), nil
 }

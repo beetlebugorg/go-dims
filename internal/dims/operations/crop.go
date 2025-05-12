@@ -11,7 +11,10 @@ import (
 func CropCommand(image *vips.ImageRef, args string) error {
 	sanitizedArgs := strings.ReplaceAll(args, " ", "+")
 
-	rect := geometry.ParseGeometry(sanitizedArgs)
+	rect, err := geometry.ParseGeometry(sanitizedArgs)
+	if err != nil {
+		return err
+	}
 	rect = rect.ApplyMeta(image)
 
 	height := rect.Y + int(rect.Height)

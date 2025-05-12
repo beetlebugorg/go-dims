@@ -1,7 +1,7 @@
 package geometry
 
 import (
-	"log/slog"
+	"fmt"
 	"math"
 	"strconv"
 
@@ -54,7 +54,7 @@ type Geometry struct {
 // "100x200+50+50%" - width 100, height 200, x offset 50, y offset 50%
 // "+50+50" - x offset 50, y offset 50, width and height are 100% of the rest of the image
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
-func ParseGeometry(geometry string) Geometry {
+func ParseGeometry(geometry string) (Geometry, error) {
 	is := antlr.NewInputStream(geometry)
 
 	var errorListener = errorListener{}
@@ -75,10 +75,10 @@ func ParseGeometry(geometry string) Geometry {
 	antlr.ParseTreeWalkerDefault.Walk(g, p.Start_())
 
 	if len(errorListener.Errors) > 0 {
-		return Geometry{}
+		return Geometry{}, errorListener.Errors[0]
 	}
 
-	return *g.Geometry
+	return *g.Geometry, nil
 }
 
 // ApplyMeta returns a geometry that is modified as determined
@@ -188,6 +188,10 @@ type syntaxError struct {
 	msg    string
 }
 
+func (e syntaxError) Error() string {
+	return fmt.Sprintf("syntax error at column %d: %s", e.column, e.msg)
+}
+
 type errorListener struct {
 	*antlr.DefaultErrorListener
 	Errors []syntaxError
@@ -195,8 +199,6 @@ type errorListener struct {
 
 func (g *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	g.Errors = append(g.Errors, syntaxError{line, column, msg})
-
-	slog.Error("SyntaxError", "line", line, "column", column, "msg", msg)
 }
 
 //-- GeometryListener

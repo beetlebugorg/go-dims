@@ -24,7 +24,10 @@ func ResizeCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("ResizeCommand", "args", args)
 
 	// Parse Geometry
-	geo := geometry.ParseGeometry(args)
+	geo, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return err
+	}
 	rect := geo.ApplyMeta(image)
 
 	slog.Debug("ResizeCommand", "width", rect.Width, "height", rect.Height)

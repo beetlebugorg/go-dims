@@ -88,8 +88,6 @@ var VipsRequestCommands = map[string]operations.VipsRequestOperation{
 
 // FetchImage downloads the image from the given URL.
 func (r *Request) FetchImage() error {
-	slog.Info("downloadImage", "url", r.ImageUrl)
-
 	timeout := time.Duration(r.Config.Timeout.Download) * time.Millisecond
 	sourceImage, err := core.FetchImage(r.ImageUrl, timeout)
 	if err != nil {
@@ -107,8 +105,6 @@ func (r *Request) FetchImage() error {
 
 // ProcessImage will execute the commands on the image.
 func (r *Request) ProcessImage() (string, []byte, error) {
-	slog.Debug("executeVips")
-
 	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
 	if err != nil {
 		return "", nil, err
@@ -134,8 +130,6 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	}
 
 	ctx := context.Background()
-
-	slog.Info("executeVips", "image", image, "buffer-size", len(r.SourceImage.Bytes))
 
 	// Execute the commands.
 	ctx, task := trace.NewTask(ctx, "v5.ProcessImage")
@@ -282,8 +276,6 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 
 	// Set cache headers.
 	if maxAge > 0 {
-		slog.Debug("sendImage", "maxAge", maxAge)
-
 		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
 		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
 	}
@@ -301,8 +293,6 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 		}
 
 		filename := filepath.Base(u.Path)
-
-		slog.Debug("sendImage", "sendContentDisposition", r.SendContentDisposition, "filename", filename)
 
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	}
@@ -327,15 +317,11 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	}
 
 	if r.SourceImage.LastModified != "" {
-		slog.Debug("sendImage", "lastModified", r.SourceImage.LastModified)
-
 		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
 	}
 }
 
 func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error {
-	slog.Info("SendImage", "status", status, "format", imageFormat, "size", len(imageBlob))
-
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
 	}
@@ -359,8 +345,6 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 }
 
 func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
-	slog.Info("sendError", "status", status, "message", message)
-
 	// Create blank image with error background color.
 	// Run error command through commands
 	// Call sendImage()

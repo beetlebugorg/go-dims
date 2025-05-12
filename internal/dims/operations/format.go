@@ -2,12 +2,9 @@ package operations
 
 import (
 	"github.com/davidbyttow/govips/v2/vips"
-	"golang.org/x/exp/slog"
 )
 
 func FormatCommand(image *vips.ImageRef, args string, opts *ExportOptions) error {
-	slog.Debug("FormatCommand", "args", args)
-
 	switch args {
 	case "jpeg", "jpg":
 		opts.ImageType = vips.ImageTypeJPEG
@@ -20,8 +17,6 @@ func FormatCommand(image *vips.ImageRef, args string, opts *ExportOptions) error
 	case "tiff", "tif":
 		opts.ImageType = vips.ImageTypeTIFF
 	}
-
-	slog.Debug("FormatCommand", "imagetype", opts.ImageType)
 
 	return nil
 }

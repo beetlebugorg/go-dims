@@ -15,15 +15,12 @@
 package operations
 
 import (
-	"log/slog"
 	"strconv"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func RotateCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("RotateCommand", "args", args)
-
 	degrees, err := strconv.ParseFloat(args, 64)
 	if err != nil {
 		return err

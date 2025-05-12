@@ -24,20 +24,16 @@ import (
 )
 
 func ThumbnailCommand(image *vips.ImageRef, args string) error {
-	slog.Debug("LegacyThumbnailCommand", "args", args)
-
-	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
-
-	rect, err := geometry.ParseGeometry(resizedArgs)
+	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
 		return err
 	}
 
-	if err := image.ThumbnailWithSize(int(rect.Width), int(rect.Height), vips.InterestingLow, vips.SizeUp); err != nil {
-		return err
+	if rect.Flags.Force {
+		return ResizeCommand(image, args)
 	}
 
-	return nil
+	return image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingLow)
 }
 
 func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {

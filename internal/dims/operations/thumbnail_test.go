@@ -77,3 +77,22 @@ func TestThumbnailIgnoreAspectRatio(t *testing.T) {
 		nil, // use default ExportNative
 	)
 }
+
+// Expected: Resize to 256x128, cropping in the center.
+func TestLegacyThumbnail(t *testing.T) {
+	path := "grid.png"
+	args := "256x128"
+
+	runGoldenTest(
+		t,
+		path,
+		func(img *vips.ImageRef) error {
+			return LegacyThumbnailCommand(img, args)
+		},
+		func(img *vips.ImageRef) {
+			assert.Equal(t, img.Width(), 256)
+			assert.Equal(t, img.Height(), 128)
+		},
+		nil, // use default ExportNative
+	)
+}

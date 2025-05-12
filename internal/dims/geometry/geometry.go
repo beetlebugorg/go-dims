@@ -118,6 +118,15 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		meta.Height = float64(origHeight) * float64(g.Height) / 100.0
 	}
 
+	// Apply offset x and y percentage if specified
+	if g.Flags.OffsetXPercent {
+		meta.X = int(float64(origWidth) * float64(g.X) / 100.0)
+	}
+
+	if g.Flags.OffsetYPercent {
+		meta.Y = int(float64(origHeight) * float64(g.Y) / 100.0)
+	}
+
 	// Apply aspect ratio if not forced
 	if !g.Flags.Force {
 		if meta.Width == 0 && meta.Height != 0 {
@@ -167,10 +176,6 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 			meta.Height = scaledHeight
 		}
 	}
-
-	// Apply x and y offsets
-	meta.X = g.X
-	meta.Y = g.Y
 
 	return meta
 }

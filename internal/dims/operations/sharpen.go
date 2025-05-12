@@ -24,7 +24,11 @@ import (
 func SharpenCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("SharpenCommand", "args", args)
 
-	geo := geometry.ParseGeometry(args)
+	geo, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return err
+	}
+
 	x1 := geo.Width
 	m2 := geo.Height * 2
 	if m2 == 0 {

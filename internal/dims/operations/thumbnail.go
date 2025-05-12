@@ -28,7 +28,10 @@ func ThumbnailCommand(image *vips.ImageRef, args string) error {
 
 	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
-	var rect = geometry.ParseGeometry(resizedArgs)
+	rect, err := geometry.ParseGeometry(resizedArgs)
+	if err != nil {
+		return err
+	}
 
 	if err := image.ThumbnailWithSize(int(rect.Width), int(rect.Height), vips.InterestingLow, vips.SizeUp); err != nil {
 		return err
@@ -43,7 +46,10 @@ func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
 	resizedArgs := strings.TrimRight(args, "^!<>") + "^"
 
 	// Parse Geometry (with fill)
-	var rect = geometry.ParseGeometry(resizedArgs)
+	rect, err := geometry.ParseGeometry(resizedArgs)
+	if err != nil {
+		return err
+	}
 	rect = rect.ApplyMeta(image)
 
 	if err := image.Thumbnail(int(rect.Width), int(rect.Height), vips.InterestingAll); err != nil {
@@ -51,7 +57,10 @@ func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
 	}
 
 	// Parse Geometry (actual requested size)
-	rect = geometry.ParseGeometry(args)
+	rect, err = geometry.ParseGeometry(args)
+	if err != nil {
+		return err
+	}
 
 	width := image.Width()
 	height := image.Height()

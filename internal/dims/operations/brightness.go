@@ -26,7 +26,11 @@ import (
 func BrightnessCommand(image *vips.ImageRef, args string) error {
 	slog.Debug("BrightnessCommand", "args", args)
 
-	geo := geometry.ParseGeometry(args)
+	geo, err := geometry.ParseGeometry(args)
+	if err != nil {
+		return err
+	}
+
 	brightness := float64(geo.Width)
 	contrast := float64(geo.Height)
 

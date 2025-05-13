@@ -57,7 +57,10 @@ func ParseAndValidateV5Request(r *http.Request, config core.Config) (*Request, e
 
 	// Validate signature
 	if !config.DevelopmentMode && !validateSignatureV5(request) {
-		return &request, fmt.Errorf("signature mismatch")
+		return &request, &core.StatusError{
+			StatusCode: http.StatusUnauthorized,
+			Message:    "invalid signature",
+		}
 	}
 
 	return &request, nil

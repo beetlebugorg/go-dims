@@ -24,16 +24,6 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type Kernel interface {
-	ValidateSignature() bool
-	FetchImage() error
-	ProcessImage() (string, []byte, error)
-	ProcessCommand(ctx context.Context, command operations.Command) error
-	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, status int, imageType string, imageBlob []byte) error
-	SendError(w http.ResponseWriter, status int, message string)
-}
-
 type ErrorImageGenerator interface {
 	GenerateErrorImage(w http.ResponseWriter, status int, message string)
 }
@@ -59,6 +49,8 @@ type Request struct {
 	Error                  bool        // Whether the error image is being served.
 	Timestamp              int64       // The timestamp of the request
 	SourceImage            core.Image  // The source image.
+
+	shrinkFactor int
 }
 
 var VipsTransformCommands = map[string]operations.VipsTransformOperation{
@@ -86,49 +78,33 @@ var VipsRequestCommands = map[string]operations.VipsRequestOperation{
 	"watermark": operations.Watermark,
 }
 
-// FetchImage downloads the image from the given URL.
-func (r *Request) FetchImage() error {
-	timeout := time.Duration(r.Config.Timeout.Download) * time.Millisecond
-	sourceImage, err := core.FetchImage(r.ImageUrl, timeout)
-	if err != nil {
-		return err
-	}
-
-	if sourceImage.Status != 200 {
-		return fmt.Errorf("failed to download image: %d", sourceImage.Status)
-	}
-
+func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 	r.SourceImage = *sourceImage
 
-	return nil
-}
-
-// ProcessImage will execute the commands on the image.
-func (r *Request) ProcessImage() (string, []byte, error) {
-	image, err := vips.NewImageFromBuffer(r.SourceImage.Bytes)
+	image, err := vips.NewImageFromBuffer(sourceImage.Bytes)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
-	shrinkFactor := 1
+	r.shrinkFactor = 1
 	requestedSize, err := r.requestedImageSize()
-	if err == nil && vips.DetermineImageType(r.SourceImage.Bytes) == vips.ImageTypeJPEG {
+	if err == nil && vips.DetermineImageType(sourceImage.Bytes) == vips.ImageTypeJPEG {
 		xs := image.Width() / int(requestedSize.Width)
 		ys := image.Height() / int(requestedSize.Height)
 
 		if (xs > 2) || (ys > 2) {
 			importParams.JpegShrinkFactor.Set(4)
-			shrinkFactor = 4
+			r.shrinkFactor = 4
 		}
 	}
 
-	image, err = vips.LoadImageFromBuffer(r.SourceImage.Bytes, importParams)
-	if err != nil {
-		return "", nil, err
-	}
+	return vips.LoadImageFromBuffer(sourceImage.Bytes, importParams)
+}
 
+// ProcessImage will execute the commands on the image.
+func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, []byte, error) {
 	ctx := context.Background()
 
 	// Execute the commands.
@@ -136,7 +112,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 	defer task.End()
 
 	opts := operations.ExportOptions{
-		ImageType:        image.Format(),
+		ImageType:        core.ImageTypes[r.SourceImage.Format],
 		JpegExportParams: vips.NewJpegExportParams(),
 		PngExportParams:  vips.NewPngExportParams(),
 		WebpExportParams: vips.NewWebpExportParams(),
@@ -163,27 +139,26 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 
 		if operation, ok := VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
-				command.Args, err = adjustCropAfterShrink(image, command.Args, shrinkFactor)
+				adjustedArgs, err := adjustCropAfterShrink(command.Args, r.shrinkFactor)
 				if err != nil {
 					return "", nil, err
 				}
+
+				command.Args = adjustedArgs
 			}
 
 			if command.Name == "strip" && command.Args == "false" {
 				stripMetadata = false
 			}
 
-			slog.Debug("executeTransformCommand", "command", command.Name, "args", command.Args)
-			if err := operation(image, command.Args); err != nil {
+			if err := operation(image, command.Args); err != nil && !errorImage {
 				return "", nil, err
 			}
 		} else if operation, ok := VipsExportCommands[command.Name]; ok {
-			slog.Debug("executeExportCommand", "command", command.Name, "args", command.Args)
-			if err := operation(image, command.Args, &opts); err != nil {
+			if err := operation(image, command.Args, &opts); err != nil && !errorImage {
 				return "", nil, err
 			}
-		} else if operation, ok := VipsRequestCommands[command.Name]; ok {
-			slog.Debug("executeRequestCommand", "command", command.Name, "args", command.Args)
+		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
 			if err := operation(image, command.Args, operations.RequestOperation{
 				Request: r.HttpRequest,
 				Config:  r.Config,
@@ -244,7 +219,7 @@ func (r *Request) ProcessImage() (string, []byte, error) {
 		return "", nil, err
 	}
 
-	return vips.ImageTypes[image.Format()], imageBytes, nil
+	return vips.ImageTypes[opts.ImageType], imageBytes, nil
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {
@@ -344,26 +319,38 @@ func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat strin
 	return nil
 }
 
-func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
-	// Create blank image with error background color.
-	// Run error command through commands
-	// Call sendImage()
+func (r *Request) SendError(w http.ResponseWriter, err error) error {
+	message := err.Error()
 
-	errorImage, err := vips.Black(2048, 2048)
+	// Strip stack from vips errors.
+	if strings.HasPrefix(message, "VipsOperation:") {
+		message = message[0:strings.Index(message, "\n")]
+	}
+
+	slog.Error("SendError", "message", message)
+
+	// Set status code.
+	status := http.StatusInternalServerError
+	var statusError *core.StatusError
+	var operationError *operations.OperationError
+	if errors.As(err, &statusError) {
+		status = statusError.StatusCode
+	} else if errors.As(err, &operationError) {
+		status = operationError.StatusCode
+	}
+
+	errorImage, err := vips.Black(512, 512)
 	if err != nil {
-		slog.Error("createErrorImage failed.", "error", err)
-		return
+		return err
 	}
 
 	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
-		slog.Error("BandjoinConst failed", "error", err)
-		return
+		return err
 	}
 
 	backgroundColor, err := colorx.ParseHexColor(r.Config.Error.Background)
 	if err != nil {
-		slog.Error("parseHexColor failed.", "error", err)
-		return
+		return err
 	}
 
 	red, green, blue, _ := backgroundColor.RGBA()
@@ -372,32 +359,36 @@ func (r *Request) SendError(w http.ResponseWriter, status int, message string) {
 	blueI := float64(blue) / 65535 * 255
 
 	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
-		return
+		return err
 	}
 
-	// Export blank image to JPG.
-	exportOptions := vips.NewJpegExportParams()
-	exportOptions.Quality = 1
-
-	imageBytes, _, err := errorImage.ExportJpeg(exportOptions)
-	if err != nil {
-		slog.Error("exportJpeg failed.", "error", err)
-		return
+	r.SourceImage = core.Image{
+		Status: status,
+		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}
 
-	r.SourceImage.Bytes = imageBytes
-	r.SourceImage.Format = "jpg"
+	// Send error headers.
+	maxAge := r.Config.OriginCacheControl.Error
+	if maxAge > 0 {
+		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
+		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
+	}
 
-	imageType, imageBlob, err := r.ProcessImage()
+	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
 	if err != nil {
 		// If processing failed because of a bad command then return the image as-is.
+		exportOptions := vips.NewJpegExportParams()
+		exportOptions.Quality = 1
 		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
 
-		r.SendImage(w, status, "jpg", imageBytes)
-		return
+		return r.SendImage(w, status, "jpg", imageBytes)
 	}
 
-	r.SendImage(w, status, imageType, imageBlob)
+	if imageType == "" {
+		imageType = "jpg"
+	}
+
+	return r.SendImage(w, status, imageType, imageBlob)
 }
 
 func (r *Request) Commands() []operations.Command {
@@ -458,10 +449,10 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
 }
 
-func adjustCropAfterShrink(image *vips.ImageRef, args string, factor int) (string, error) {
+func adjustCropAfterShrink(args string, factor int) (string, error) {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return "", err
+		return "", operations.NewOperationError("crop", args, err.Error())
 	}
 
 	rect.X = int(float64(rect.X) / float64(factor))

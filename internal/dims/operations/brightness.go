@@ -25,7 +25,7 @@ import (
 func BrightnessCommand(image *vips.ImageRef, args string) error {
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return err
+		return NewOperationError("brightness", args, err.Error())
 	}
 
 	brightness := float64(geo.Width)
@@ -35,10 +35,15 @@ func BrightnessCommand(image *vips.ImageRef, args string) error {
 
 	adjustedImage, err := applyPolynomial(image, coefficients)
 	if err != nil {
-		return err
+		return NewOperationError("brightness", args, err.Error())
 	}
 
-	return image.Insert(adjustedImage, 0, 0, false, nil)
+	err = image.Insert(adjustedImage, 0, 0, false, nil)
+	if err != nil {
+		return NewOperationError("brightness", args, err.Error())
+	}
+
+	return nil
 }
 
 // PerceptibleReciprocal prevents division by zero.

@@ -22,7 +22,7 @@ import (
 func SharpenCommand(image *vips.ImageRef, args string) error {
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return err
+		return NewOperationError("sharpen", args, err.Error())
 	}
 
 	x1 := geo.Width
@@ -31,5 +31,10 @@ func SharpenCommand(image *vips.ImageRef, args string) error {
 		m2 = 2.0
 	}
 
-	return image.Sharpen(float64(0.5), x1, m2)
+	err = image.Sharpen(float64(0.5), x1, m2)
+	if err != nil {
+		return NewOperationError("sharpen", args, err.Error())
+	}
+
+	return nil
 }

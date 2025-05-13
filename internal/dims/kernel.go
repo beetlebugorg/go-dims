@@ -332,8 +332,11 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 	// Set status code.
 	status := http.StatusInternalServerError
 	var statusError *core.StatusError
+	var operationError *operations.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
+	} else if errors.As(err, &operationError) {
+		status = operationError.StatusCode
 	}
 
 	errorImage, err := vips.Black(512, 512)
@@ -449,7 +452,7 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 func adjustCropAfterShrink(args string, factor int) (string, error) {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return "", err
+		return "", operations.NewOperationError("crop", args, err.Error())
 	}
 
 	rect.X = int(float64(rect.X) / float64(factor))

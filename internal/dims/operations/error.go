@@ -12,22 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package operations
 
-import "fmt"
+import (
+	"fmt"
 
-type StatusError struct {
-	StatusCode int
-	Message    string
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
+)
+
+type OperationError struct {
+	core.StatusError
+	Command string
+	Args    string
 }
 
-func NewStatusError(statusCode int, message string) *StatusError {
-	return &StatusError{
-		StatusCode: statusCode,
-		Message:    message,
+func NewOperationError(command string, args string, message string) *OperationError {
+	return &OperationError{
+		StatusError: *core.NewStatusError(400, message),
+		Command:     command,
+		Args:        args,
 	}
 }
 
-func (e *StatusError) Error() string {
-	return fmt.Sprintf("Error: %s (status: %d)", e.Message, e.StatusCode)
+func (e *OperationError) Error() string {
+	return fmt.Sprintf("OperationError: %s (status: %d) (command: %s) (args: %s)", e.Message, e.StatusCode, e.Command, e.Args)
 }

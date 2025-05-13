@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type Image struct {
@@ -32,6 +34,19 @@ type Image struct {
 	EdgeControl  string // The edge control headers from the downloaded image.
 	LastModified string // The last modified header from the downloaded image.
 	Etag         string // The etag header from the downloaded image.
+}
+
+// ImageTypes defines the various image types supported by govips
+var ImageTypes = map[string]vips.ImageType{
+	"gif":  vips.ImageTypeGIF,
+	"jpeg": vips.ImageTypeJPEG,
+	"jpg":  vips.ImageTypeJPEG,
+	"png":  vips.ImageTypePNG,
+	"tiff": vips.ImageTypeTIFF,
+	"webp": vips.ImageTypeWEBP,
+	"heif": vips.ImageTypeHEIF,
+	"svg":  vips.ImageTypeSVG,
+	"psd":  vips.ImageTypePSD,
 }
 
 type FetchError struct {
@@ -76,7 +91,7 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 		CacheControl: image.Header.Get("Cache-Control"),
 		LastModified: image.Header.Get("Last-Modified"),
 		Etag:         image.Header.Get("Etag"),
-		Format:       image.Header.Get("Content-Type"),
+		Format:       vips.ImageTypes[vips.DetermineImageType(imageBytes)],
 		Size:         imageSize,
 		Bytes:        imageBytes,
 	}

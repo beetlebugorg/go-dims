@@ -112,7 +112,7 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 	defer task.End()
 
 	opts := operations.ExportOptions{
-		ImageType:        image.Format(),
+		ImageType:        core.ImageTypes[r.SourceImage.Format],
 		JpegExportParams: vips.NewJpegExportParams(),
 		PngExportParams:  vips.NewPngExportParams(),
 		WebpExportParams: vips.NewWebpExportParams(),
@@ -154,8 +154,8 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 			if err := operation(image, command.Args); err != nil && !errorImage {
 				return "", nil, err
 			}
-		} else if operation, ok := VipsExportCommands[command.Name]; ok && !errorImage {
-			if err := operation(image, command.Args, &opts); err != nil {
+		} else if operation, ok := VipsExportCommands[command.Name]; ok {
+			if err := operation(image, command.Args, &opts); err != nil && !errorImage {
 				return "", nil, err
 			}
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
@@ -219,7 +219,7 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 		return "", nil, err
 	}
 
-	return vips.ImageTypes[image.Format()], imageBytes, nil
+	return vips.ImageTypes[opts.ImageType], imageBytes, nil
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {
@@ -359,7 +359,12 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		return err
 	}
 
-	_, imageBlob, err := r.ProcessImage(errorImage, true)
+	r.SourceImage = core.Image{
+		Status: status,
+		Format: vips.ImageTypes[vips.ImageTypeJPEG],
+	}
+
+	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
 	if err != nil {
 		// If processing failed because of a bad command then return the image as-is.
 		exportOptions := vips.NewJpegExportParams()
@@ -369,7 +374,11 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		return r.SendImage(w, status, "jpg", imageBytes)
 	}
 
-	return r.SendImage(w, status, "jpg", imageBlob)
+	if imageType == "" {
+		imageType = "jpg"
+	}
+
+	return r.SendImage(w, status, imageType, imageBlob)
 }
 
 func (r *Request) Commands() []operations.Command {

@@ -48,11 +48,14 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 			request, err := dims.ParseAndValidateV4Request(r, config)
 			if err != nil {
-				request.SendError(w, 400, "Signature Mismatch")
+				request.SendError(w, err)
 				return
 			}
 
-			dims.Handler(*request, config, w)
+			if err := dims.Handler(*request, config, w); err != nil {
+				request.SendError(w, err)
+				return
+			}
 		})
 
 	// v5 endpoint
@@ -71,11 +74,15 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 			request, err := dims.ParseAndValidateV5Request(r, config)
 			if err != nil {
-				request.SendError(w, 400, "Signature Mismatch")
+				request.SendError(w, err)
 				return
 			}
 
-			dims.Handler(*request, config, w)
+			if err := dims.Handler(*request, config, w); err != nil {
+
+				request.SendError(w, err)
+				return
+			}
 		})
 
 	mux.HandleFunc("/dims-status",

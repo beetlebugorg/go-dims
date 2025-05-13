@@ -15,45 +15,37 @@
 package dims
 
 import (
-	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func Handler(request Request, config core.Config, w http.ResponseWriter) {
+func Handler(request Request, config core.Config, w http.ResponseWriter) error {
 	// Download image.
-	start := time.Now()
-	if err := request.FetchImage(); err != nil {
-		slog.Error("kernel.FetchImage() failed.", "error", err)
-
-		request.SendError(w, 500, "downloadImage failed.")
-
-		return
+	timeout := time.Duration(request.Config.Timeout.Download) * time.Millisecond
+	sourceImage, err := core.FetchImage(request.ImageUrl, timeout)
+	if err != nil {
+		return err
 	}
-	slog.Info("kernel.FetchImage()", "duration", time.Since(start).Milliseconds())
+
+	// Convert image to vips image.
+	vipsImage, err := request.LoadImage(sourceImage)
+	if err != nil {
+		return err
+	}
 
 	// Execute Imagemagick commands.
-	start = time.Now()
-	imageType, imageBlob, err := request.ProcessImage()
+	imageType, imageBlob, err := request.ProcessImage(vipsImage, false)
 	if err != nil {
-		slog.Error("kernel.ProcessImage() failed.", "error", err)
-
-		request.SendError(w, 500, "image processing failed.")
-
-		return
+		return err
 	}
-	slog.Info("kernel.ProcessImage()", "duration", time.Since(start).Milliseconds())
 
 	// Serve the image.
 	request.SendHeaders(w)
-	start = time.Now()
 	if err := request.SendImage(w, 200, imageType, imageBlob); err != nil {
-		slog.Error("serveImage failed.", "error", err)
-
-		http.Error(w, "Failed to serve image", http.StatusInternalServerError)
-		return
+		return err
 	}
-	slog.Info("kernel.SendImage()", "duration", time.Since(start).Milliseconds())
+
+	return nil
 }

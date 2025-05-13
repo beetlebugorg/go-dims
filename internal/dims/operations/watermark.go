@@ -28,7 +28,7 @@ import (
 func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	url := data.Request.URL.Query().Get("overlay")
 	if url == "" {
-		return fmt.Errorf("missing required query parameter 'overlay'")
+		return NewOperationError("watermark", args, "missing required query parameter 'overlay'")
 	}
 
 	// Parse args "<opacity>,<size>,<gravity>"
@@ -44,17 +44,17 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	timeout := time.Duration(data.Config.Timeout.Download) * time.Millisecond
 	overlayImageSource, err := core.FetchImage(url, timeout)
 	if err != nil {
-		return err
+		return NewOperationError("watermark", args, err.Error())
 	}
 
 	overlayImage, err := vips.LoadImageFromBuffer(overlayImageSource.Bytes, nil)
 	if err != nil {
-		return err
+		return NewOperationError("watermark", args, err.Error())
 	}
 
 	// Resize image
 	if err := scaleOverlay(image, overlayImage, size); err != nil {
-		return err
+		return NewOperationError("watermark", args, err.Error())
 	}
 
 	// Reduce opacity of overlay image

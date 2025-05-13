@@ -1,4 +1,4 @@
-// Copyright 2024 Jeremy Collins. All rights reserved.
+// Copyright 2025 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,26 +15,25 @@
 package operations
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
-	"github.com/davidbyttow/govips/v2/vips"
+	"fmt"
+
+	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func SharpenCommand(image *vips.ImageRef, args string) error {
-	geo, err := geometry.ParseGeometry(args)
-	if err != nil {
-		return NewOperationError("sharpen", args, err.Error())
-	}
+type OperationError struct {
+	core.StatusError
+	Command string
+	Args    string
+}
 
-	x1 := geo.Width
-	m2 := geo.Height * 2
-	if m2 == 0 {
-		m2 = 2.0
+func NewOperationError(command string, args string, message string) *OperationError {
+	return &OperationError{
+		StatusError: *core.NewStatusError(400, message),
+		Command:     command,
+		Args:        args,
 	}
+}
 
-	err = image.Sharpen(float64(0.5), x1, m2)
-	if err != nil {
-		return NewOperationError("sharpen", args, err.Error())
-	}
-
-	return nil
+func (e *OperationError) Error() string {
+	return fmt.Sprintf("OperationError: %s (status: %d) (command: %s) (args: %s)", e.Message, e.StatusCode, e.Command, e.Args)
 }

@@ -23,7 +23,7 @@ import (
 func RotateCommand(image *vips.ImageRef, args string) error {
 	degrees, err := strconv.ParseFloat(args, 64)
 	if err != nil {
-		return err
+		return NewOperationError("rotate", args, err.Error())
 	}
 
 	idx, idy, odx, ody := 0.0, 0.0, 0.0, 0.0

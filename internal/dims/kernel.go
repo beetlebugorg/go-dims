@@ -359,7 +359,7 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		return err
 	}
 
-	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
+	_, imageBlob, err := r.ProcessImage(errorImage, true)
 	if err != nil {
 		// If processing failed because of a bad command then return the image as-is.
 		exportOptions := vips.NewJpegExportParams()
@@ -369,7 +369,7 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		return r.SendImage(w, status, "jpg", imageBytes)
 	}
 
-	return r.SendImage(w, status, imageType, imageBlob)
+	return r.SendImage(w, status, "jpg", imageBlob)
 }
 
 func (r *Request) Commands() []operations.Command {

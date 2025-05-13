@@ -364,6 +364,13 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}
 
+	// Send error headers.
+	maxAge := r.Config.OriginCacheControl.Error
+	if maxAge > 0 {
+		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
+		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
+	}
+
 	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
 	if err != nil {
 		// If processing failed because of a bad command then return the image as-is.

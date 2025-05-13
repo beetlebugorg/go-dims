@@ -34,6 +34,15 @@ type Image struct {
 	Etag         string // The etag header from the downloaded image.
 }
 
+type FetchError struct {
+	Message string
+	Status  int
+}
+
+func (e *FetchError) Error() string {
+	return fmt.Sprintf("FetchError: %s (status: %d)", e.Message, e.Status)
+}
+
 func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	slog.Debug("downloadImage", "url", imageUrl)
 
@@ -70,6 +79,13 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 		Format:       image.Header.Get("Content-Type"),
 		Size:         imageSize,
 		Bytes:        imageBytes,
+	}
+
+	if image.StatusCode != 200 {
+		return nil, &FetchError{
+			Message: fmt.Sprintf("failed to fetch image from %s", imageUrl),
+			Status:  image.StatusCode,
+		}
 	}
 
 	return &sourceImage, nil

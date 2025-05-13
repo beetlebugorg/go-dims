@@ -49,15 +49,6 @@ var ImageTypes = map[string]vips.ImageType{
 	"psd":  vips.ImageTypePSD,
 }
 
-type FetchError struct {
-	Message string
-	Status  int
-}
-
-func (e *FetchError) Error() string {
-	return fmt.Sprintf("FetchError: %s (status: %d)", e.Message, e.Status)
-}
-
 func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	slog.Debug("downloadImage", "url", imageUrl)
 
@@ -97,9 +88,9 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	}
 
 	if image.StatusCode != 200 {
-		return nil, &FetchError{
-			Message: fmt.Sprintf("failed to fetch image from %s", imageUrl),
-			Status:  image.StatusCode,
+		return nil, &StatusError{
+			Message:    fmt.Sprintf("failed to fetch image from %s", imageUrl),
+			StatusCode: image.StatusCode,
 		}
 	}
 

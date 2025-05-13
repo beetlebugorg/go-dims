@@ -22,7 +22,7 @@ import (
 func ThumbnailCommand(image *vips.ImageRef, args string) error {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return err
+		return NewOperationError("thumbnail", args, err.Error())
 	}
 
 	cropMethod := vips.InterestingLow
@@ -35,13 +35,18 @@ func ThumbnailCommand(image *vips.ImageRef, args string) error {
 		return ResizeCommand(image, args)
 	}
 
-	return image.Thumbnail(int(rect.Width), int(rect.Height), cropMethod)
+	err = image.Thumbnail(int(rect.Width), int(rect.Height), cropMethod)
+	if err != nil {
+		return NewOperationError("thumbnail", args, err.Error())
+	}
+
+	return nil
 }
 
 func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return err
+		return NewOperationError("thumbnail", args, err.Error())
 	}
 
 	cropMethod := vips.InterestingCentre
@@ -52,5 +57,10 @@ func LegacyThumbnailCommand(image *vips.ImageRef, args string) error {
 		rect.Height = cropRect.Height / 2
 	}
 
-	return image.Thumbnail(int(rect.Width), int(rect.Height), cropMethod)
+	err = image.Thumbnail(int(rect.Width), int(rect.Height), cropMethod)
+	if err != nil {
+		return NewOperationError("thumbnail", args, err.Error())
+	}
+
+	return nil
 }

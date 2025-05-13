@@ -23,7 +23,7 @@ import (
 func QualityCommand(image *vips.ImageRef, args string, opts *ExportOptions) error {
 	quality, err := strconv.Atoi(args)
 	if err != nil {
-		return err
+		return NewOperationError("quality", args, err.Error())
 	}
 
 	opts.JpegExportParams.Quality = quality

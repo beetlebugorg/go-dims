@@ -25,11 +25,11 @@ func AutolevelCommand(image *vips.ImageRef, args string) error {
 
 	statsOut, err := image.Copy()
 	if err != nil {
-		return err
+		return NewOperationError("autolevel", args, err.Error())
 	}
 
 	if err := statsOut.Stats(); err != nil {
-		return err
+		return NewOperationError("autolevel", args, err.Error())
 	}
 
 	stat, _ := statsOut.GetPoint(0, 0)
@@ -51,7 +51,7 @@ func AutolevelCommand(image *vips.ImageRef, args string) error {
 
 	// Apply the linear stretch
 	if err := image.Linear(scales, offsets); err != nil {
-		return err
+		return NewOperationError("autolevel", args, err.Error())
 	}
 
 	return nil

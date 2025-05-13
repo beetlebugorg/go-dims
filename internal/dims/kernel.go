@@ -331,9 +331,9 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 
 	// Set status code.
 	status := http.StatusInternalServerError
-	var fetchError *core.FetchError
-	if errors.As(err, &fetchError) {
-		status = fetchError.Status
+	var statusError *core.StatusError
+	if errors.As(err, &statusError) {
+		status = statusError.StatusCode
 	}
 
 	errorImage, err := vips.Black(512, 512)

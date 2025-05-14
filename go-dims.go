@@ -96,10 +96,12 @@ func (e *DecryptionCmd) Run() error {
 	return nil
 }
 
-type HealthCheckCmd struct{}
+type HealthCheckCmd struct {
+	Port int `help:"Port to check." default:"8080"`
+}
 
-func (*HealthCheckCmd) Run() error {
-	url := "http://localhost:8080/healthz"
+func (h *HealthCheckCmd) Run() error {
+	url := fmt.Sprintf("http://localhost:%d/healthz", h.Port)
 	client := http.Client{
 		Timeout: 2 * time.Second,
 	}

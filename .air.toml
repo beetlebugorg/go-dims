@@ -3,17 +3,17 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
-  bin = "./build/dims serve --debug --dev"
   cmd = "make"
+  bin = "./build/dims serve"
+  full_bin = "DIMS_DEVELOPMENT_MODE=true DIMS_DEBUG_MODE=true ./build/dims"
+  args_bin = ["serve"]
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "internal/dims/geometry/parser"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
-  full_bin = ""
-  include_dir = []
+  include_dir = ["cmd", "internal", "pkg"]
   include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
   kill_delay = "0s"

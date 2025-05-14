@@ -1,12 +1,12 @@
-VERSION?=v4.0.0
+VERSION ?= $(shell git rev-parse --short=8 HEAD)
 
 all:
 	go generate ./...
-	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.core.Version=${VERSION}'" go-dims.go
+	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims/core.Version=${VERSION}'" go-dims.go
 
 static:
 	go generate ./...
-	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims.core.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif -lsharpyuv'" go-dims.go
+	go build -o ./build/dims -ldflags "-X 'github.com/beetlebugorg/go-dims/internal/dims/core.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lgif -lsharpyuv'" go-dims.go
 
 docs:
 	mdbook build docs

@@ -21,6 +21,7 @@ import (
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type ServeCmd struct {
@@ -28,6 +29,9 @@ type ServeCmd struct {
 
 func (s *ServeCmd) Run() error {
 	config := core.ReadConfig()
+
+	vips.LoggingSettings(nil, vips.LogLevelError)
+	vips.Startup(nil)
 
 	var opts *slog.HandlerOptions
 	if config.DebugMode {

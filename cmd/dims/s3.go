@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build s3.object.lambda
+// +build s3.object.lambda
+
 package main
 
 import (
@@ -31,14 +34,7 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type AwsCmd struct {
-	S3Object S3ObjectCmd `cmd:"" name:"s3-lambda" help:"Implementation of AWS S3 Object Lambda."`
-}
-
-type S3ObjectCmd struct {
-}
-
-func (s *S3ObjectCmd) Run() error {
+func main() {
 	config := core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
@@ -97,6 +93,4 @@ func (s *S3ObjectCmd) Run() error {
 	}
 
 	lambda.Start(handler)
-
-	return nil
 }

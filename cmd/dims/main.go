@@ -25,6 +25,7 @@ var CLI struct {
 	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
 	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
 	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
+	AwsCmd  AwsCmd        `cmd:"" name:"aws" help:"AWS servlerless commands."`
 }
 
 func main() {

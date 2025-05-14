@@ -20,16 +20,11 @@ import (
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func NewHandler(config core.Config) http.Handler {
 
 	mux := http.NewServeMux()
-
-	vips.LoggingSettings(nil, vips.LogLevelError)
-
-	vips.Startup(nil)
 
 	slog.Debug("startup", "config", config)
 

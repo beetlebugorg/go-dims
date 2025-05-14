@@ -113,24 +113,14 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 
 	opts := operations.ExportOptions{
 		ImageType:        core.ImageTypes[r.SourceImage.Format],
-		JpegExportParams: vips.NewJpegExportParams(),
-		PngExportParams:  vips.NewPngExportParams(),
-		WebpExportParams: vips.NewWebpExportParams(),
+		JpegExportParams: core.NewJpegExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Jpeg, r.Config.StripMetadata),
+		PngExportParams:  core.NewPngExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Png, r.Config.StripMetadata),
+		WebpExportParams: core.NewWebpExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Webp, r.Config.StripMetadata),
 		GifExportParams:  vips.NewGifExportParams(),
 		TiffExportParams: vips.NewTiffExportParams(),
 	}
 
 	stripMetadata := r.Config.StripMetadata
-	opts.JpegExportParams.StripMetadata = stripMetadata
-	opts.JpegExportParams.SubsampleMode = vips.VipsForeignSubsampleAuto
-	opts.JpegExportParams.OptimizeCoding = true
-	opts.JpegExportParams.OptimizeScans = true
-	opts.JpegExportParams.TrellisQuant = true
-
-	opts.WebpExportParams.StripMetadata = stripMetadata
-	opts.WebpExportParams.ReductionEffort = 6
-
-	opts.PngExportParams.StripMetadata = stripMetadata
 	opts.GifExportParams.StripMetadata = stripMetadata
 	opts.TiffExportParams.StripMetadata = stripMetadata
 
@@ -147,7 +137,7 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 				command.Args = adjustedArgs
 			}
 
-			if command.Name == "strip" && command.Args == "false" {
+			if command.Name == "strip" && command.Args != "true" {
 				stripMetadata = false
 			}
 

@@ -22,6 +22,6 @@ builder:
 	docker buildx build --push --platform linux/amd64,linux/arm64 -t ghcr.io/beetlebugorg/go-dims:builder -f Dockerfile.builder .
 
 devmedia:
-	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./devmedia:/usr/share/nginx/html:ro nginx:latest
+	docker run --rm --name go-dims-devmedia --privileged -p 8081:80 -v ./resources:/usr/share/nginx/html:ro nginx:latest
 
 .PHONY: docs docs-serve devmedia

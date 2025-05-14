@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
@@ -95,16 +96,34 @@ func (e *DecryptionCmd) Run() error {
 	return nil
 }
 
+type HealthCheckCmd struct {
+	Port int `help:"Port to check." default:"8080"`
+}
+
+func (h *HealthCheckCmd) Run() error {
+	url := fmt.Sprintf("http://localhost:%d/healthz", h.Port)
+	client := http.Client{
+		Timeout: 2 * time.Second,
+	}
+	resp, err := client.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check failed: %v", err)
+	}
+
+	return nil
+}
+
 var CLI struct {
-	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
-	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
-	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
+	Serve       ServeCmd       `cmd:"" help:"Runs the DIMS service."`
+	Encrypt     EncryptionCmd  `cmd:"" help:"Encrypt an eurl."`
+	Decrypt     DecryptionCmd  `cmd:"" help:"Decrypt an eurl."`
+	HealthCheck HealthCheckCmd `cmd:"" help:"Check the health of the DIMS service."`
 }
 
 func main() {
 	ctx := kong.Parse(&CLI)
 	err := ctx.Run()
 	if err != nil {
-		return
+		os.Exit(1)
 	}
 }

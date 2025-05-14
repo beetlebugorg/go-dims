@@ -37,6 +37,9 @@ COPY --from=go-dims /etc/passwd /etc/passwd
 COPY --from=go-dims /etc/group /etc/group
 COPY --from=go-dims --chown=10001:10001 /tmp /tmp
 
+HEALTHCHECK --interval=5s --timeout=2s --start-period=5s --retries=3 \
+    CMD /dims health-check || exit 1
+
 ENTRYPOINT ["/dims"]
 CMD ["serve"]
 EXPOSE 8080

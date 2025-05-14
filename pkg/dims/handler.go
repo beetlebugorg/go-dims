@@ -15,7 +15,7 @@
 package dims
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
@@ -32,6 +32,8 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.Startup(nil)
 
+	slog.Debug("startup", "config", environmentConfig)
+
 	// v4 endpoint
 	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -40,10 +42,6 @@ func NewHandler(debug bool, dev bool) http.Handler {
 				DevelopmentMode:   dev,
 				DebugMode:         debug,
 				EtagAlgorithm:     "md5",
-			}
-
-			if debug {
-				fmt.Printf("config: %+v\n", config)
 			}
 
 			request, err := dims.ParseAndValidateV4Request(r, config)
@@ -66,10 +64,6 @@ func NewHandler(debug bool, dev bool) http.Handler {
 				DevelopmentMode:   dev,
 				DebugMode:         debug,
 				EtagAlgorithm:     "hmac-sha256",
-			}
-
-			if debug {
-				fmt.Printf("config: %+v\n", config)
 			}
 
 			request, err := dims.ParseAndValidateV5Request(r, config)

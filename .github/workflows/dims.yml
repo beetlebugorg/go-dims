@@ -27,8 +27,19 @@ permissions:
   id-token: write
 
 jobs:
-  build-amd64:
-    runs-on: ubuntu-24.04
+  build:
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+        include:
+          - platform: linux/amd64
+            os: ubuntu-24.04
+          - platform: linux/arm64
+            os: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,7 +60,7 @@ jobs:
         with:
           context: .
           push: false
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
 
       - name: Build and Push (Release)
         if: github.event_name != 'pull_request'
@@ -58,45 +69,13 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-amd64
-
-  build-arm64:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Only (Branches)
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          platforms: linux/arm64
-
-      - name: Build and Push (Release)
-        if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          platforms: linux/arm64
-          tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-arm64
 
   manifest:
     if: github.event_name != 'pull_request'
-    needs: [build-amd64, build-arm64]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

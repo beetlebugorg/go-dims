@@ -96,3 +96,58 @@ func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 
 	return &sourceImage, nil
 }
+
+func NewJpegExportParams(options JpegCompression, stripMetadata bool) *vips.JpegExportParams {
+	jpegParams := &vips.JpegExportParams{
+		StripMetadata:      stripMetadata,
+		Quality:            options.Quality,
+		Interlace:          options.Interlace,
+		OptimizeCoding:     options.OptimizeCoding,
+		TrellisQuant:       options.TrellisQuant,
+		OvershootDeringing: options.OvershootDeringing,
+		OptimizeScans:      options.OptimizeScans,
+		QuantTable:         options.QuantTable,
+	}
+
+	jpegParams.SubsampleMode = vips.VipsForeignSubsampleOff
+	if options.SubsampleMode {
+		jpegParams.SubsampleMode = vips.VipsForeignSubsampleAuto
+	}
+
+	return jpegParams
+}
+
+func NewPngExportParams(options PngCompression, stripMetadata bool) *vips.PngExportParams {
+	pngParams := &vips.PngExportParams{
+		StripMetadata: stripMetadata,
+		Quality:       options.Quality,
+		Interlace:     options.Interlace,
+	}
+
+	if options.Compression >= 0 && options.Compression <= 9 {
+		pngParams.Compression = options.Compression
+	}
+
+	return pngParams
+}
+
+func NewWebpExportParams(options WebpCompression, stripMetadata bool) *vips.WebpExportParams {
+	webpParams := &vips.WebpExportParams{
+		StripMetadata:   stripMetadata,
+		Quality:         options.Quality,
+		ReductionEffort: options.ReductionEffort,
+	}
+
+	if options.Compression == "lossless" {
+		webpParams.NearLossless = false
+		webpParams.Lossless = true
+	} else if options.Compression == "near_lossless" {
+		webpParams.NearLossless = true
+		webpParams.Lossless = true
+	} else if options.Compression == "lossy" {
+		webpParams.NearLossless = false
+		webpParams.Lossless = false
+	}
+
+	return webpParams
+}

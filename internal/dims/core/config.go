@@ -55,6 +55,35 @@ type Options struct {
 	IncludeDisposition bool `env:"DIMS_INCLUDE_DISPOSITION" envDefault:"false"`
 }
 
+type JpegCompression struct {
+	Quality            int  `env:"DIMS_JPEG_QUALITY" envDefault:"80"`
+	Interlace          bool `env:"DIMS_JPEG_INTERLACE" envDefault:"false"`
+	OptimizeCoding     bool `env:"DIMS_JPEG_OPTIMIZE_CODING" envDefault:"true"`
+	SubsampleMode      bool `env:"DIMS_JPEG_SUBSAMPLE_MODE" envDefault:"true"`
+	TrellisQuant       bool `env:"DIMS_JPEG_TRELLIS_QUANT" envDefault:"false"`
+	OvershootDeringing bool `env:"DIMS_JPEG_OVERSHOOT_DERINGING" envDefault:"false"`
+	OptimizeScans      bool `env:"DIMS_JPEG_OPTIMIZE_SCANS" envDefault:"false"`
+	QuantTable         int  `env:"DIMS_JPEG_QUANT_TABLE" envDefault:"3"`
+}
+
+type PngCompression struct {
+	Quality     int  `env:"DIMS_PNG_QUALITY" envDefault:"80"`
+	Interlace   bool `env:"DIMS_PNG_INTERLACE" envDefault:"false"`
+	Compression int  `env:"DIMS_PNG_COMPRESSION" envDefault:"4"`
+}
+
+type WebpCompression struct {
+	Quality         int    `env:"DIMS_WEBP_QUALITY" envDefault:"80"`
+	Compression     string `env:"DIMS_WEBP_COMPRESSION" envDefault:"lossy"`
+	ReductionEffort int    `env:"DIMS_WEBP_REDUCTION_EFFORT" envDefault:"4"`
+}
+
+type ImageOutputOptions struct {
+	Jpeg JpegCompression
+	Png  PngCompression
+	Webp WebpCompression
+}
+
 type EnvironmentConfig struct {
 	Timeout
 	EdgeControl
@@ -63,6 +92,7 @@ type EnvironmentConfig struct {
 	OriginCacheControl
 	OutputFormat
 	Options
+	ImageOutputOptions
 }
 
 type Config struct {

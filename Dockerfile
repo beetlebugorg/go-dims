@@ -1,5 +1,7 @@
 FROM ghcr.io/beetlebugorg/go-dims:builder AS go-dims
 
+ARG VERSION="v0.0.0"
+
 ENV USER=dims
 ENV UID=10001
 
@@ -19,7 +21,7 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
     go env -w GOCACHE=/go-cache && \
     go env -w GOMODCACHE=/gomod-cache && \
     go mod download && \
-    make static && \
+    make static VERSION=${VERSION} && \
     strip build/dims && \
     upx build/dims
 

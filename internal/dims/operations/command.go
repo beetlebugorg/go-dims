@@ -17,6 +17,7 @@ package operations
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -37,11 +38,6 @@ type ExportOptions struct {
 	*vips.TiffExportParams
 }
 
-type RequestOperation struct {
-	Request http.Request // The original HTTP request
-	Config  core.Config  // The global configuration.
-}
-
 type VipsTransformOperation func(image *vips.ImageRef, args string) error
 type VipsExportOperation func(image *vips.ImageRef, args string, opts *ExportOptions) error
 type VipsRequestOperation func(image *vips.ImageRef, args string, data RequestOperation) error
@@ -53,4 +49,14 @@ type VipsCommand[T any] struct {
 
 func PassThroughCommand(ctx context.Context, args string) error {
 	return nil
+}
+
+type RequestOperation struct {
+	ImageUrl string       // The URL of the image being processed
+	Request  http.Request // The original HTTP request
+	Config   core.Config  // The global configuration.
+}
+
+func (r *RequestOperation) FetchImage(timeout time.Duration) (*core.Image, error) {
+	return core.FetchImage(r.ImageUrl, timeout)
 }

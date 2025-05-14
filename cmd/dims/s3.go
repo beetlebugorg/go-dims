@@ -51,12 +51,14 @@ func main() {
 	slog.SetDefault(logger)
 
 	handler := func(ctx context.Context, event *events.S3ObjectLambdaEvent) {
-		request := aws.NewS3ObjectLambdaRequest(*event, config)
+		request, err := aws.NewS3ObjectLambdaRequest(*event, config)
 		response := httptest.NewRecorder()
 
-		dims.Handler(request, config, response)
+		dims.Handler(*request, config, response)
 
 		httpResponse := response.Result()
+
+		slog.Debug("response", "status", httpResponse.Status, "headers", httpResponse.Header)
 
 		cfg, err := awscfg.LoadDefaultConfig(ctx)
 		if err != nil {
@@ -70,12 +72,15 @@ func main() {
 		etag := httpResponse.Header.Get("ETag")
 		contentType := httpResponse.Header.Get("Content-Type")
 		cacheControl := httpResponse.Header.Get("Cache-Control")
-		cl, err := strconv.Atoi(httpResponse.Header.Get("Content-Length"))
-		if err != nil {
-			slog.Error("failed to parse Content-Length", "error", err)
-			return
+		contentLength := int64(0)
+		cl := httpResponse.Header.Get("Content-Length")
+		if cl != "" {
+			contentLength, err = strconv.ParseInt(cl, 10, 64)
+			if err != nil {
+				slog.Error("failed to parse Content-Length", "error", err)
+				return
+			}
 		}
-		contentLength := int64(cl)
 
 		if _, err := svc.WriteGetObjectResponse(ctx, &s3.WriteGetObjectResponseInput{
 			StatusCode:    &statusCode,

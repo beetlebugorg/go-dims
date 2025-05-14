@@ -48,13 +48,35 @@ func init() {
 	client = s3.NewFromConfig(cfg)
 }
 
-func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Config) dims.Request {
+func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Config) (*S3ObjectLambdaRequest, error) {
 	u, err := url.Parse(event.UserRequest.URL)
 	if err != nil {
 		slog.Error("failed to parse URL", "error", err)
+		return nil, err
 	}
 
-	rawCommands := strings.TrimPrefix(u.Path, "/v5")
+	var clientId string
+	var signature string
+	var rawCommands string
+
+	if strings.HasPrefix(u.Path, "/v5/") {
+		rawCommands = strings.TrimPrefix(u.Path, "/v5/")
+		signature = u.Query().Get("sig")
+		clientId = ""
+	} else if strings.HasPrefix(u.Path, "/dims4/") {
+		// Remove the "/dims4/" prefix if it exists
+		// Parse out /<clientId>/<sig>/<expire>/<rawCommands>
+		u.Path = strings.TrimPrefix(u.Path, "/dims4/")
+
+		parts := strings.SplitN(u.Path, "/", 4)
+		if len(parts) < 4 {
+			return nil, fmt.Errorf("invalid dims4 path format")
+		}
+
+		clientId = parts[0]
+		signature = parts[1]
+		rawCommands = strings.Join(parts[3:], "/")
+	}
 
 	slog.Info("NewS3ObjectRequest", "event", event)
 	slog.Info("NewS3ObjectRequest", "URL", event.UserRequest.URL)
@@ -66,35 +88,23 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	h.Write([]byte(u.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	return dims.Request{
-		Id:          requestHash,
-		Config:      config,
-		ClientId:    u.Query().Get("clientId"),
-		ImageUrl:    u.Query().Get("url"),
-		RawCommands: rawCommands,
-		Signature:   u.Query().Get("sig"),
-	}
+	return &S3ObjectLambdaRequest{
+		dims.Request{
+			Id:          requestHash,
+			Config:      config,
+			ClientId:    clientId,
+			ImageUrl:    u.Query().Get("url"),
+			RawCommands: rawCommands,
+			Signature:   signature,
+		},
+	}, nil
 }
 
-// FetchImage downloads the image from the given URL.
-func (r *S3ObjectLambdaRequest) FetchImage() error {
-	slog.Info("downloadImage", "url", r.ImageUrl)
-
-	image, err := r.fetchImage()
-	if err != nil {
-		return err
-	}
-
-	r.SourceImage = *image
-
-	return nil
-}
-
-func (r *S3ObjectLambdaRequest) fetchImage() (*core.Image, error) {
-	http.DefaultClient.Timeout = time.Duration(r.Config.Timeout.Download) * time.Millisecond
+func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, error) {
+	slog.Info("downloadImageS3", "url", r.ImageUrl)
 
 	response, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String("shortfinal-go-dims"),
+		Bucket: aws.String(r.Config.S3.Bucket),
 		Key:    aws.String(strings.TrimLeft(r.ImageUrl, "/")),
 	})
 
@@ -102,10 +112,15 @@ func (r *S3ObjectLambdaRequest) fetchImage() (*core.Image, error) {
 		return nil, err
 	}
 
+	slog.Debug("fetchImage", "response", response)
+
+	lastModified := response.LastModified.Format(http.TimeFormat)
+
 	sourceImage := core.Image{
-		Status: 200,
-		Etag:   *response.ETag,
-		Format: *response.ContentType,
+		Status:       200,
+		Etag:         *response.ETag,
+		Format:       *response.ContentType,
+		LastModified: lastModified,
 	}
 
 	sourceImage.Size = int(*response.ContentLength)

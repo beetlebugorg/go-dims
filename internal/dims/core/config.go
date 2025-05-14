@@ -84,6 +84,11 @@ type ImageOutputOptions struct {
 	Webp WebpCompression
 }
 
+type S3 struct {
+	Bucket string `env:"DIMS_S3_BUCKET" envDefault:""`
+	Prefix string `env:"DIMS_S3_PREFIX" envDefault:""`
+}
+
 type Config struct {
 	BindAddress     string `env:"DIMS_BIND_ADDRESS" envDefault:":8080"`
 	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
@@ -98,6 +103,7 @@ type Config struct {
 	OutputFormat
 	Options
 	ImageOutputOptions
+	S3
 }
 
 func ReadConfig() Config {

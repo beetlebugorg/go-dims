@@ -21,10 +21,22 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
+/*
+type RequestHandler interface {
+	FetchImage(timeout time.Duration) ([]byte, error)
+	LoadImage(sourceImage []byte) (*core.VipsImage, error)
+	ProcessImage(vipsImage *core.VipsImage, isLambda bool) (string, []byte, error)
+	SendHeaders(w http.ResponseWriter)
+	SendImage(w http.ResponseWriter, statusCode int, imageType string, imageBlob []byte) error
+}
+*/
+
 func Handler(request Request, config core.Config, w http.ResponseWriter) error {
+
 	// Download image.
+	var fi core.ImageFetcher = &request
 	timeout := time.Duration(request.Config.Timeout.Download) * time.Millisecond
-	sourceImage, err := core.FetchImage(request.ImageUrl, timeout)
+	sourceImage, err := fi.FetchImage(timeout)
 	if err != nil {
 		return err
 	}

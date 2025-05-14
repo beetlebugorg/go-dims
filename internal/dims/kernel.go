@@ -150,8 +150,9 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 			}
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
 			if err := operation(image, command.Args, operations.RequestOperation{
-				Request: r.HttpRequest,
-				Config:  r.Config,
+				Request:  r.HttpRequest,
+				Config:   r.Config,
+				ImageUrl: r.ImageUrl,
 			}); err != nil {
 				return "", nil, err
 			}
@@ -284,6 +285,10 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	if r.SourceImage.LastModified != "" {
 		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
 	}
+}
+
+func (r *Request) FetchImage(timeout time.Duration) (*core.Image, error) {
+	return core.FetchImage(r.ImageUrl, timeout)
 }
 
 func (r *Request) SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error {

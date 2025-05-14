@@ -41,8 +41,9 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	}
 
 	// Download overlay image
+	var fi core.ImageFetcher = &data
 	timeout := time.Duration(data.Config.Timeout.Download) * time.Millisecond
-	overlayImageSource, err := core.FetchImage(url, timeout)
+	overlayImageSource, err := fi.FetchImage(timeout)
 	if err != nil {
 		return NewOperationError("watermark", args, err.Error())
 	}

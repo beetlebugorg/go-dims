@@ -1,4 +1,4 @@
-// Copyright 2024 Jeremy Collins. All rights reserved.
+// Copyright 2025 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package main
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
-func HandleDimsStatus(config core.Config, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+type HealthCmd struct {
+}
+
+func (h *HealthCmd) Run() error {
+	config := core.ReadConfig()
+
+	url := fmt.Sprintf("http://localhost%s/healthz", config.BindAddress)
+	client := http.Client{
+		Timeout: 2 * time.Second,
+	}
+	resp, err := client.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("health check failed: %v", err)
+	}
+
+	return nil
 }

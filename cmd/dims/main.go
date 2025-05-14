@@ -12,15 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package main
 
 import (
-	"net/http"
+	"os"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/alecthomas/kong"
 )
 
-func HandleDimsStatus(config core.Config, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+var CLI struct {
+	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
+	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
+	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
+	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
+}
+
+func main() {
+	ctx := kong.Parse(&CLI)
+	err := ctx.Run()
+	if err != nil {
+		os.Exit(1)
+	}
 }

@@ -23,8 +23,7 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func NewHandler(debug bool, dev bool) http.Handler {
-	environmentConfig := core.ReadConfig()
+func NewHandler(config core.Config) http.Handler {
 
 	mux := http.NewServeMux()
 
@@ -32,17 +31,12 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	vips.Startup(nil)
 
-	slog.Debug("startup", "config", environmentConfig)
+	slog.Debug("startup", "config", config)
 
 	// v4 endpoint
 	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			config := core.Config{
-				EnvironmentConfig: environmentConfig,
-				DevelopmentMode:   dev,
-				DebugMode:         debug,
-				EtagAlgorithm:     "md5",
-			}
+			config.EtagAlgorithm = "md5"
 
 			request, err := dims.ParseAndValidateV4Request(r, config)
 			if err != nil {
@@ -59,12 +53,7 @@ func NewHandler(debug bool, dev bool) http.Handler {
 	// v5 endpoint
 	mux.HandleFunc("/v5/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			config := core.Config{
-				EnvironmentConfig: environmentConfig,
-				DevelopmentMode:   dev,
-				DebugMode:         debug,
-				EtagAlgorithm:     "hmac-sha256",
-			}
+			config.EtagAlgorithm = "hmac-sha256"
 
 			request, err := dims.ParseAndValidateV5Request(r, config)
 			if err != nil {
@@ -81,11 +70,11 @@ func NewHandler(debug bool, dev bool) http.Handler {
 
 	mux.HandleFunc("/dims-status/",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
+			dims.HandleDimsStatus(config, w, r)
 		})
 	mux.HandleFunc("/healthz",
 		func(w http.ResponseWriter, r *http.Request) {
-			dims.HandleDimsStatus(environmentConfig, debug, dev, w, r)
+			dims.HandleDimsStatus(config, w, r)
 		})
 
 	return mux

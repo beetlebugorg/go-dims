@@ -1,4 +1,4 @@
-// Copyright 2024 Jeremy Collins. All rights reserved.
+// Copyright 2025 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dims
+package main
 
 import (
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 
-func HandleDimsStatus(config core.Config, w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("ALIVE"))
+type ServeCmd struct {
+}
+
+func (s *ServeCmd) Run() error {
+	config := core.ReadConfig()
+
+	var opts *slog.HandlerOptions
+	if config.DebugMode {
+		opts = &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
+	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
+	if err != nil {
+		slog.Error("Server failed.", "error", err)
+		return err
+	}
+	return nil
 }

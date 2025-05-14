@@ -113,9 +113,9 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 
 	opts := operations.ExportOptions{
 		ImageType:        core.ImageTypes[r.SourceImage.Format],
-		JpegExportParams: core.NewJpegExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Jpeg, r.Config.StripMetadata),
-		PngExportParams:  core.NewPngExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Png, r.Config.StripMetadata),
-		WebpExportParams: core.NewWebpExportParams(r.Config.EnvironmentConfig.ImageOutputOptions.Webp, r.Config.StripMetadata),
+		JpegExportParams: core.NewJpegExportParams(r.Config.ImageOutputOptions.Jpeg, r.Config.StripMetadata),
+		PngExportParams:  core.NewPngExportParams(r.Config.ImageOutputOptions.Png, r.Config.StripMetadata),
+		WebpExportParams: core.NewWebpExportParams(r.Config.ImageOutputOptions.Webp, r.Config.StripMetadata),
 		GifExportParams:  vips.NewGifExportParams(),
 		TiffExportParams: vips.NewTiffExportParams(),
 	}

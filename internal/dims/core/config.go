@@ -84,7 +84,12 @@ type ImageOutputOptions struct {
 	Webp WebpCompression
 }
 
-type EnvironmentConfig struct {
+type Config struct {
+	BindAddress     string `env:"DIMS_BIND_ADDRESS" envDefault:":8080"`
+	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
+	DebugMode       bool   `env:"DIMS_DEBUG_MODE" envDefault:"false"`
+	EtagAlgorithm   string
+
 	Timeout
 	EdgeControl
 	Signing
@@ -95,15 +100,8 @@ type EnvironmentConfig struct {
 	ImageOutputOptions
 }
 
-type Config struct {
-	DevelopmentMode bool
-	DebugMode       bool
-	EtagAlgorithm   string
-	EnvironmentConfig
-}
-
-func ReadConfig() EnvironmentConfig {
-	cfg := EnvironmentConfig{}
+func ReadConfig() Config {
+	cfg := Config{}
 	if err := env.Parse(&cfg); err != nil {
 		fmt.Printf("%+v\n", err)
 	}

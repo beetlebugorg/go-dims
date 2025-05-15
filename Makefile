@@ -22,6 +22,20 @@ lambda:
 	upx $(BUILD_DIR)/bootstrap
 	cd $(BUILD_DIR) && zip lambda.zip bootstrap
 
+lambda-amd64:
+	docker buildx build \
+      --platform linux/amd64 \
+      --build-arg TARGETARCH=amd64 \
+      -f Dockerfile.make \
+      --output type=local,dest=build .
+
+lambda-arm64:
+	docker buildx build \
+      --platform linux/arm64 \
+      --build-arg TARGETARCH=arm64 \
+      -f Dockerfile.make \
+      --output type=local,dest=build .
+
 docs:
 	mdbook build docs
 

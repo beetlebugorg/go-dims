@@ -67,72 +67,33 @@ func (r *Request) HashId() string {
 func (r *Request) SendHeaders() {
 	w := r.httpResponse
 
-	maxAge := r.Config().OriginCacheControl.Default
-	edgeControlTtl := r.Config().EdgeControl.DownstreamTtl
-
-	if r.Config().OriginCacheControl.UseOrigin {
-		originMaxAge, err := sourceMaxAge(r.SourceImage.CacheControl)
-		if err == nil {
-			maxAge = originMaxAge
-
-			// If below minimum, set to minimum.
-			minCacheAge := r.Config().OriginCacheControl.Min
-			if minCacheAge != 0 && maxAge <= minCacheAge {
-				maxAge = minCacheAge
-			}
-
-			// If above maximum, set to maximum.
-			maxCacheAge := r.Config().OriginCacheControl.Max
-			if maxCacheAge != 0 && maxAge >= maxCacheAge {
-				maxAge = maxCacheAge
-			}
-		}
+	cacheControl := r.CacheControl()
+	if cacheControl != "" {
+		w.Header().Set("Cache-Control", cacheControl)
 	}
 
-	// Set cache headers.
-	if maxAge > 0 {
-		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
-		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
+	expires := r.Expires()
+	if expires != "" {
+		w.Header().Set("Expires", expires)
 	}
 
-	if edgeControlTtl > 0 {
-		w.Header().Set("Edge-Control", fmt.Sprintf("downstream-ttl=%d", edgeControlTtl))
+	edgeControl := r.EdgeControl()
+	if edgeControl != "" {
+		w.Header().Set("Edge-Control", edgeControl)
 	}
 
-	// Set content disposition.
-	if r.SendContentDisposition {
-		// Grab filename from imageUrl
-		u, err := url.Parse(r.ImageUrl)
-		if err != nil {
-			return
-		}
-
-		filename := filepath.Base(u.Path)
-
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	contentDisposition := r.ContentDisposition()
+	if contentDisposition != "" {
+		w.Header().Set("Content-Disposition", contentDisposition)
 	}
 
-	// Set etag header.
-	if r.SourceImage.Etag != "" {
-		var h hash.Hash
-		if r.Config().EtagAlgorithm == "md5" {
-			h = md5.New()
-		} else {
-			h = sha256.New()
-		}
-
-		h.Write([]byte(r.HashId()))
-		if r.SourceImage.Etag != "" {
-			h.Write([]byte(r.SourceImage.Etag))
-		}
-
-		etag := fmt.Sprintf("%x", h.Sum(nil))
-
+	etag := r.Etag()
+	if etag != "" {
 		w.Header().Set("ETag", etag)
 	}
 
-	if r.SourceImage.LastModified != "" {
-		w.Header().Set("Last-Modified", r.SourceImage.LastModified)
+	if r.LastModified() != "" {
+		w.Header().Set("Last-Modified", r.LastModified())
 	}
 }
 
@@ -231,6 +192,100 @@ func (r *Request) SendError(err error) error {
 	}
 
 	return r.SendImage(status, imageType, imageBlob)
+}
+
+//-- Headers Interface
+
+func (r *Request) CacheControl() string {
+	maxAge := r.calculateMaxAge()
+	if maxAge > 0 {
+		return fmt.Sprintf("max-age=%d, public", r.calculateMaxAge())
+	}
+
+	return ""
+}
+
+func (r *Request) Etag() string {
+	if r.SourceImage.Etag != "" {
+		var h hash.Hash
+		if r.Config().EtagAlgorithm == "md5" {
+			h = md5.New()
+		} else {
+			h = sha256.New()
+		}
+
+		h.Write([]byte(r.HashId()))
+		if r.SourceImage.Etag != "" {
+			h.Write([]byte(r.SourceImage.Etag))
+		}
+
+		return fmt.Sprintf("%x", h.Sum(nil))
+	}
+
+	return ""
+}
+
+func (r *Request) LastModified() string {
+	return r.SourceImage.LastModified
+}
+
+func (r *Request) Expires() string {
+	maxAge := r.calculateMaxAge()
+	if maxAge > 0 {
+		return time.Now().Add(time.Duration(maxAge) * time.Second).UTC().Format(http.TimeFormat)
+	}
+
+	return ""
+}
+
+func (r *Request) EdgeControl() string {
+	edgeControlTtl := r.Config().EdgeControl.DownstreamTtl
+	if edgeControlTtl > 0 {
+		return fmt.Sprintf("downstream-ttl=%d", edgeControlTtl)
+	}
+
+	return ""
+}
+
+func (r *Request) ContentDisposition() string {
+	if r.SendContentDisposition {
+		// Grab filename from imageUrl
+		u, err := url.Parse(r.ImageUrl)
+		if err != nil {
+			return ""
+		}
+
+		filename := filepath.Base(u.Path)
+
+		return fmt.Sprintf("attachment; filename=%s", filename)
+	}
+
+	return ""
+}
+
+func (r *Request) calculateMaxAge() int {
+	maxAge := r.Config().OriginCacheControl.Default
+
+	if r.Config().OriginCacheControl.UseOrigin {
+		originMaxAge, err := sourceMaxAge(r.SourceImage.CacheControl)
+		if err == nil {
+			maxAge = originMaxAge
+
+			// If below minimum, set to minimum.
+			minCacheAge := r.Config().OriginCacheControl.Min
+			if minCacheAge != 0 && maxAge <= minCacheAge {
+				maxAge = minCacheAge
+			}
+
+			// If above maximum, set to maximum.
+			maxCacheAge := r.Config().OriginCacheControl.Max
+			if maxCacheAge != 0 && maxAge >= maxCacheAge {
+				maxAge = maxCacheAge
+			}
+		}
+	}
+
+	return maxAge
 }
 
 func sourceMaxAge(header string) (int, error) {

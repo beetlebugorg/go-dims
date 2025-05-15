@@ -15,19 +15,25 @@
 package aws
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/beetlebugorg/go-dims/internal/commands"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	v4 "github.com/beetlebugorg/go-dims/internal/v4"
 	v5 "github.com/beetlebugorg/go-dims/internal/v5"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 type Request struct {
 	dims.RequestContext
+
+	response events.LambdaFunctionURLStreamingResponse
 }
 
 func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Request, error) {
@@ -81,5 +87,67 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 }
 
 func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) error {
+	response := &events.LambdaFunctionURLStreamingResponse{}
+
+	headers := make(map[string]string)
+	if r.RequestContext.CacheControl() != "" {
+		headers["Cache-Control"] = r.CacheControl()
+	}
+
+	if r.RequestContext.Etag() != "" {
+		headers["ETag"] = r.Etag()
+	}
+
+	if r.RequestContext.Expires() != "" {
+		headers["Expires"] = r.Expires()
+	}
+
+	if r.RequestContext.LastModified() != "" {
+		headers["Last-Modified"] = r.LastModified()
+	}
+
+	if r.RequestContext.ContentDisposition() != "" {
+		headers["Content-Disposition"] = r.ContentDisposition()
+	}
+
+	if r.RequestContext.EdgeControl() != "" {
+		headers["Edge-Control"] = r.EdgeControl()
+	}
+
+	headers["Content-Type"] = fmt.Sprintf("image/%s", strings.ToLower(imageFormat))
+	headers["Content-Length"] = strconv.Itoa(len(imageBlob))
+
+	response.StatusCode = status
+	response.Headers = headers
+	response.Body = bytes.NewReader(imageBlob)
+
 	return nil
+}
+
+func (r *Request) SendError(err error) error {
+	response := &events.LambdaFunctionURLStreamingResponse{}
+
+	message := err.Error()
+
+	var statusError *core.StatusError
+	var operationError *commands.OperationError
+	if errors.As(err, &statusError) {
+		response.StatusCode = statusError.StatusCode
+	} else if errors.As(err, &operationError) {
+		response.StatusCode = operationError.StatusCode
+	}
+
+	headers := make(map[string]string)
+	headers["Content-Type"] = "text/plain"
+	headers["Content-Length"] = strconv.Itoa(len(message))
+
+	response.StatusCode = 500
+	response.Headers = headers
+	response.Body = bytes.NewReader([]byte(message))
+
+	return nil
+}
+
+func (r *Request) Response() *events.LambdaFunctionURLStreamingResponse {
+	return &r.response
 }

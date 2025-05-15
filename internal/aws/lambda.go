@@ -33,7 +33,7 @@ import (
 type Request struct {
 	dims.RequestContext
 
-	response events.LambdaFunctionURLStreamingResponse
+	response *events.LambdaFunctionURLStreamingResponse
 }
 
 func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Request, error) {
@@ -80,7 +80,7 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 
 		request.RequestContext = v5Request
 	} else {
-		return nil, core.NewStatusError(400, "path must start with /dims4/ or /v5/")
+		return nil, core.NewStatusError(400, "path must start with /dims4/ or /v5/: "+requestUrl.Path)
 	}
 
 	return request, nil
@@ -121,6 +121,8 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 	response.Headers = headers
 	response.Body = bytes.NewReader(imageBlob)
 
+	r.response = response
+
 	return nil
 }
 
@@ -149,5 +151,5 @@ func (r *Request) SendError(err error) error {
 }
 
 func (r *Request) Response() *events.LambdaFunctionURLStreamingResponse {
-	return &r.response
+	return r.response
 }

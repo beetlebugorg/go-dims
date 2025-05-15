@@ -34,7 +34,7 @@ type Request struct {
 	SendContentDisposition bool              // The content disposition of the http.
 	RawCommands            string            // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Signature              string            // The signature of the request.
-	SignParams             map[string]string // The query parameters used to sign the request.
+	SignedParams           map[string]string // The query parameters used to sign the request.
 	SourceImage            core.Image        // The source image.
 	config                 core.Config       // The global configuration.
 	shrinkFactor           int
@@ -44,11 +44,11 @@ func NewRequest(url *url.URL, imageUrl string, commands string,
 	signedParams map[string]string, config core.Config) *Request {
 
 	return &Request{
-		URL:         url,
-		ImageUrl:    imageUrl,
-		RawCommands: commands,
-		SignParams:  signedParams,
-		config:      config,
+		URL:          url,
+		ImageUrl:     imageUrl,
+		RawCommands:  commands,
+		SignedParams: signedParams,
+		config:       config,
 	}
 }
 

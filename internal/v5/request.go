@@ -22,7 +22,6 @@ import (
 	dims "github.com/beetlebugorg/go-dims/internal/http"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
 type Request struct {
@@ -44,22 +43,20 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 
 // Validate verifies the signature of the image resize is valid.
 func (v5 *Request) Validate() bool {
-	slog.Debug("verifySignature", "url", v5.URL)
+	return ValidateSignature(v5.Signature, v5.ImageUrl, v5.SignedParams, v5.Config().SigningKey)
+}
 
-	sanitizedArgs := strings.ReplaceAll(v5.RawCommands, " ", "+")
+func ValidateSignature(signature, imageUrl string, signedParams map[string]string, signingKey string) bool {
+	mac := hmac.New(sha256.New, []byte(signingKey))
+	mac.Write([]byte(imageUrl))
 
-	mac := hmac.New(sha256.New, []byte(v5.Config().SigningKey))
-	mac.Write([]byte(sanitizedArgs))
-	mac.Write([]byte(v5.ImageUrl))
-
-	for _, signedParam := range v5.SignParams {
+	for _, signedParam := range signedParams {
 		mac.Write([]byte(signedParam))
 	}
 
 	expectedSignature := mac.Sum(nil)[0:31]
-	gotSignature, err := hex.DecodeString(v5.Signature)
+	gotSignature, err := hex.DecodeString(signature)
 	if err != nil {
-		slog.Error("verifySignature failed.", "error", err)
 		return false
 	}
 
@@ -69,7 +66,7 @@ func (v5 *Request) Validate() bool {
 
 	slog.Error("verifySignature failed.",
 		"expected", hex.EncodeToString(expectedSignature),
-		"got", v5.Signature)
+		"got", signature)
 
 	return false
 }

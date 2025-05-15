@@ -18,7 +18,7 @@ static:
 
 lambda:
 	go generate ./...
-	go build -o $(LAMBDA_BINARY) -tags "lambda.norpc s3.object.lambda" -ldflags $(STATIC_LDFLAGS) ./cmd/dims
+	go build -o $(LAMBDA_BINARY) -tags "lambda.norpc lambda" -ldflags $(STATIC_LDFLAGS) ./cmd/dims
 	upx $(BUILD_DIR)/bootstrap
 	cd $(BUILD_DIR) && zip lambda.zip bootstrap
 

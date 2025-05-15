@@ -32,7 +32,7 @@ type RequestContext interface {
 
 func Handler(request RequestContext) error {
 	// Validate the request.
-	if !request.Validate() {
+	if !request.Config().DevelopmentMode && !request.Validate() {
 		return core.NewStatusError(403, "Invalid signature")
 	}
 

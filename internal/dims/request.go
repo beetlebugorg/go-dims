@@ -55,7 +55,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 
 	// Signed Parameters
 	// _keys query parameter is a comma-delimited list of keys to include in the signature.
-	var signedParams map[string]string
+	var signedParams = make(map[string]string)
 	params := url.Query().Get("_keys")
 	if params != "" {
 		keys := strings.Split(params, ",")

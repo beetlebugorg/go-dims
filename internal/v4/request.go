@@ -21,7 +21,6 @@ import (
 	dims "github.com/beetlebugorg/go-dims/internal/http"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
 type Request struct {
@@ -60,28 +59,28 @@ func (v4 *Request) HashId() string {
 }
 
 func (v4 *Request) Validate() bool {
-	sanitizedCommands := strings.ReplaceAll(v4.RawCommands, " ", "+")
-	sanitizedCommands = strings.Trim(sanitizedCommands, "/")
-	sanitizedCommands += "/"
+	return ValidateSignature(v4.Signature, v4.clientId, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
+}
 
-	hash := md5.New()
-	hash.Write([]byte(v4.timestamp))
-	hash.Write([]byte(v4.Config().SigningKey))
-	hash.Write([]byte(sanitizedCommands))
-	hash.Write([]byte(v4.ImageUrl))
+func ValidateSignature(signature, clientId, timestamp, imageUrl string, signedParams map[string]string, signingKey string) bool {
+	h := md5.New()
+	h.Write([]byte(clientId))
+	h.Write([]byte(timestamp))
+	h.Write([]byte(signingKey))
+	h.Write([]byte(imageUrl))
 
-	for _, signedParam := range v4.SignParams {
-		hash.Write([]byte(signedParam))
+	for _, signedParam := range signedParams {
+		h.Write([]byte(signedParam))
 	}
 
-	expectedSignature := fmt.Sprintf("%x", hash.Sum(nil))[0:7]
-	if expectedSignature == v4.Signature {
+	expectedSignature := fmt.Sprintf("%x", h.Sum(nil))[0:7]
+	if expectedSignature == signature {
 		return true
 	}
 
 	slog.Error("verifySignature failed.",
 		"expected", expectedSignature,
-		"got", v4.Signature)
+		"got", signature)
 
 	return false
 }

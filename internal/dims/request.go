@@ -29,22 +29,26 @@ import (
 )
 
 type Request struct {
-	Id                     string      // The hash of the http -> hash(clientId + commands + imageUrl).
-	URL                    *url.URL    // The URL of the http.
-	ImageUrl               string      // The image URL that is being manipulated.
-	SendContentDisposition bool        // The content disposition of the http.
-	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	SourceImage            core.Image  // The source image.
-	config                 core.Config // The global configuration.
+	URL                    *url.URL          // The URL of the http.
+	ImageUrl               string            // The image URL that is being manipulated.
+	SendContentDisposition bool              // The content disposition of the http.
+	RawCommands            string            // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	Signature              string            // The signature of the request.
+	SignParams             map[string]string // The query parameters used to sign the request.
+	SourceImage            core.Image        // The source image.
+	config                 core.Config       // The global configuration.
 	shrinkFactor           int
 }
 
-func NewRequest(id string, url *url.URL, imageUrl string, commands string, config core.Config) *Request {
+func NewRequest(url *url.URL, imageUrl string, commands string,
+	signedParams map[string]string, signature string, config core.Config) *Request {
+
 	return &Request{
-		Id:          id,
 		URL:         url,
 		ImageUrl:    imageUrl,
 		RawCommands: commands,
+		Signature:   signature,
+		SignParams:  signedParams,
 		config:      config,
 	}
 }

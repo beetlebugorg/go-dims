@@ -47,36 +47,10 @@ type Request struct {
 
 func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Request, error) {
 	requestUrl := r.URL
-	imageUrl := r.URL.Query().Get("url")
 	cmds := r.PathValue("commands")
 
-	eurl := r.URL.Query().Get("eurl")
-	if eurl != "" {
-		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
-		if err != nil {
-			slog.Error("DecryptURL failed.", "error", err)
-			return nil, fmt.Errorf("DecryptURL failed: %w", err)
-		}
-
-		imageUrl = decryptedUrl
-	}
-
-	// Signed Parameters
-	// _keys query parameter is a comma-delimited list of keys to include in the signature.
-	var signedParams map[string]string
-	params := r.URL.Query().Get("_keys")
-	if params != "" {
-		keys := strings.Split(params, ",")
-		for _, key := range keys {
-			value := r.URL.Query().Get(key)
-			if value != "" {
-				signedParams[key] = value
-			}
-		}
-	}
-
 	return &Request{
-		Request:      *dims.NewRequest(requestUrl, imageUrl, cmds, signedParams, config),
+		Request:      *dims.NewRequest(requestUrl, cmds, config),
 		httpRequest:  r,
 		httpResponse: w,
 	}, nil

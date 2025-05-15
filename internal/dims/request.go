@@ -22,6 +22,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
 	"net/url"
 	"runtime/trace"
 	"strings"
@@ -40,13 +41,36 @@ type Request struct {
 	shrinkFactor           int
 }
 
-func NewRequest(url *url.URL, imageUrl string, commands string,
-	signedParams map[string]string, config core.Config) *Request {
+func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
+	imageUrl := url.Query().Get("url")
+	eurl := url.Query().Get("eurl")
+	if eurl != "" {
+		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
+		if err != nil {
+			slog.Error("DecryptURL failed.", "error", err)
+		}
+
+		imageUrl = decryptedUrl
+	}
+
+	// Signed Parameters
+	// _keys query parameter is a comma-delimited list of keys to include in the signature.
+	var signedParams map[string]string
+	params := url.Query().Get("_keys")
+	if params != "" {
+		keys := strings.Split(params, ",")
+		for _, key := range keys {
+			value := url.Query().Get(key)
+			if value != "" {
+				signedParams[key] = value
+			}
+		}
+	}
 
 	return &Request{
 		URL:          url,
 		ImageUrl:     imageUrl,
-		RawCommands:  commands,
+		RawCommands:  cmds,
 		SignedParams: signedParams,
 		config:       config,
 	}

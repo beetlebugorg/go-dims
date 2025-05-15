@@ -15,13 +15,18 @@
 package aws
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
 	"crypto/sha256"
+	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -30,15 +35,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/beetlebugorg/go-dims/internal/dims/operations"
 	"github.com/beetlebugorg/go-dims/internal/dims/request"
 	v4 "github.com/beetlebugorg/go-dims/internal/dims/v4"
 	v5 "github.com/beetlebugorg/go-dims/internal/dims/v5"
+	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
 var client *s3.Client
 
 type S3ObjectLambdaRequest struct {
-	request.Request
+	request.DimsRequest
+	event events.S3ObjectLambdaEvent
 }
 
 func init() {
@@ -116,12 +125,9 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	h.Write([]byte(u.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	httpRequest := &http.Request{
-		URL: u,
-	}
-
 	return &S3ObjectLambdaRequest{
-		Request: *request.NewDimsRequest(*httpRequest, requestHash, u.Query().Get("url"), rawCommands, config),
+		DimsRequest: *request.NewDimsRequest(requestHash, u, u.Query().Get("url"), rawCommands, config),
+		event:       event,
 	}, nil
 }
 
@@ -151,5 +157,131 @@ func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, 
 	sourceImage.Size = int(*response.ContentLength)
 	sourceImage.Bytes, _ = io.ReadAll(response.Body)
 
+	r.SourceImage = sourceImage
+
 	return &sourceImage, nil
+}
+
+func (r *S3ObjectLambdaRequest) SendError(err error) error {
+	message := err.Error()
+
+	// Strip stack from vips errors.
+	if strings.HasPrefix(message, "VipsOperation:") {
+		message = message[0:strings.Index(message, "\n")]
+	}
+
+	slog.Error("SendError", "message", message)
+
+	// Set status code.
+	status := http.StatusInternalServerError
+	var statusError *core.StatusError
+	var operationError *operations.OperationError
+	if errors.As(err, &statusError) {
+		status = statusError.StatusCode
+	} else if errors.As(err, &operationError) {
+		status = operationError.StatusCode
+	}
+
+	errorImage, err := vips.Black(512, 512)
+	if err != nil {
+		return err
+	}
+
+	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
+		return err
+	}
+
+	backgroundColor, err := colorx.ParseHexColor(r.Config().Error.Background)
+	if err != nil {
+		return err
+	}
+
+	red, green, blue, _ := backgroundColor.RGBA()
+	redI := float64(red) / 65535 * 255
+	greenI := float64(green) / 65535 * 255
+	blueI := float64(blue) / 65535 * 255
+
+	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
+		return err
+	}
+
+	r.SourceImage = core.Image{
+		Status: status,
+		Format: vips.ImageTypes[vips.ImageTypeJPEG],
+	}
+
+	// Send error headers.
+	maxAge := r.Config().OriginCacheControl.Error
+	if maxAge > 0 {
+		//r.response.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
+		//r.response.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
+	}
+
+	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
+	if err != nil {
+		// If processing failed because of a bad command then return the image as-is.
+		exportOptions := vips.NewJpegExportParams()
+		exportOptions.Quality = 1
+		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
+
+		return r.SendImage(status, "jpg", imageBytes)
+	}
+
+	if imageType == "" {
+		imageType = "jpg"
+	}
+
+	return r.SendImage(status, imageType, imageBlob)
+}
+
+func (r *S3ObjectLambdaRequest) SendImage(status int, imageFormat string, imageBlob []byte) error {
+	slog.Info("sendImageS3", "url", r.ImageUrl)
+
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		slog.Error("failed to load configuration", "error", err)
+		return err
+	}
+	cfg.Region = os.Getenv("AWS_REGION")
+	svc := s3.NewFromConfig(cfg)
+
+	var etag string
+	// Set etag header.
+	if r.SourceImage.Etag != "" {
+		var h hash.Hash
+		if r.Config().EtagAlgorithm == "md5" {
+			h = md5.New()
+		} else {
+			h = sha256.New()
+		}
+
+		h.Write([]byte(r.Id))
+		if r.SourceImage.Etag != "" {
+			h.Write([]byte(r.SourceImage.Etag))
+		}
+
+		etag = fmt.Sprintf("%x", h.Sum(nil))
+	}
+
+	statusCode := int32(status)
+	contentType := "image/" + strings.ToLower(imageFormat)
+	//cacheControl := httpResponse.Header.Get("Cache-Control")
+	contentLength := int64(len(imageBlob))
+
+	if _, err := svc.WriteGetObjectResponse(ctx, &s3.WriteGetObjectResponseInput{
+		StatusCode:    &statusCode,
+		ETag:          &etag,
+		ContentType:   &contentType,
+		ContentLength: &contentLength,
+		//CacheControl:  &cacheControl,
+		Body:         bytes.NewReader(imageBlob),
+		RequestRoute: &r.event.GetObjectContext.OutputRoute,
+		RequestToken: &r.event.GetObjectContext.OutputToken,
+	}); err != nil {
+		slog.Error("failed to write get object response", "error", err)
+		return err
+	}
+
+	return nil
 }

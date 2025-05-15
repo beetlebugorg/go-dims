@@ -15,7 +15,6 @@
 package dims
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
@@ -27,11 +26,10 @@ type RequestContext interface {
 	FetchImage(timeout time.Duration) (*core.Image, error)
 	LoadImage(image *core.Image) (*vips.ImageRef, error)
 	ProcessImage(img *vips.ImageRef, strip bool) (string, []byte, error)
-	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error
+	SendImage(status int, imageFormat string, imageBlob []byte) error
 }
 
-func Handler(request RequestContext, w http.ResponseWriter) error {
+func Handler(request RequestContext) error {
 
 	// Download image.
 	timeout := time.Duration(request.Config().Timeout.Download) * time.Millisecond
@@ -53,8 +51,7 @@ func Handler(request RequestContext, w http.ResponseWriter) error {
 	}
 
 	// Serve the image.
-	request.SendHeaders(w)
-	if err := request.SendImage(w, 200, imageType, imageBlob); err != nil {
+	if err := request.SendImage(200, imageType, imageBlob); err != nil {
 		return err
 	}
 

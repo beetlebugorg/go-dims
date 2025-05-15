@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build s3.object.lambda
-// +build s3.object.lambda
+//go:build lambda
+// +build lambda
 
 package main
 

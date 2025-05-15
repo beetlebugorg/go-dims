@@ -41,13 +41,12 @@ type Request struct {
 }
 
 func NewRequest(url *url.URL, imageUrl string, commands string,
-	signedParams map[string]string, signature string, config core.Config) *Request {
+	signedParams map[string]string, config core.Config) *Request {
 
 	return &Request{
 		URL:         url,
 		ImageUrl:    imageUrl,
 		RawCommands: commands,
-		Signature:   signature,
 		SignParams:  signedParams,
 		config:      config,
 	}

@@ -21,7 +21,17 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
+type Headers interface {
+	Etag() string
+	LastModified() string
+	Expires() string
+	CacheControl() string
+	EdgeControl() string
+	ContentDisposition() string
+}
+
 type RequestContext interface {
+	Headers
 	Config() core.Config
 	Validate() bool
 	FetchImage(timeout time.Duration) (*core.Image, error)

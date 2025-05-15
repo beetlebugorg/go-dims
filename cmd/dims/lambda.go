@@ -46,22 +46,19 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
-	handler := func(ctx context.Context, event *events.S3ObjectLambdaEvent) {
-		request, err := aws.NewS3ObjectLambdaRequest(*event, config)
+	handler := func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLStreamingResponse, error) {
+		request, err := aws.NewRequest(*event, config)
 		if err != nil {
-			slog.Error("failed to parse http", "error", err)
-			return
+			return nil, err
 		}
 
 		if err := dims.Handler(request); err != nil {
-			slog.Error("failed to process http", "error", err)
-
 			if err := request.SendError(err); err != nil {
-				slog.Error("failed to send error response", "error", err)
+				return nil, err
 			}
-
-			return
 		}
+
+		return request.Response(), nil
 	}
 
 	lambda.Start(handler)

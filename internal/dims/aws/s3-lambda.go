@@ -87,7 +87,8 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 		rawCommands = strings.TrimPrefix(u.Path, "/v5/")
 		signature = u.Query().Get("sig")
 
-		if !v5.ValidateSignatureV5(rawCommands, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
+		if !config.DevelopmentMode &&
+			!v5.ValidateSignatureV5(rawCommands, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
 			return nil, &core.StatusError{
 				StatusCode: http.StatusUnauthorized,
 				Message:    "invalid signature",
@@ -107,7 +108,8 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 		timestamp := parts[2]
 		rawCommands = strings.Join(parts[3:], "/")
 
-		if !v4.ValidateSignatureV4(rawCommands, timestamp, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
+		if !config.DevelopmentMode &&
+			!v4.ValidateSignatureV4(rawCommands, timestamp, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
 			return nil, &core.StatusError{
 				StatusCode: http.StatusUnauthorized,
 				Message:    "invalid signature",
@@ -143,19 +145,21 @@ func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, 
 		return nil, err
 	}
 
-	slog.Debug("fetchImage", "response", response)
-
 	lastModified := response.LastModified.Format(http.TimeFormat)
+	size := int(*response.ContentLength)
+	imageBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	sourceImage := core.Image{
 		Status:       200,
 		Etag:         *response.ETag,
-		Format:       *response.ContentType,
+		Size:         size,
+		Bytes:        imageBytes,
+		Format:       vips.ImageTypes[vips.DetermineImageType(imageBytes)],
 		LastModified: lastModified,
 	}
-
-	sourceImage.Size = int(*response.ContentLength)
-	sourceImage.Bytes, _ = io.ReadAll(response.Body)
 
 	r.SourceImage = sourceImage
 

@@ -40,7 +40,11 @@ resource "aws_iam_policy" "s3_object_lambda_write_response" {
     Statement = [
       {
         Effect   = "Allow",
-        Action   = "s3-object-lambda:WriteGetObjectResponse",
+        Action   = [
+          "s3-object-lambda:WriteGetObjectResponse",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
         Resource = "*"
       }
     ]

@@ -162,9 +162,8 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 			}
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
 			if err := operation(image, command.Args, operations.RequestOperation{
-				Request:  r.HttpRequest,
-				Config:   r.config,
-				ImageUrl: r.ImageUrl,
+				Config: r.config,
+				URL:    r.HttpRequest.URL,
 			}); err != nil {
 				return "", nil, err
 			}

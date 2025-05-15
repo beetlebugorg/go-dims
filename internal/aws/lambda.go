@@ -55,12 +55,10 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 			return nil, fmt.Errorf("invalid dims4 path format")
 		}
 
-		cmds := strings.Join(parts[4:], "/")
-
-		httpRequest.SetPathValue("clientId", parts[1])
-		httpRequest.SetPathValue("signature", parts[2])
-		httpRequest.SetPathValue("timestamp", parts[3])
-		httpRequest.SetPathValue("commands", cmds)
+		httpRequest.SetPathValue("clientId", parts[0])
+		httpRequest.SetPathValue("signature", parts[1])
+		httpRequest.SetPathValue("timestamp", parts[2])
+		httpRequest.SetPathValue("commands", parts[3])
 
 		v4Request, err := v4.NewRequest(httpRequest, nil, config)
 		if err != nil {

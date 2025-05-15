@@ -54,7 +54,7 @@ func main() {
 		request, err := aws.NewS3ObjectLambdaRequest(*event, config)
 		response := httptest.NewRecorder()
 
-		dims.Handler(*request, config, response)
+		dims.Handler(request, response)
 
 		httpResponse := response.Result()
 

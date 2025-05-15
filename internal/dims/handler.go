@@ -19,24 +19,23 @@ import (
 	"time"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-/*
-type RequestHandler interface {
-	FetchImage(timeout time.Duration) ([]byte, error)
-	LoadImage(sourceImage []byte) (*core.VipsImage, error)
-	ProcessImage(vipsImage *core.VipsImage, isLambda bool) (string, []byte, error)
+type RequestContext interface {
+	Config() core.Config
+	FetchImage(timeout time.Duration) (*core.Image, error)
+	LoadImage(image *core.Image) (*vips.ImageRef, error)
+	ProcessImage(img *vips.ImageRef, strip bool) (string, []byte, error)
 	SendHeaders(w http.ResponseWriter)
-	SendImage(w http.ResponseWriter, statusCode int, imageType string, imageBlob []byte) error
+	SendImage(w http.ResponseWriter, status int, imageFormat string, imageBlob []byte) error
 }
-*/
 
-func Handler(request Request, config core.Config, w http.ResponseWriter) error {
+func Handler(request RequestContext, w http.ResponseWriter) error {
 
 	// Download image.
-	var fi core.ImageFetcher = &request
-	timeout := time.Duration(request.Config.Timeout.Download) * time.Millisecond
-	sourceImage, err := fi.FetchImage(timeout)
+	timeout := time.Duration(request.Config().Timeout.Download) * time.Millisecond
+	sourceImage, err := request.FetchImage(timeout)
 	if err != nil {
 		return err
 	}

@@ -20,6 +20,8 @@ import (
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	v4 "github.com/beetlebugorg/go-dims/internal/dims/v4"
+	v5 "github.com/beetlebugorg/go-dims/internal/dims/v5"
 )
 
 func NewHandler(config core.Config) http.Handler {
@@ -33,13 +35,13 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "md5"
 
-			request, err := dims.ParseAndValidateV4Request(r, config)
+			request, err := v4.ParseAndValidateV4Request(r, config)
 			if err != nil {
 				request.SendError(w, err)
 				return
 			}
 
-			if err := dims.Handler(*request, config, w); err != nil {
+			if err := dims.Handler(request, w); err != nil {
 				request.SendError(w, err)
 				return
 			}
@@ -50,13 +52,13 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "hmac-sha256"
 
-			request, err := dims.ParseAndValidateV5Request(r, config)
+			request, err := v5.ParseAndValidateV5Request(r, config)
 			if err != nil {
 				request.SendError(w, err)
 				return
 			}
 
-			if err := dims.Handler(*request, config, w); err != nil {
+			if err := dims.Handler(request, w); err != nil {
 
 				request.SendError(w, err)
 				return

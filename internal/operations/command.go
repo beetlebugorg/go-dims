@@ -16,9 +16,9 @@ package operations
 
 import (
 	"context"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"net/url"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 

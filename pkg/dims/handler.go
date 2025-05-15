@@ -15,13 +15,13 @@
 package dims
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"log/slog"
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	v4 "github.com/beetlebugorg/go-dims/internal/dims/v4"
-	v5 "github.com/beetlebugorg/go-dims/internal/dims/v5"
 )
 
 func NewHandler(config core.Config) http.Handler {

@@ -16,9 +16,9 @@ package operations
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"math"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 

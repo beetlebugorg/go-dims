@@ -16,10 +16,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"net/http"
 	"time"
-
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
 type HealthCmd struct {

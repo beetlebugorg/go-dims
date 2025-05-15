@@ -17,15 +17,14 @@ package v4
 import (
 	"crypto/md5"
 	"fmt"
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/request"
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/beetlebugorg/go-dims/internal/dims/request"
 )
 
-func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config core.Config) (*request.HttpDimsRequest, error) {
+func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config core2.Config) (*request.HttpDimsRequest, error) {
 	clientId := r.PathValue("clientId")
 	timestamp := r.PathValue("timestamp")
 	signature := r.PathValue("signature")
@@ -49,7 +48,7 @@ func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config co
 	// Validate signature
 	if !config.DevelopmentMode &&
 		!ValidateSignatureV4(commands, timestamp, imageUrl, signedKeys, config.SigningKey, signature) {
-		return nil, &core.StatusError{
+		return nil, &core2.StatusError{
 			StatusCode: http.StatusUnauthorized,
 			Message:    "invalid signature",
 		}

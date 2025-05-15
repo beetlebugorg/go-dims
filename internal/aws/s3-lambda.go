@@ -21,6 +21,11 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/operations"
+	"github.com/beetlebugorg/go-dims/internal/request"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"hash"
 	"io"
 	"log/slog"
@@ -34,11 +39,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/beetlebugorg/go-dims/internal/dims/operations"
-	"github.com/beetlebugorg/go-dims/internal/dims/request"
-	v4 "github.com/beetlebugorg/go-dims/internal/dims/v4"
-	v5 "github.com/beetlebugorg/go-dims/internal/dims/v5"
 	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/davidbyttow/govips/v2/vips"
 )
@@ -59,7 +59,7 @@ func init() {
 	client = s3.NewFromConfig(cfg)
 }
 
-func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Config) (*S3ObjectLambdaRequest, error) {
+func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core2.Config) (*S3ObjectLambdaRequest, error) {
 	u, err := url.Parse(event.UserRequest.URL)
 	if err != nil {
 		slog.Error("failed to parse URL", "error", err)
@@ -89,7 +89,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 
 		if !config.DevelopmentMode &&
 			!v5.ValidateSignatureV5(rawCommands, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
-			return nil, &core.StatusError{
+			return nil, &core2.StatusError{
 				StatusCode: http.StatusUnauthorized,
 				Message:    "invalid signature",
 			}
@@ -110,7 +110,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 
 		if !config.DevelopmentMode &&
 			!v4.ValidateSignatureV4(rawCommands, timestamp, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
-			return nil, &core.StatusError{
+			return nil, &core2.StatusError{
 				StatusCode: http.StatusUnauthorized,
 				Message:    "invalid signature",
 			}
@@ -133,7 +133,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	}, nil
 }
 
-func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, error) {
+func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core2.Image, error) {
 	slog.Info("downloadImageS3", "url", r.ImageUrl)
 
 	response, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
@@ -152,7 +152,7 @@ func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, 
 		return nil, err
 	}
 
-	sourceImage := core.Image{
+	sourceImage := core2.Image{
 		Status:       200,
 		Etag:         *response.ETag,
 		Size:         size,
@@ -178,7 +178,7 @@ func (r *S3ObjectLambdaRequest) SendError(err error) error {
 
 	// Set status code.
 	status := http.StatusInternalServerError
-	var statusError *core.StatusError
+	var statusError *core2.StatusError
 	var operationError *operations.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
@@ -209,7 +209,7 @@ func (r *S3ObjectLambdaRequest) SendError(err error) error {
 		return err
 	}
 
-	r.SourceImage = core.Image{
+	r.SourceImage = core2.Image{
 		Status: status,
 		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}

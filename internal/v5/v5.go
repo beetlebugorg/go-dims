@@ -19,22 +19,21 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/request"
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/beetlebugorg/go-dims/internal/dims/request"
 )
 
-func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config core.Config) (*request.HttpDimsRequest, error) {
+func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config core2.Config) (*request.HttpDimsRequest, error) {
 	signature := r.PathValue("signature")
 	imageUrl := r.URL.Query().Get("url")
 	commands := r.PathValue("commands")
 
 	eurl := r.URL.Query().Get("eurl")
 	if eurl != "" {
-		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
+		decryptedUrl, err := core2.DecryptURL(config.SigningKey, eurl)
 		if err != nil {
 			slog.Error("DecryptURL failed.", "error", err)
 			return nil, fmt.Errorf("DecryptURL failed: %w", err)
@@ -65,7 +64,7 @@ func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config co
 	// Validate signature
 	if !config.DevelopmentMode &&
 		!ValidateSignatureV5(commands, imageUrl, signedKeys, config.SigningKey, signature) {
-		return nil, &core.StatusError{
+		return nil, &core2.StatusError{
 			StatusCode: http.StatusUnauthorized,
 			Message:    "invalid signature",
 		}

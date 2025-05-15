@@ -16,12 +16,12 @@ package operations
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 

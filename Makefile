@@ -36,6 +36,9 @@ lambda-arm64:
       -f Dockerfile.make \
       --output type=local,dest=build .
 
+deploy-lambda-arm64: lambda-arm64
+	cd terraform && terraform apply -auto-approve
+
 docs:
 	mdbook build docs
 

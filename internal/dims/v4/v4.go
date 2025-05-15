@@ -32,9 +32,23 @@ func ParseAndValidateV4Request(r *http.Request, config core.Config) (*request.Re
 	imageUrl := r.URL.Query().Get("url")
 	commands := r.PathValue("commands")
 
+	// Signed Parameters
+	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	var signedKeys []string
+	params := r.URL.Query().Get("_keys")
+	if params != "" {
+		keys := strings.Split(params, ",")
+		for _, key := range keys {
+			value := r.URL.Query().Get(key)
+			if value != "" {
+				signedKeys = append(signedKeys, value)
+			}
+		}
+	}
+
 	// Validate signature
 	if !config.DevelopmentMode &&
-		!validateSignatureV4(commands, timestamp, imageUrl, config.SigningKey, signature) {
+		!ValidateSignatureV4(commands, timestamp, imageUrl, signedKeys, config.SigningKey, signature) {
 		return nil, &core.StatusError{
 			StatusCode: http.StatusUnauthorized,
 			Message:    "invalid signature",
@@ -51,7 +65,7 @@ func ParseAndValidateV4Request(r *http.Request, config core.Config) (*request.Re
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
-func validateSignatureV4(commands string, timestamp string, imageUrl string, signingKey string, signature string) bool {
+func ValidateSignatureV4(commands string, timestamp string, imageUrl string, signedParams []string, signingKey string, signature string) bool {
 	slog.Debug("verifySignature", "url", imageUrl)
 
 	sanitizedCommands := strings.ReplaceAll(commands, " ", "+")
@@ -63,6 +77,11 @@ func validateSignatureV4(commands string, timestamp string, imageUrl string, sig
 	hash.Write([]byte(signingKey))
 	hash.Write([]byte(sanitizedCommands))
 	hash.Write([]byte(imageUrl))
+
+	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	for _, signedParam := range signedParams {
+		hash.Write([]byte(signedParam))
+	}
 
 	expectedSignature := fmt.Sprintf("%x", hash.Sum(nil))[0:7]
 

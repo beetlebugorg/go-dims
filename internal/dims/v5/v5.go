@@ -64,7 +64,7 @@ func ParseAndValidateV5Request(r *http.Request, config core.Config) (*request.Re
 
 	// Validate signature
 	if !config.DevelopmentMode &&
-		!validateSignatureV5(commands, imageUrl, signedKeys, config.SigningKey, signature) {
+		!ValidateSignatureV5(commands, imageUrl, signedKeys, config.SigningKey, signature) {
 		return nil, &core.StatusError{
 			StatusCode: http.StatusUnauthorized,
 			Message:    "invalid signature",
@@ -75,7 +75,7 @@ func ParseAndValidateV5Request(r *http.Request, config core.Config) (*request.Re
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
-func validateSignatureV5(commands string, imageUrl string, signedParams []string, signingKey string, signature string) bool {
+func ValidateSignatureV5(commands string, imageUrl string, signedParams []string, signingKey string, signature string) bool {
 	slog.Debug("verifySignature", "url", imageUrl)
 
 	sanitizedArgs := strings.ReplaceAll(commands, " ", "+")

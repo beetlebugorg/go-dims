@@ -138,7 +138,9 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 	}
 
 	if stripMetadata {
-		image.RemoveMetadata()
+		if err := image.RemoveMetadata(); err != nil {
+			return "", nil, err
+		}
 	}
 
 	switch opts.ImageType {

@@ -16,8 +16,7 @@ package operations
 
 import (
 	"context"
-	"net/http"
-	"time"
+	"net/url"
 
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -52,11 +51,6 @@ func PassThroughCommand(ctx context.Context, args string) error {
 }
 
 type RequestOperation struct {
-	ImageUrl string       // The URL of the image being processed
-	Request  http.Request // The original HTTP request
-	Config   core.Config  // The global configuration.
-}
-
-func (r *RequestOperation) FetchImage(timeout time.Duration) (*core.Image, error) {
-	return core.FetchImage(r.ImageUrl, timeout)
+	URL    *url.URL    // The URL of the image being processed
+	Config core.Config // The global configuration.
 }

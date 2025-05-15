@@ -40,6 +40,8 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 		return nil, err
 	}
 
+	request.Signature = r.PathValue("signature")
+
 	return &Request{
 		Request: request,
 

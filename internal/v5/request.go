@@ -35,6 +35,8 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 		return nil, err
 	}
 
+	request.Signature = r.URL.Query().Get("sig")
+
 	return &Request{
 		Request: request,
 	}, nil

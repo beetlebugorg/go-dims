@@ -46,7 +46,6 @@ type Request struct {
 //-- Request/RequestContext Implementation
 
 func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Request, error) {
-	signature := r.PathValue("signature")
 	requestUrl := r.URL
 	imageUrl := r.URL.Query().Get("url")
 	cmds := r.PathValue("commands")
@@ -77,7 +76,7 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 	}
 
 	return &Request{
-		Request:      *dims.NewRequest(requestUrl, imageUrl, cmds, signedParams, signature, config),
+		Request:      *dims.NewRequest(requestUrl, imageUrl, cmds, signedParams, config),
 		httpRequest:  r,
 		httpResponse: w,
 	}, nil

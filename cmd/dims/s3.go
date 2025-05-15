@@ -20,14 +20,10 @@ package main
 import (
 	"context"
 	"log/slog"
-	"net/http/httptest"
 	"os"
-	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	awscfg "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/dims/aws"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
@@ -52,49 +48,12 @@ func main() {
 
 	handler := func(ctx context.Context, event *events.S3ObjectLambdaEvent) {
 		request, err := aws.NewS3ObjectLambdaRequest(*event, config)
-		response := httptest.NewRecorder()
-
-		dims.Handler(request, response)
-
-		httpResponse := response.Result()
-
-		slog.Debug("response", "status", httpResponse.Status, "headers", httpResponse.Header)
-
-		cfg, err := awscfg.LoadDefaultConfig(ctx)
 		if err != nil {
-			slog.Error("failed to load configuration", "error", err)
+			slog.Error("failed to parse request", "error", err)
 			return
 		}
-		cfg.Region = os.Getenv("AWS_REGION")
-		svc := s3.NewFromConfig(cfg)
 
-		statusCode := int32(httpResponse.StatusCode)
-		etag := httpResponse.Header.Get("ETag")
-		contentType := httpResponse.Header.Get("Content-Type")
-		cacheControl := httpResponse.Header.Get("Cache-Control")
-		contentLength := int64(0)
-		cl := httpResponse.Header.Get("Content-Length")
-		if cl != "" {
-			contentLength, err = strconv.ParseInt(cl, 10, 64)
-			if err != nil {
-				slog.Error("failed to parse Content-Length", "error", err)
-				return
-			}
-		}
-
-		if _, err := svc.WriteGetObjectResponse(ctx, &s3.WriteGetObjectResponseInput{
-			StatusCode:    &statusCode,
-			ETag:          &etag,
-			ContentType:   &contentType,
-			ContentLength: &contentLength,
-			CacheControl:  &cacheControl,
-			Body:          httpResponse.Body,
-			RequestRoute:  &event.GetObjectContext.OutputRoute,
-			RequestToken:  &event.GetObjectContext.OutputToken,
-		}); err != nil {
-			slog.Error("failed to write get object response", "error", err)
-			return
-		}
+		dims.Handler(request)
 	}
 
 	lambda.Start(handler)

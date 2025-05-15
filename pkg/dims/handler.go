@@ -35,14 +35,14 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "md5"
 
-			request, err := v4.ParseAndValidateV4Request(r, config)
+			request, err := v4.ParseAndValidateV4Request(r, w, config)
 			if err != nil {
-				request.SendError(w, err)
+				request.SendError(err)
 				return
 			}
 
-			if err := dims.Handler(request, w); err != nil {
-				request.SendError(w, err)
+			if err := dims.Handler(request); err != nil {
+				request.SendError(err)
 				return
 			}
 		})
@@ -52,15 +52,15 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "hmac-sha256"
 
-			request, err := v5.ParseAndValidateV5Request(r, config)
+			request, err := v5.ParseAndValidateV5Request(r, w, config)
 			if err != nil {
-				request.SendError(w, err)
+				request.SendError(err)
 				return
 			}
 
-			if err := dims.Handler(request, w); err != nil {
+			if err := dims.Handler(request); err != nil {
 
-				request.SendError(w, err)
+				request.SendError(err)
 				return
 			}
 		})

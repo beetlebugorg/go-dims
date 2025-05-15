@@ -25,7 +25,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims/request"
 )
 
-func ParseAndValidateV4Request(r *http.Request, config core.Config) (*request.Request, error) {
+func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config core.Config) (*request.HttpDimsRequest, error) {
 	clientId := r.PathValue("clientId")
 	timestamp := r.PathValue("timestamp")
 	signature := r.PathValue("signature")
@@ -61,7 +61,7 @@ func ParseAndValidateV4Request(r *http.Request, config core.Config) (*request.Re
 	h.Write([]byte(imageUrl))
 	id := fmt.Sprintf("%x", h.Sum(nil))
 
-	return request.NewDimsRequest(*r, id, imageUrl, commands, config), nil
+	return request.NewHttpDimsRequest(*r, w, id, imageUrl, commands, config), nil
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.

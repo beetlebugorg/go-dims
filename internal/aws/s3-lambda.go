@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/commands"
 	core2 "github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/beetlebugorg/go-dims/internal/http"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/v4"
 	"github.com/beetlebugorg/go-dims/internal/v5"
 	"hash"
@@ -46,7 +46,7 @@ import (
 var client *s3.Client
 
 type S3ObjectLambdaRequest struct {
-	http.DimsRequest
+	dims.Request
 	event events.S3ObjectLambdaEvent
 }
 
@@ -128,8 +128,8 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core2.Con
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return &S3ObjectLambdaRequest{
-		DimsRequest: *http.NewDimsRequest(requestHash, u, u.Query().Get("url"), rawCommands, config),
-		event:       event,
+		Request: *dims.NewRequest(requestHash, u, u.Query().Get("url"), rawCommands, config),
+		event:   event,
 	}, nil
 }
 

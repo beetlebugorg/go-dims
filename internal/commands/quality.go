@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operations
+package commands
 
 import (
 	"strconv"
@@ -20,23 +20,17 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func RotateCommand(image *vips.ImageRef, args string) error {
-	degrees, err := strconv.ParseFloat(args, 64)
+func QualityCommand(image *vips.ImageRef, args string, opts *ExportOptions) error {
+	quality, err := strconv.Atoi(args)
 	if err != nil {
-		return NewOperationError("rotate", args, err.Error())
+		return NewOperationError("quality", args, err.Error())
 	}
 
-	idx, idy, odx, ody := 0.0, 0.0, 0.0, 0.0
-	if degrees == 90 {
-		idx, idy = 0.0, 1.0
-		odx, ody = 1.0, 0.0
-	} else if degrees == 180 {
-		idx, idy = 0.0, 1.0
-		odx, ody = 1.0, 0.0
-	} else if degrees == 270 {
-		idx, idy = 1.0, 0.0
-		odx, ody = 0.0, -1.0
-	}
+	opts.JpegExportParams.Quality = quality
+	opts.PngExportParams.Quality = quality
+	opts.WebpExportParams.Quality = quality
+	opts.TiffExportParams.Quality = quality
+	opts.GifExportParams.Quality = quality
 
-	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, idx, idy, odx, ody)
+	return nil
 }

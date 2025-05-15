@@ -49,12 +49,12 @@ func main() {
 	handler := func(ctx context.Context, event *events.S3ObjectLambdaEvent) {
 		request, err := aws.NewS3ObjectLambdaRequest(*event, config)
 		if err != nil {
-			slog.Error("failed to parse request", "error", err)
+			slog.Error("failed to parse http", "error", err)
 			return
 		}
 
 		if err := dims.Handler(request); err != nil {
-			slog.Error("failed to process request", "error", err)
+			slog.Error("failed to process http", "error", err)
 
 			if err := request.SendError(err); err != nil {
 				slog.Error("failed to send error response", "error", err)

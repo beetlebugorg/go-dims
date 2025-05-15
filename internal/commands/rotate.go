@@ -12,27 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operations
+package commands
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/geometry"
+	"strconv"
+
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func ResizeCommand(image *vips.ImageRef, args string) error {
-	geo, err := geometry.ParseGeometry(args)
+func RotateCommand(image *vips.ImageRef, args string) error {
+	degrees, err := strconv.ParseFloat(args, 64)
 	if err != nil {
-		return NewOperationError("resize", args, err.Error())
-	}
-	rect := geo.ApplyMeta(image)
-
-	xr := float64(rect.Width) / float64(image.Width())
-	yr := float64(rect.Height) / float64(image.Height())
-
-	err = image.ResizeWithVScale(xr, yr, vips.KernelLanczos3)
-	if err != nil {
-		return NewOperationError("resize", args, err.Error())
+		return NewOperationError("rotate", args, err.Error())
 	}
 
-	return nil
+	idx, idy, odx, ody := 0.0, 0.0, 0.0, 0.0
+	if degrees == 90 {
+		idx, idy = 0.0, 1.0
+		odx, ody = 1.0, 0.0
+	} else if degrees == 180 {
+		idx, idy = 0.0, 1.0
+		odx, ody = 1.0, 0.0
+	} else if degrees == 270 {
+		idx, idy = 1.0, 0.0
+		odx, ody = 0.0, -1.0
+	}
+
+	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, idx, idy, odx, ody)
 }

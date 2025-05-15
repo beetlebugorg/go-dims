@@ -19,6 +19,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/operations"
 	"hash"
 	"log/slog"
 	"net/http"
@@ -28,8 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/beetlebugorg/go-dims/internal/dims/operations"
 	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/davidbyttow/govips/v2/vips"
 )
@@ -143,7 +143,7 @@ func (r *HttpDimsRequest) SendError(err error) error {
 
 	// Set status code.
 	status := http.StatusInternalServerError
-	var statusError *core.StatusError
+	var statusError *core2.StatusError
 	var operationError *operations.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
@@ -174,7 +174,7 @@ func (r *HttpDimsRequest) SendError(err error) error {
 		return err
 	}
 
-	r.SourceImage = core.Image{
+	r.SourceImage = core2.Image{
 		Status: status,
 		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}

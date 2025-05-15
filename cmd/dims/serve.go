@@ -15,11 +15,11 @@
 package main
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"log/slog"
 	"net/http"
 	"os"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
 	"github.com/davidbyttow/govips/v2/vips"
 )

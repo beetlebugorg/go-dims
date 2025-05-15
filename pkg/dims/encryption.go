@@ -14,7 +14,9 @@
 
 package dims
 
-import "github.com/beetlebugorg/go-dims/internal/dims/core"
+import (
+	"github.com/beetlebugorg/go-dims/internal/core"
+)
 
 func EncryptURL(secretKey string, u string) (string, error) {
 	return core.EncryptURL(secretKey, u)

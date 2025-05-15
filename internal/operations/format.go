@@ -1,7 +1,7 @@
 package operations
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 

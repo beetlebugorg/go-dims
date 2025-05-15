@@ -15,23 +15,25 @@
 package operations
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
+	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func ResizeCommand(image *vips.ImageRef, args string) error {
+func SharpenCommand(image *vips.ImageRef, args string) error {
 	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return NewOperationError("resize", args, err.Error())
+		return NewOperationError("sharpen", args, err.Error())
 	}
-	rect := geo.ApplyMeta(image)
 
-	xr := float64(rect.Width) / float64(image.Width())
-	yr := float64(rect.Height) / float64(image.Height())
+	x1 := geo.Width
+	m2 := geo.Height * 2
+	if m2 == 0 {
+		m2 = 2.0
+	}
 
-	err = image.ResizeWithVScale(xr, yr, vips.KernelLanczos3)
+	err = image.Sharpen(float64(0.5), x1, m2)
 	if err != nil {
-		return NewOperationError("resize", args, err.Error())
+		return NewOperationError("sharpen", args, err.Error())
 	}
 
 	return nil

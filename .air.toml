@@ -8,7 +8,7 @@ tmp_dir = "tmp"
   full_bin = "DIMS_DEVELOPMENT_MODE=true DIMS_DEBUG_MODE=true ./build/dims"
   args_bin = ["serve"]
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "internal/dims/geometry/parser"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "internal/geometry/parser"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false

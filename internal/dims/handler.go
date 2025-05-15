@@ -15,16 +15,16 @@
 package dims
 
 import (
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
 	"time"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type RequestContext interface {
-	Config() core.Config
-	FetchImage(timeout time.Duration) (*core.Image, error)
-	LoadImage(image *core.Image) (*vips.ImageRef, error)
+	Config() core2.Config
+	FetchImage(timeout time.Duration) (*core2.Image, error)
+	LoadImage(image *core2.Image) (*vips.ImageRef, error)
 	ProcessImage(img *vips.ImageRef, strip bool) (string, []byte, error)
 	SendImage(status int, imageFormat string, imageBlob []byte) error
 }

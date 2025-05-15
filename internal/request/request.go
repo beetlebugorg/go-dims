@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/geometry"
+	operations2 "github.com/beetlebugorg/go-dims/internal/operations"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -26,20 +29,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
-	"github.com/beetlebugorg/go-dims/internal/dims/operations"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type DimsRequest struct {
-	Id                     string      // The hash of the request -> hash(clientId + commands + imageUrl).
-	URL                    *url.URL    // The URL of the request.
-	ImageUrl               string      // The image URL that is being manipulated.
-	SendContentDisposition bool        // The content disposition of the request.
-	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	SourceImage            core.Image  // The source image.
-	config                 core.Config // The global configuration.
+	Id                     string       // The hash of the request -> hash(clientId + commands + imageUrl).
+	URL                    *url.URL     // The URL of the request.
+	ImageUrl               string       // The image URL that is being manipulated.
+	SendContentDisposition bool         // The content disposition of the request.
+	RawCommands            string       // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	SourceImage            core2.Image  // The source image.
+	config                 core2.Config // The global configuration.
 	shrinkFactor           int
 }
 
@@ -50,34 +50,34 @@ type HttpDimsRequest struct {
 	response http.ResponseWriter
 }
 
-var VipsTransformCommands = map[string]operations.VipsTransformOperation{
-	"crop":             operations.CropCommand,
-	"resize":           operations.ResizeCommand,
-	"sharpen":          operations.SharpenCommand,
-	"brightness":       operations.BrightnessCommand,
-	"flipflop":         operations.FlipFlopCommand,
-	"sepia":            operations.SepiaCommand,
-	"grayscale":        operations.GrayscaleCommand,
-	"autolevel":        operations.AutolevelCommand,
-	"invert":           operations.InvertCommand,
-	"rotate":           operations.RotateCommand,
-	"thumbnail":        operations.ThumbnailCommand,
-	"legacy_thumbnail": operations.LegacyThumbnailCommand,
+var VipsTransformCommands = map[string]operations2.VipsTransformOperation{
+	"crop":             operations2.CropCommand,
+	"resize":           operations2.ResizeCommand,
+	"sharpen":          operations2.SharpenCommand,
+	"brightness":       operations2.BrightnessCommand,
+	"flipflop":         operations2.FlipFlopCommand,
+	"sepia":            operations2.SepiaCommand,
+	"grayscale":        operations2.GrayscaleCommand,
+	"autolevel":        operations2.AutolevelCommand,
+	"invert":           operations2.InvertCommand,
+	"rotate":           operations2.RotateCommand,
+	"thumbnail":        operations2.ThumbnailCommand,
+	"legacy_thumbnail": operations2.LegacyThumbnailCommand,
 }
 
-var VipsExportCommands = map[string]operations.VipsExportOperation{
-	"strip":   operations.StripMetadataCommand,
-	"format":  operations.FormatCommand,
-	"quality": operations.QualityCommand,
+var VipsExportCommands = map[string]operations2.VipsExportOperation{
+	"strip":   operations2.StripMetadataCommand,
+	"format":  operations2.FormatCommand,
+	"quality": operations2.QualityCommand,
 }
 
-var VipsRequestCommands = map[string]operations.VipsRequestOperation{
-	"watermark": operations.Watermark,
+var VipsRequestCommands = map[string]operations2.VipsRequestOperation{
+	"watermark": operations2.Watermark,
 }
 
 //-- Request/RequestContext Implementation
 
-func NewHttpDimsRequest(r http.Request, w http.ResponseWriter, id string, imageUrl string, commands string, config core.Config) *HttpDimsRequest {
+func NewHttpDimsRequest(r http.Request, w http.ResponseWriter, id string, imageUrl string, commands string, config core2.Config) *HttpDimsRequest {
 	return &HttpDimsRequest{
 		DimsRequest: *NewDimsRequest(id, r.URL, imageUrl, commands, config),
 		request:     r,
@@ -85,7 +85,7 @@ func NewHttpDimsRequest(r http.Request, w http.ResponseWriter, id string, imageU
 	}
 }
 
-func NewDimsRequest(id string, url *url.URL, imageUrl string, commands string, config core.Config) *DimsRequest {
+func NewDimsRequest(id string, url *url.URL, imageUrl string, commands string, config core2.Config) *DimsRequest {
 	return &DimsRequest{
 		Id:          id,
 		URL:         url,
@@ -95,11 +95,11 @@ func NewDimsRequest(id string, url *url.URL, imageUrl string, commands string, c
 	}
 }
 
-func (r *DimsRequest) Config() core.Config {
+func (r *DimsRequest) Config() core2.Config {
 	return r.config
 }
 
-func (r *DimsRequest) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
+func (r *DimsRequest) LoadImage(sourceImage *core2.Image) (*vips.ImageRef, error) {
 	image, err := vips.NewImageFromBuffer(sourceImage.Bytes)
 	if err != nil {
 		return nil, err
@@ -130,11 +130,11 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 	ctx, task := trace.NewTask(ctx, "v5.ProcessImage")
 	defer task.End()
 
-	opts := operations.ExportOptions{
-		ImageType:        core.ImageTypes[r.SourceImage.Format],
-		JpegExportParams: core.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
-		PngExportParams:  core.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
-		WebpExportParams: core.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
+	opts := operations2.ExportOptions{
+		ImageType:        core2.ImageTypes[r.SourceImage.Format],
+		JpegExportParams: core2.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
+		PngExportParams:  core2.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
+		WebpExportParams: core2.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
 		GifExportParams:  vips.NewGifExportParams(),
 		TiffExportParams: vips.NewTiffExportParams(),
 	}
@@ -168,7 +168,7 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 				return "", nil, err
 			}
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
-			if err := operation(image, command.Args, operations.RequestOperation{
+			if err := operation(image, command.Args, operations2.RequestOperation{
 				Config: r.config,
 				URL:    r.URL,
 			}); err != nil {
@@ -231,8 +231,8 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 	return vips.ImageTypes[opts.ImageType], imageBytes, nil
 }
 
-func (r *DimsRequest) FetchImage(timeout time.Duration) (*core.Image, error) {
-	image, err := core.FetchImage(r.ImageUrl, timeout)
+func (r *DimsRequest) FetchImage(timeout time.Duration) (*core2.Image, error) {
+	image, err := core2.FetchImage(r.ImageUrl, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -242,14 +242,14 @@ func (r *DimsRequest) FetchImage(timeout time.Duration) (*core.Image, error) {
 	return image, nil
 }
 
-func (r *DimsRequest) Commands() []operations.Command {
-	commands := make([]operations.Command, 0)
+func (r *DimsRequest) Commands() []operations2.Command {
+	commands := make([]operations2.Command, 0)
 	parsedCommands := strings.Split(strings.Trim(r.RawCommands, "/"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
 		command := parsedCommands[i]
 		args := parsedCommands[i+1]
 
-		commands = append(commands, operations.Command{
+		commands = append(commands, operations2.Command{
 			Name: command,
 			Args: args,
 		})
@@ -303,7 +303,7 @@ func (r *DimsRequest) requestedImageSize() (geometry.Geometry, error) {
 func adjustCropAfterShrink(args string, factor int) (string, error) {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return "", operations.NewOperationError("crop", args, err.Error())
+		return "", operations2.NewOperationError("crop", args, err.Error())
 	}
 
 	rect.X = int(float64(rect.X) / float64(factor))

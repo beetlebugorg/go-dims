@@ -2,11 +2,11 @@ package geometry
 
 import (
 	"fmt"
+	parser2 "github.com/beetlebugorg/go-dims/internal/geometry/parser"
 	"math"
 	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry/parser"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -59,13 +59,13 @@ func ParseGeometry(geometry string) (Geometry, error) {
 
 	var errorListener = errorListener{}
 
-	lexer := parser.NewGeometryLexer(is)
+	lexer := parser2.NewGeometryLexer(is)
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(&errorListener)
 
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	var p = parser.NewGeometryParser(stream)
+	var p = parser2.NewGeometryParser(stream)
 	p.RemoveErrorListeners()
 	p.AddErrorListener(&errorListener)
 	var g = &geometryListener{
@@ -214,11 +214,11 @@ func (g *errorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol
 //-- GeometryListener
 
 type geometryListener struct {
-	*parser.BaseGeometryListener
+	*parser2.BaseGeometryListener
 	*Geometry
 }
 
-func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
+func (g *geometryListener) ExitWidth(c *parser2.WidthContext) {
 	if c.NUMBER() == nil {
 		return
 	}
@@ -230,7 +230,7 @@ func (g *geometryListener) ExitWidth(c *parser.WidthContext) {
 	}
 }
 
-func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
+func (g *geometryListener) ExitHeight(c *parser2.HeightContext) {
 	if c.NUMBER() == nil {
 		return
 	}
@@ -242,7 +242,7 @@ func (g *geometryListener) ExitHeight(c *parser.HeightContext) {
 	}
 }
 
-func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
+func (g *geometryListener) ExitOffsetx(c *parser2.OffsetxContext) {
 	if c.NUMBER() == nil {
 		return
 	}
@@ -254,7 +254,7 @@ func (g *geometryListener) ExitOffsetx(c *parser.OffsetxContext) {
 	}
 }
 
-func (g *geometryListener) ExitOffsety(c *parser.OffsetyContext) {
+func (g *geometryListener) ExitOffsety(c *parser2.OffsetyContext) {
 	if c.NUMBER() == nil {
 		return
 	}
@@ -266,7 +266,7 @@ func (g *geometryListener) ExitOffsety(c *parser.OffsetyContext) {
 	}
 }
 
-func (g *geometryListener) ExitFlags(c *parser.FlagsContext) {
+func (g *geometryListener) ExitFlags(c *parser2.FlagsContext) {
 	if c.BANG() != nil {
 		g.Flags.Force = true
 	}

@@ -15,9 +15,9 @@
 package operations
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"strings"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 

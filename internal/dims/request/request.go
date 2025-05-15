@@ -1,4 +1,4 @@
-package dims
+package request
 
 import (
 	"context"
@@ -39,17 +39,13 @@ type Signer interface {
 
 type Request struct {
 	HttpRequest            http.Request
-	Id                     string      // The hash of the request -> hash(clientId + commands + imageUrl).
-	Signature              string      // The signature of the request.
-	Config                 core.Config // The global configuration.
-	ClientId               string      // The client ID of this request.
-	ImageUrl               string      // The image URL that is being manipulated.
-	SendContentDisposition bool        // The content disposition of the request.
-	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	Error                  bool        // Whether the error image is being served.
-	Timestamp              int64       // The timestamp of the request
-	SourceImage            core.Image  // The source image.
+	Id                     string     // The hash of the request -> hash(clientId + commands + imageUrl).
+	ImageUrl               string     // The image URL that is being manipulated.
+	SendContentDisposition bool       // The content disposition of the request.
+	RawCommands            string     // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	SourceImage            core.Image // The source image.
 
+	config       core.Config // The global configuration.
 	shrinkFactor int
 }
 
@@ -76,6 +72,22 @@ var VipsExportCommands = map[string]operations.VipsExportOperation{
 
 var VipsRequestCommands = map[string]operations.VipsRequestOperation{
 	"watermark": operations.Watermark,
+}
+
+//-- Request/RequestContext Implementation
+
+func NewDimsRequest(httpRequest http.Request, id string, imageUrl string, commands string, config core.Config) *Request {
+	return &Request{
+		HttpRequest: httpRequest,
+		Id:          id,
+		ImageUrl:    imageUrl,
+		RawCommands: commands,
+		config:      config,
+	}
+}
+
+func (r *Request) Config() core.Config {
+	return r.config
 }
 
 func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
@@ -113,14 +125,14 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 
 	opts := operations.ExportOptions{
 		ImageType:        core.ImageTypes[r.SourceImage.Format],
-		JpegExportParams: core.NewJpegExportParams(r.Config.ImageOutputOptions.Jpeg, r.Config.StripMetadata),
-		PngExportParams:  core.NewPngExportParams(r.Config.ImageOutputOptions.Png, r.Config.StripMetadata),
-		WebpExportParams: core.NewWebpExportParams(r.Config.ImageOutputOptions.Webp, r.Config.StripMetadata),
+		JpegExportParams: core.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
+		PngExportParams:  core.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
+		WebpExportParams: core.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
 		GifExportParams:  vips.NewGifExportParams(),
 		TiffExportParams: vips.NewTiffExportParams(),
 	}
 
-	stripMetadata := r.Config.StripMetadata
+	stripMetadata := r.config.StripMetadata
 	opts.GifExportParams.StripMetadata = stripMetadata
 	opts.TiffExportParams.StripMetadata = stripMetadata
 
@@ -151,7 +163,7 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
 			if err := operation(image, command.Args, operations.RequestOperation{
 				Request:  r.HttpRequest,
-				Config:   r.Config,
+				Config:   r.config,
 				ImageUrl: r.ImageUrl,
 			}); err != nil {
 				return "", nil, err
@@ -214,30 +226,26 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 }
 
 func (r *Request) SendHeaders(w http.ResponseWriter) {
-	maxAge := r.Config.OriginCacheControl.Default
-	edgeControlTtl := r.Config.EdgeControl.DownstreamTtl
+	maxAge := r.config.OriginCacheControl.Default
+	edgeControlTtl := r.config.EdgeControl.DownstreamTtl
 
-	if r.Config.OriginCacheControl.UseOrigin {
+	if r.config.OriginCacheControl.UseOrigin {
 		originMaxAge, err := sourceMaxAge(r.SourceImage.CacheControl)
 		if err == nil {
 			maxAge = originMaxAge
 
 			// If below minimum, set to minimum.
-			minCacheAge := r.Config.OriginCacheControl.Min
+			minCacheAge := r.config.OriginCacheControl.Min
 			if minCacheAge != 0 && maxAge <= minCacheAge {
 				maxAge = minCacheAge
 			}
 
 			// If above maximum, set to maximum.
-			maxCacheAge := r.Config.OriginCacheControl.Max
+			maxCacheAge := r.config.OriginCacheControl.Max
 			if maxCacheAge != 0 && maxAge >= maxCacheAge {
 				maxAge = maxCacheAge
 			}
 		}
-	}
-
-	if r.Error {
-		maxAge = r.Config.OriginCacheControl.Error
 	}
 
 	// Set cache headers.
@@ -266,7 +274,7 @@ func (r *Request) SendHeaders(w http.ResponseWriter) {
 	// Set etag header.
 	if r.SourceImage.Etag != "" {
 		var h hash.Hash
-		if r.Config.EtagAlgorithm == "md5" {
+		if r.config.EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()
@@ -343,7 +351,7 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 		return err
 	}
 
-	backgroundColor, err := colorx.ParseHexColor(r.Config.Error.Background)
+	backgroundColor, err := colorx.ParseHexColor(r.config.Error.Background)
 	if err != nil {
 		return err
 	}
@@ -363,7 +371,7 @@ func (r *Request) SendError(w http.ResponseWriter, err error) error {
 	}
 
 	// Send error headers.
-	maxAge := r.Config.OriginCacheControl.Error
+	maxAge := r.config.OriginCacheControl.Error
 	if maxAge > 0 {
 		w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
 		w.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))

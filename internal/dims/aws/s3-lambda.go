@@ -62,7 +62,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	if strings.HasPrefix(u.Path, "/v5/") {
 		rawCommands = strings.TrimPrefix(u.Path, "/v5/")
 		signature = u.Query().Get("sig")
-		clientId = ""
+
 	} else if strings.HasPrefix(u.Path, "/dims4/") {
 		// Remove the "/dims4/" prefix if it exists
 		// Parse out /<clientId>/<sig>/<expire>/<rawCommands>
@@ -88,15 +88,12 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	h.Write([]byte(u.Query().Get("url")))
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
+	httpRequest := &http.Request{
+		URL: u,
+	}
+
 	return &S3ObjectLambdaRequest{
-		dims.Request{
-			Id:          requestHash,
-			Config:      config,
-			ClientId:    clientId,
-			ImageUrl:    u.Query().Get("url"),
-			RawCommands: rawCommands,
-			Signature:   signature,
-		},
+		Request: *dims.NewDimsRequest(*httpRequest, requestHash, u.Query().Get("url"), rawCommands, config),
 	}, nil
 }
 
@@ -104,7 +101,7 @@ func (r *S3ObjectLambdaRequest) FetchImage(timeout time.Duration) (*core.Image, 
 	slog.Info("downloadImageS3", "url", r.ImageUrl)
 
 	response, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(r.Config.S3.Bucket),
+		Bucket: aws.String(r.Config().S3.Bucket),
 		Key:    aws.String(strings.TrimLeft(r.ImageUrl, "/")),
 	})
 

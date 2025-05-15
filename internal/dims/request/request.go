@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -119,8 +118,6 @@ func (r *DimsRequest) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error)
 			r.shrinkFactor = 4
 		}
 	}
-
-	r.SourceImage = *sourceImage
 
 	return vips.LoadImageFromBuffer(sourceImage.Bytes, importParams)
 }
@@ -231,8 +228,6 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 		return "", nil, err
 	}
 
-	slog.Debug("ProcessImage", "imageType", vips.ImageTypes[opts.ImageType], "size", len(imageBytes))
-
 	return vips.ImageTypes[opts.ImageType], imageBytes, nil
 }
 
@@ -241,6 +236,8 @@ func (r *DimsRequest) FetchImage(timeout time.Duration) (*core.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	r.SourceImage = *image
 
 	return image, nil
 }

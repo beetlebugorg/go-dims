@@ -53,7 +53,15 @@ func main() {
 			return
 		}
 
-		dims.Handler(request)
+		if err := dims.Handler(request); err != nil {
+			slog.Error("failed to process request", "error", err)
+
+			if err := request.SendError(err); err != nil {
+				slog.Error("failed to send error response", "error", err)
+			}
+
+			return
+		}
 	}
 
 	lambda.Start(handler)

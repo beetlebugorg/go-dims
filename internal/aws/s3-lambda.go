@@ -21,9 +21,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/commands"
 	core2 "github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/beetlebugorg/go-dims/internal/operations"
-	"github.com/beetlebugorg/go-dims/internal/request"
+	"github.com/beetlebugorg/go-dims/internal/http"
 	"github.com/beetlebugorg/go-dims/internal/v4"
 	"github.com/beetlebugorg/go-dims/internal/v5"
 	"hash"
@@ -46,7 +46,7 @@ import (
 var client *s3.Client
 
 type S3ObjectLambdaRequest struct {
-	request.DimsRequest
+	http.DimsRequest
 	event events.S3ObjectLambdaEvent
 }
 
@@ -128,7 +128,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core2.Con
 	requestHash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return &S3ObjectLambdaRequest{
-		DimsRequest: *request.NewDimsRequest(requestHash, u, u.Query().Get("url"), rawCommands, config),
+		DimsRequest: *http.NewDimsRequest(requestHash, u, u.Query().Get("url"), rawCommands, config),
 		event:       event,
 	}, nil
 }
@@ -179,7 +179,7 @@ func (r *S3ObjectLambdaRequest) SendError(err error) error {
 	// Set status code.
 	status := http.StatusInternalServerError
 	var statusError *core2.StatusError
-	var operationError *operations.OperationError
+	var operationError *commands.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
 	} else if errors.As(err, &operationError) {

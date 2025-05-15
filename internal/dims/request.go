@@ -1,4 +1,4 @@
-// Copyright 2025 Jeremy Collins. All rights reserved.
+// Copyright 2024 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,81 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package request
+package dims
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/commands"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
-	operations2 "github.com/beetlebugorg/go-dims/internal/operations"
-	"net/http"
+	"github.com/davidbyttow/govips/v2/vips"
 	"net/url"
-	"regexp"
 	"runtime/trace"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type DimsRequest struct {
-	Id                     string       // The hash of the request -> hash(clientId + commands + imageUrl).
-	URL                    *url.URL     // The URL of the request.
-	ImageUrl               string       // The image URL that is being manipulated.
-	SendContentDisposition bool         // The content disposition of the request.
-	RawCommands            string       // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	SourceImage            core2.Image  // The source image.
-	config                 core2.Config // The global configuration.
+type Request struct {
+	Id                     string      // The hash of the http -> hash(clientId + commands + imageUrl).
+	URL                    *url.URL    // The URL of the http.
+	ImageUrl               string      // The image URL that is being manipulated.
+	SendContentDisposition bool        // The content disposition of the http.
+	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	SourceImage            core.Image  // The source image.
+	config                 core.Config // The global configuration.
 	shrinkFactor           int
 }
 
-type HttpDimsRequest struct {
-	DimsRequest
-
-	request  http.Request
-	response http.ResponseWriter
-}
-
-var VipsTransformCommands = map[string]operations2.VipsTransformOperation{
-	"crop":             operations2.CropCommand,
-	"resize":           operations2.ResizeCommand,
-	"sharpen":          operations2.SharpenCommand,
-	"brightness":       operations2.BrightnessCommand,
-	"flipflop":         operations2.FlipFlopCommand,
-	"sepia":            operations2.SepiaCommand,
-	"grayscale":        operations2.GrayscaleCommand,
-	"autolevel":        operations2.AutolevelCommand,
-	"invert":           operations2.InvertCommand,
-	"rotate":           operations2.RotateCommand,
-	"thumbnail":        operations2.ThumbnailCommand,
-	"legacy_thumbnail": operations2.LegacyThumbnailCommand,
-}
-
-var VipsExportCommands = map[string]operations2.VipsExportOperation{
-	"strip":   operations2.StripMetadataCommand,
-	"format":  operations2.FormatCommand,
-	"quality": operations2.QualityCommand,
-}
-
-var VipsRequestCommands = map[string]operations2.VipsRequestOperation{
-	"watermark": operations2.Watermark,
-}
-
-//-- Request/RequestContext Implementation
-
-func NewHttpDimsRequest(r http.Request, w http.ResponseWriter, id string, imageUrl string, commands string, config core2.Config) *HttpDimsRequest {
-	return &HttpDimsRequest{
-		DimsRequest: *NewDimsRequest(id, r.URL, imageUrl, commands, config),
-		request:     r,
-		response:    w,
-	}
-}
-
-func NewDimsRequest(id string, url *url.URL, imageUrl string, commands string, config core2.Config) *DimsRequest {
-	return &DimsRequest{
+func NewRequest(id string, url *url.URL, imageUrl string, commands string, config core.Config) *Request {
+	return &Request{
 		Id:          id,
 		URL:         url,
 		ImageUrl:    imageUrl,
@@ -95,11 +49,11 @@ func NewDimsRequest(id string, url *url.URL, imageUrl string, commands string, c
 	}
 }
 
-func (r *DimsRequest) Config() core2.Config {
+func (r *Request) Config() core.Config {
 	return r.config
 }
 
-func (r *DimsRequest) LoadImage(sourceImage *core2.Image) (*vips.ImageRef, error) {
+func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 	image, err := vips.NewImageFromBuffer(sourceImage.Bytes)
 	if err != nil {
 		return nil, err
@@ -123,18 +77,18 @@ func (r *DimsRequest) LoadImage(sourceImage *core2.Image) (*vips.ImageRef, error
 }
 
 // ProcessImage will execute the commands on the image.
-func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (string, []byte, error) {
+func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, []byte, error) {
 	ctx := context.Background()
 
 	// Execute the commands.
 	ctx, task := trace.NewTask(ctx, "v5.ProcessImage")
 	defer task.End()
 
-	opts := operations2.ExportOptions{
-		ImageType:        core2.ImageTypes[r.SourceImage.Format],
-		JpegExportParams: core2.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
-		PngExportParams:  core2.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
-		WebpExportParams: core2.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
+	opts := commands.ExportOptions{
+		ImageType:        core.ImageTypes[r.SourceImage.Format],
+		JpegExportParams: core.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
+		PngExportParams:  core.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
+		WebpExportParams: core.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
 		GifExportParams:  vips.NewGifExportParams(),
 		TiffExportParams: vips.NewTiffExportParams(),
 	}
@@ -146,7 +100,7 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 	for _, command := range r.Commands() {
 		region := trace.StartRegion(ctx, command.Name)
 
-		if operation, ok := VipsTransformCommands[command.Name]; ok {
+		if operation, ok := commands.VipsTransformCommands[command.Name]; ok {
 			if command.Name == "crop" {
 				adjustedArgs, err := adjustCropAfterShrink(command.Args, r.shrinkFactor)
 				if err != nil {
@@ -163,12 +117,12 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 			if err := operation(image, command.Args); err != nil && !errorImage {
 				return "", nil, err
 			}
-		} else if operation, ok := VipsExportCommands[command.Name]; ok {
+		} else if operation, ok := commands.VipsExportCommands[command.Name]; ok {
 			if err := operation(image, command.Args, &opts); err != nil && !errorImage {
 				return "", nil, err
 			}
-		} else if operation, ok := VipsRequestCommands[command.Name]; ok && !errorImage {
-			if err := operation(image, command.Args, operations2.RequestOperation{
+		} else if operation, ok := commands.VipsRequestCommands[command.Name]; ok && !errorImage {
+			if err := operation(image, command.Args, commands.RequestOperation{
 				Config: r.config,
 				URL:    r.URL,
 			}); err != nil {
@@ -231,8 +185,8 @@ func (r *DimsRequest) ProcessImage(image *vips.ImageRef, errorImage bool) (strin
 	return vips.ImageTypes[opts.ImageType], imageBytes, nil
 }
 
-func (r *DimsRequest) FetchImage(timeout time.Duration) (*core2.Image, error) {
-	image, err := core2.FetchImage(r.ImageUrl, timeout)
+func (r *Request) FetchImage(timeout time.Duration) (*core.Image, error) {
+	image, err := core.FetchImage(r.ImageUrl, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -242,47 +196,28 @@ func (r *DimsRequest) FetchImage(timeout time.Duration) (*core2.Image, error) {
 	return image, nil
 }
 
-func (r *DimsRequest) Commands() []operations2.Command {
-	commands := make([]operations2.Command, 0)
+func (r *Request) Commands() []commands.Command {
+	cmds := make([]commands.Command, 0)
 	parsedCommands := strings.Split(strings.Trim(r.RawCommands, "/"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
 		command := parsedCommands[i]
 		args := parsedCommands[i+1]
 
-		commands = append(commands, operations2.Command{
+		cmds = append(cmds, commands.Command{
 			Name: command,
 			Args: args,
 		})
 	}
 
-	return commands
-}
-
-func sourceMaxAge(header string) (int, error) {
-	if header == "" {
-		return 0, errors.New("empty header")
-	}
-
-	pattern, _ := regexp.Compile(`max-age=(\d+)`)
-	match := pattern.FindStringSubmatch(header)
-	if len(match) == 1 {
-		sourceMaxAge, err := strconv.Atoi(match[0])
-		if err != nil {
-			return 0, errors.New("unable to convert to int")
-		}
-
-		return sourceMaxAge, nil
-	}
-
-	return 0, errors.New("max-age not found in header")
+	return cmds
 }
 
 // Parse through the requested commands and return requested image size for thumbnail and resize
-// operations.
+// commands.
 //
 // This is used while reading an image to improve performance when generating thumbnails from very
 // large images.
-func (r *DimsRequest) requestedImageSize() (geometry.Geometry, error) {
+func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	for _, command := range r.Commands() {
 		if command.Name == "thumbnail" || command.Name == "resize" {
 			rect, err := geometry.ParseGeometry(command.Args)
@@ -303,7 +238,7 @@ func (r *DimsRequest) requestedImageSize() (geometry.Geometry, error) {
 func adjustCropAfterShrink(args string, factor int) (string, error) {
 	rect, err := geometry.ParseGeometry(args)
 	if err != nil {
-		return "", operations2.NewOperationError("crop", args, err.Error())
+		return "", commands.NewOperationError("crop", args, err.Error())
 	}
 
 	rect.X = int(float64(rect.X) / float64(factor))

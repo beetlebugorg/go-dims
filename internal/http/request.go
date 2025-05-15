@@ -12,20 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package request
+package http
 
 import (
 	"crypto/md5"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/commands"
 	core2 "github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/beetlebugorg/go-dims/internal/operations"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"hash"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -34,25 +36,42 @@ import (
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
-func (r *HttpDimsRequest) SendHeaders() {
+type Request struct {
+	dims.Request
+
+	request  http.Request
+	response http.ResponseWriter
+}
+
+//-- Request/RequestContext Implementation
+
+func NewRequest(r http.Request, w http.ResponseWriter, id string, imageUrl string, commands string, config core2.Config) *Request {
+	return &Request{
+		Request:  *dims.NewRequest(id, r.URL, imageUrl, commands, config),
+		request:  r,
+		response: w,
+	}
+}
+
+func (r *Request) SendHeaders() {
 	w := r.response
 
-	maxAge := r.config.OriginCacheControl.Default
-	edgeControlTtl := r.config.EdgeControl.DownstreamTtl
+	maxAge := r.Config().OriginCacheControl.Default
+	edgeControlTtl := r.Config().EdgeControl.DownstreamTtl
 
-	if r.config.OriginCacheControl.UseOrigin {
+	if r.Config().OriginCacheControl.UseOrigin {
 		originMaxAge, err := sourceMaxAge(r.SourceImage.CacheControl)
 		if err == nil {
 			maxAge = originMaxAge
 
 			// If below minimum, set to minimum.
-			minCacheAge := r.config.OriginCacheControl.Min
+			minCacheAge := r.Config().OriginCacheControl.Min
 			if minCacheAge != 0 && maxAge <= minCacheAge {
 				maxAge = minCacheAge
 			}
 
 			// If above maximum, set to maximum.
-			maxCacheAge := r.config.OriginCacheControl.Max
+			maxCacheAge := r.Config().OriginCacheControl.Max
 			if maxCacheAge != 0 && maxAge >= maxCacheAge {
 				maxAge = maxCacheAge
 			}
@@ -85,7 +104,7 @@ func (r *HttpDimsRequest) SendHeaders() {
 	// Set etag header.
 	if r.SourceImage.Etag != "" {
 		var h hash.Hash
-		if r.config.EtagAlgorithm == "md5" {
+		if r.Config().EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()
@@ -106,7 +125,7 @@ func (r *HttpDimsRequest) SendHeaders() {
 	}
 }
 
-func (r *HttpDimsRequest) SendImage(status int, imageFormat string, imageBlob []byte) error {
+func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) error {
 	if imageBlob == nil {
 		return fmt.Errorf("image is empty")
 	}
@@ -131,7 +150,7 @@ func (r *HttpDimsRequest) SendImage(status int, imageFormat string, imageBlob []
 	return nil
 }
 
-func (r *HttpDimsRequest) SendError(err error) error {
+func (r *Request) SendError(err error) error {
 	message := err.Error()
 
 	// Strip stack from vips errors.
@@ -144,7 +163,7 @@ func (r *HttpDimsRequest) SendError(err error) error {
 	// Set status code.
 	status := http.StatusInternalServerError
 	var statusError *core2.StatusError
-	var operationError *operations.OperationError
+	var operationError *commands.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
 	} else if errors.As(err, &operationError) {
@@ -160,7 +179,7 @@ func (r *HttpDimsRequest) SendError(err error) error {
 		return err
 	}
 
-	backgroundColor, err := colorx.ParseHexColor(r.config.Error.Background)
+	backgroundColor, err := colorx.ParseHexColor(r.Config().Error.Background)
 	if err != nil {
 		return err
 	}
@@ -180,7 +199,7 @@ func (r *HttpDimsRequest) SendError(err error) error {
 	}
 
 	// Send error headers.
-	maxAge := r.config.OriginCacheControl.Error
+	maxAge := r.Config().OriginCacheControl.Error
 	if maxAge > 0 {
 		r.response.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
 		r.response.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
@@ -201,4 +220,23 @@ func (r *HttpDimsRequest) SendError(err error) error {
 	}
 
 	return r.SendImage(status, imageType, imageBlob)
+}
+
+func sourceMaxAge(header string) (int, error) {
+	if header == "" {
+		return 0, errors.New("empty header")
+	}
+
+	pattern, _ := regexp.Compile(`max-age=(\d+)`)
+	match := pattern.FindStringSubmatch(header)
+	if len(match) == 1 {
+		sourceMaxAge, err := strconv.Atoi(match[0])
+		if err != nil {
+			return 0, errors.New("unable to convert to int")
+		}
+
+		return sourceMaxAge, nil
+	}
+
+	return 0, errors.New("max-age not found in header")
 }

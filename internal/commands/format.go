@@ -1,4 +1,4 @@
-package operations
+package commands
 
 import (
 	"github.com/beetlebugorg/go-dims/internal/core"

@@ -19,21 +19,21 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	core2 "github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/beetlebugorg/go-dims/internal/request"
+	core "github.com/beetlebugorg/go-dims/internal/core"
+	dims "github.com/beetlebugorg/go-dims/internal/http"
 	"log/slog"
 	"net/http"
 	"strings"
 )
 
-func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config core2.Config) (*request.HttpDimsRequest, error) {
+func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config core.Config) (*dims.Request, error) {
 	signature := r.PathValue("signature")
 	imageUrl := r.URL.Query().Get("url")
 	commands := r.PathValue("commands")
 
 	eurl := r.URL.Query().Get("eurl")
 	if eurl != "" {
-		decryptedUrl, err := core2.DecryptURL(config.SigningKey, eurl)
+		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
 		if err != nil {
 			slog.Error("DecryptURL failed.", "error", err)
 			return nil, fmt.Errorf("DecryptURL failed: %w", err)
@@ -48,7 +48,7 @@ func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config co
 	id := fmt.Sprintf("%x", h.Sum(nil))
 
 	// Signed Parameters
-	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	// _keys query parameter is a comma delimited list of keys to include in the signature.
 	var signedKeys []string
 	params := r.URL.Query().Get("_keys")
 	if params != "" {
@@ -64,13 +64,13 @@ func ParseAndValidateV5Request(r *http.Request, w http.ResponseWriter, config co
 	// Validate signature
 	if !config.DevelopmentMode &&
 		!ValidateSignatureV5(commands, imageUrl, signedKeys, config.SigningKey, signature) {
-		return nil, &core2.StatusError{
+		return nil, &core.StatusError{
 			StatusCode: http.StatusUnauthorized,
 			Message:    "invalid signature",
 		}
 	}
 
-	return request.NewHttpDimsRequest(*r, w, id, imageUrl, commands, config), nil
+	return dims.NewRequest(*r, w, id, imageUrl, commands, config), nil
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.
@@ -83,7 +83,7 @@ func ValidateSignatureV5(commands string, imageUrl string, signedParams []string
 	mac.Write([]byte(sanitizedArgs))
 	mac.Write([]byte(imageUrl))
 
-	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	// _keys query parameter is a comma delimited list of keys to include in the signature.
 	for _, signedParam := range signedParams {
 		mac.Write([]byte(signedParam))
 	}

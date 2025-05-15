@@ -18,13 +18,13 @@ import (
 	"crypto/md5"
 	"fmt"
 	core2 "github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/beetlebugorg/go-dims/internal/request"
+	dims "github.com/beetlebugorg/go-dims/internal/http"
 	"log/slog"
 	"net/http"
 	"strings"
 )
 
-func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config core2.Config) (*request.HttpDimsRequest, error) {
+func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config core2.Config) (*dims.Request, error) {
 	clientId := r.PathValue("clientId")
 	timestamp := r.PathValue("timestamp")
 	signature := r.PathValue("signature")
@@ -60,7 +60,7 @@ func ParseAndValidateV4Request(r *http.Request, w http.ResponseWriter, config co
 	h.Write([]byte(imageUrl))
 	id := fmt.Sprintf("%x", h.Sum(nil))
 
-	return request.NewHttpDimsRequest(*r, w, id, imageUrl, commands, config), nil
+	return dims.NewRequest(*r, w, id, imageUrl, commands, config), nil
 }
 
 // ValidateSignature verifies the signature of the image resize is valid.

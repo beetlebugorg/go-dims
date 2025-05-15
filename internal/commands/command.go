@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operations
+package commands
 
 import (
 	"context"
@@ -53,4 +53,29 @@ func PassThroughCommand(ctx context.Context, args string) error {
 type RequestOperation struct {
 	URL    *url.URL    // The URL of the image being processed
 	Config core.Config // The global configuration.
+}
+
+var VipsTransformCommands = map[string]VipsTransformOperation{
+	"crop":             CropCommand,
+	"resize":           ResizeCommand,
+	"sharpen":          SharpenCommand,
+	"brightness":       BrightnessCommand,
+	"flipflop":         FlipFlopCommand,
+	"sepia":            SepiaCommand,
+	"grayscale":        GrayscaleCommand,
+	"autolevel":        AutolevelCommand,
+	"invert":           InvertCommand,
+	"rotate":           RotateCommand,
+	"thumbnail":        ThumbnailCommand,
+	"legacy_thumbnail": LegacyThumbnailCommand,
+}
+
+var VipsExportCommands = map[string]VipsExportOperation{
+	"strip":   StripMetadataCommand,
+	"format":  FormatCommand,
+	"quality": QualityCommand,
+}
+
+var VipsRequestCommands = map[string]VipsRequestOperation{
+	"watermark": Watermark,
 }

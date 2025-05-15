@@ -15,21 +15,26 @@
 package dims
 
 import (
-	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
 type RequestContext interface {
-	Config() core2.Config
-	FetchImage(timeout time.Duration) (*core2.Image, error)
-	LoadImage(image *core2.Image) (*vips.ImageRef, error)
+	Config() core.Config
+	Validate() bool
+	FetchImage(timeout time.Duration) (*core.Image, error)
+	LoadImage(image *core.Image) (*vips.ImageRef, error)
 	ProcessImage(img *vips.ImageRef, strip bool) (string, []byte, error)
 	SendImage(status int, imageFormat string, imageBlob []byte) error
 }
 
 func Handler(request RequestContext) error {
+	// Validate the request.
+	if !request.Validate() {
+		return core.NewStatusError(403, "Invalid signature")
+	}
 
 	// Download image.
 	timeout := time.Duration(request.Config().Timeout.Download) * time.Millisecond

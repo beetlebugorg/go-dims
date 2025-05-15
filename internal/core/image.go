@@ -49,10 +49,6 @@ var ImageTypes = map[string]vips.ImageType{
 	"psd":  vips.ImageTypePSD,
 }
 
-type ImageFetcher interface {
-	FetchImage(timeout time.Duration) (*Image, error)
-}
-
 func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
 	slog.Debug("downloadImage", "url", imageUrl)
 

@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/commands"
-	core2 "github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"hash"
 	"log/slog"
@@ -39,22 +39,60 @@ import (
 type Request struct {
 	dims.Request
 
-	request  http.Request
-	response http.ResponseWriter
+	httpRequest  *http.Request
+	httpResponse http.ResponseWriter
 }
 
 //-- Request/RequestContext Implementation
 
-func NewRequest(r http.Request, w http.ResponseWriter, id string, imageUrl string, commands string, config core2.Config) *Request {
-	return &Request{
-		Request:  *dims.NewRequest(id, r.URL, imageUrl, commands, config),
-		request:  r,
-		response: w,
+func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Request, error) {
+	signature := r.PathValue("signature")
+	requestUrl := r.URL
+	imageUrl := r.URL.Query().Get("url")
+	cmds := r.PathValue("commands")
+
+	eurl := r.URL.Query().Get("eurl")
+	if eurl != "" {
+		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
+		if err != nil {
+			slog.Error("DecryptURL failed.", "error", err)
+			return nil, fmt.Errorf("DecryptURL failed: %w", err)
+		}
+
+		imageUrl = decryptedUrl
 	}
+
+	// Signed Parameters
+	// _keys query parameter is a comma-delimited list of keys to include in the signature.
+	var signedParams map[string]string
+	params := r.URL.Query().Get("_keys")
+	if params != "" {
+		keys := strings.Split(params, ",")
+		for _, key := range keys {
+			value := r.URL.Query().Get(key)
+			if value != "" {
+				signedParams[key] = value
+			}
+		}
+	}
+
+	return &Request{
+		Request:      *dims.NewRequest(requestUrl, imageUrl, cmds, signedParams, signature, config),
+		httpRequest:  r,
+		httpResponse: w,
+	}, nil
+}
+
+func (r *Request) HashId() string {
+	h := md5.New()
+	h.Write([]byte(r.RawCommands))
+	h.Write([]byte(r.ImageUrl))
+
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (r *Request) SendHeaders() {
-	w := r.response
+	w := r.httpResponse
 
 	maxAge := r.Config().OriginCacheControl.Default
 	edgeControlTtl := r.Config().EdgeControl.DownstreamTtl
@@ -110,7 +148,7 @@ func (r *Request) SendHeaders() {
 			h = sha256.New()
 		}
 
-		h.Write([]byte(r.Id))
+		h.Write([]byte(r.HashId()))
 		if r.SourceImage.Etag != "" {
 			h.Write([]byte(r.SourceImage.Etag))
 		}
@@ -133,16 +171,16 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 	r.SendHeaders()
 
 	// Set content type.
-	r.response.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageFormat)))
+	r.httpResponse.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageFormat)))
 
 	// Set content length
-	r.response.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
+	r.httpResponse.Header().Set("Content-Length", strconv.Itoa(len(imageBlob)))
 
 	// Set status code.
-	r.response.WriteHeader(status)
+	r.httpResponse.WriteHeader(status)
 
 	// Write the image.
-	_, err := r.response.Write(imageBlob)
+	_, err := r.httpResponse.Write(imageBlob)
 	if err != nil {
 		return err
 	}
@@ -162,7 +200,7 @@ func (r *Request) SendError(err error) error {
 
 	// Set status code.
 	status := http.StatusInternalServerError
-	var statusError *core2.StatusError
+	var statusError *core.StatusError
 	var operationError *commands.OperationError
 	if errors.As(err, &statusError) {
 		status = statusError.StatusCode
@@ -193,7 +231,7 @@ func (r *Request) SendError(err error) error {
 		return err
 	}
 
-	r.SourceImage = core2.Image{
+	r.SourceImage = core.Image{
 		Status: status,
 		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}
@@ -201,8 +239,8 @@ func (r *Request) SendError(err error) error {
 	// Send error headers.
 	maxAge := r.Config().OriginCacheControl.Error
 	if maxAge > 0 {
-		r.response.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
-		r.response.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
+		r.httpResponse.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d, public", maxAge))
+		r.httpResponse.Header().Set("Expires", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(http.TimeFormat))
 	}
 
 	imageType, imageBlob, err := r.ProcessImage(errorImage, true)

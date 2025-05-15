@@ -52,7 +52,7 @@ type Geometry struct {
 // "300x" - width 300
 // "x400" - height 400
 // "100x200+50+50%" - width 100, height 200, x offset 50, y offset 50%
-// "+50+50" - x offset 50, y offset 50, width and height are 100% of the rest of the image
+// "+50+50" - x offset 50, y offset 50, width and height are 100% of the http of the image
 // "100x100%+50+50" - width 100, height 100%, x offset 50, y offset 50
 func ParseGeometry(geometry string) (Geometry, error) {
 	is := antlr.NewInputStream(geometry)

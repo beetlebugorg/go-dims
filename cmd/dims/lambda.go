@@ -13,21 +13,19 @@
 // limitations under the License.
 
 //go:build lambda
-// +build lambda
 
 package main
 
 import (
 	"context"
-	"github.com/beetlebugorg/go-dims/internal/aws"
-	"github.com/beetlebugorg/go-dims/internal/core"
-	"log/slog"
-	"os"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/beetlebugorg/go-dims/internal/aws"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
+	"os"
 )
 
 func main() {

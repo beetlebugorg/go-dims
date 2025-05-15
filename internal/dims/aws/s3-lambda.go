@@ -29,14 +29,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/beetlebugorg/go-dims/internal/dims/core"
+	"github.com/beetlebugorg/go-dims/internal/dims/request"
+	v4 "github.com/beetlebugorg/go-dims/internal/dims/v4"
+	v5 "github.com/beetlebugorg/go-dims/internal/dims/v5"
 )
 
 var client *s3.Client
 
 type S3ObjectLambdaRequest struct {
-	dims.Request
+	request.Request
 }
 
 func init() {
@@ -55,14 +57,33 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 		return nil, err
 	}
 
-	var clientId string
 	var signature string
 	var rawCommands string
+
+	// Signed Parameters
+	// _keys query parameter is a comma delimted list of keys to include in the signature.
+	var signedKeys []string
+	params := u.Query().Get("_keys")
+	if params != "" {
+		keys := strings.Split(params, ",")
+		for _, key := range keys {
+			value := u.Query().Get(key)
+			if value != "" {
+				signedKeys = append(signedKeys, value)
+			}
+		}
+	}
 
 	if strings.HasPrefix(u.Path, "/v5/") {
 		rawCommands = strings.TrimPrefix(u.Path, "/v5/")
 		signature = u.Query().Get("sig")
 
+		if !v5.ValidateSignatureV5(rawCommands, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
+			return nil, &core.StatusError{
+				StatusCode: http.StatusUnauthorized,
+				Message:    "invalid signature",
+			}
+		}
 	} else if strings.HasPrefix(u.Path, "/dims4/") {
 		// Remove the "/dims4/" prefix if it exists
 		// Parse out /<clientId>/<sig>/<expire>/<rawCommands>
@@ -73,9 +94,16 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 			return nil, fmt.Errorf("invalid dims4 path format")
 		}
 
-		clientId = parts[0]
 		signature = parts[1]
+		timestamp := parts[2]
 		rawCommands = strings.Join(parts[3:], "/")
+
+		if !v4.ValidateSignatureV4(rawCommands, timestamp, u.Query().Get("url"), signedKeys, config.SigningKey, signature) {
+			return nil, &core.StatusError{
+				StatusCode: http.StatusUnauthorized,
+				Message:    "invalid signature",
+			}
+		}
 	}
 
 	slog.Info("NewS3ObjectRequest", "event", event)
@@ -93,7 +121,7 @@ func NewS3ObjectLambdaRequest(event events.S3ObjectLambdaEvent, config core.Conf
 	}
 
 	return &S3ObjectLambdaRequest{
-		Request: *dims.NewDimsRequest(*httpRequest, requestHash, u.Query().Get("url"), rawCommands, config),
+		Request: *request.NewDimsRequest(*httpRequest, requestHash, u.Query().Get("url"), rawCommands, config),
 	}, nil
 }
 

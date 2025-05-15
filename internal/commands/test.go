@@ -40,8 +40,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const sourceImageDir = "../../../resources/"
-const goldenImageDir = "../../../resources/golden/"
+const sourceImageDir = "../../resources/"
+const goldenImageDir = "../../resources/golden/"
 
 func runGoldenTest(
 	t *testing.T,

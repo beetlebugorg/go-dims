@@ -4,17 +4,13 @@ variable "aws_region" {
   type        = string
 }
 
-variable "source_bucket_name" {
-  description = "The name of the source S3 bucket."
-  type        = string
-}
-
 variable "environment" {
   description = "Environment variables for the Lambda function."
   type        = map(string)
 }
 
-variable "lambda_zip_file" {
-  description = "Path to the Lambda zip file."
+variable "platform" {
+  description = "Platform architecture to deploy. Options: arm64 or amd64."
   type        = string
+  default     = "arm64"
 }

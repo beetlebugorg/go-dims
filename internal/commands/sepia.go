@@ -12,27 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !lambda
+package commands
 
-package main
+import "github.com/davidbyttow/govips/v2/vips"
 
-import (
-	"os"
-
-	"github.com/alecthomas/kong"
-)
-
-var CLI struct {
-	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
-	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
-	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
-	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
-}
-
-func main() {
-	ctx := kong.Parse(&CLI)
-	err := ctx.Run()
-	if err != nil {
-		os.Exit(1)
-	}
+func SepiaCommand(image *vips.ImageRef, args string) error {
+	return nil
 }

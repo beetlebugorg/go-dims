@@ -15,9 +15,8 @@
 package dims
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"net/http"
-
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 )
 
 func HandleDimsStatus(config core.Config, w http.ResponseWriter, r *http.Request) {

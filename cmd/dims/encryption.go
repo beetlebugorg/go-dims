@@ -17,8 +17,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/core"
 
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 

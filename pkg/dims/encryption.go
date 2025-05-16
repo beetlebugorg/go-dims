@@ -15,14 +15,14 @@
 package dims
 
 import (
-	"github.com/beetlebugorg/go-dims/internal/dims"
+	"github.com/beetlebugorg/go-dims/internal/core"
 )
 
 func EncryptURL(secretKey string, u string) (string, error) {
-	return dims.EncryptURL(secretKey, u)
+	return core.EncryptURL(secretKey, u)
 }
 
 // DecryptURL decrypts the given eurl string using a derived AES-128-GCM key.
 func DecryptURL(secretKey string, base64Eurl string) (string, error) {
-	return dims.DecryptURL(secretKey, base64Eurl)
+	return core.DecryptURL(secretKey, base64Eurl)
 }

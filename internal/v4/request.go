@@ -59,14 +59,14 @@ func (v4 *Request) HashId() string {
 }
 
 func (v4 *Request) Validate() bool {
-	return ValidateSignature(v4.Signature, v4.clientId, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
+	return ValidateSignature(v4.Signature, v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
 }
 
-func ValidateSignature(signature, clientId, timestamp, imageUrl string, signedParams map[string]string, signingKey string) bool {
+func ValidateSignature(signature, commands, timestamp, imageUrl string, signedParams map[string]string, signingKey string) bool {
 	h := md5.New()
-	h.Write([]byte(clientId))
 	h.Write([]byte(timestamp))
 	h.Write([]byte(signingKey))
+	h.Write([]byte(commands))
 	h.Write([]byte(imageUrl))
 
 	for _, signedParam := range signedParams {

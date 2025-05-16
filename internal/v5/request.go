@@ -43,11 +43,12 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 
 // Validate verifies the signature of the image resize is valid.
 func (v5 *Request) Validate() bool {
-	return ValidateSignature(v5.Signature, v5.ImageUrl, v5.SignedParams, v5.Config().SigningKey)
+	return ValidateSignature(v5.Signature, v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey)
 }
 
-func ValidateSignature(signature, imageUrl string, signedParams map[string]string, signingKey string) bool {
+func ValidateSignature(signature, imageUrl string, signedParams map[string]string, command string, signingKey string) bool {
 	mac := hmac.New(sha256.New, []byte(signingKey))
+	mac.Write([]byte(command))
 	mac.Write([]byte(imageUrl))
 
 	for _, signedParam := range signedParams {

@@ -15,11 +15,6 @@
 package core
 
 import (
-	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -36,7 +31,6 @@ type Image struct {
 	Etag         string // The etag header from the downloaded image.
 }
 
-// ImageTypes defines the various image types supported by govips
 var ImageTypes = map[string]vips.ImageType{
 	"gif":  vips.ImageTypeGIF,
 	"jpeg": vips.ImageTypeJPEG,
@@ -49,52 +43,35 @@ var ImageTypes = map[string]vips.ImageType{
 	"psd":  vips.ImageTypePSD,
 }
 
-func FetchImage(imageUrl string, timeout time.Duration) (*Image, error) {
-	slog.Debug("downloadImage", "url", imageUrl)
+type ImageBackend interface {
+	Name() string
+	CanHandle(imageSource string) bool
+	FetchImage(imageSource string, timeout time.Duration) (*Image, error)
+}
 
-	_, err := url.ParseRequestURI(imageUrl)
-	if err != nil {
-		return nil, err
-	}
+var imageBackends []ImageBackend
 
-	request, err := http.NewRequest("GET", imageUrl, nil)
-	if err != nil {
-		return nil, err
-	}
+func RegisterImageBackend(fetcher ImageBackend) {
+	imageBackends = append(imageBackends, fetcher)
+}
 
-	request.Header.Set("User-Agent", fmt.Sprintf("go-dims/%s", Version))
-
-	http.DefaultClient.Timeout = timeout
-	image, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	imageSize := int(image.ContentLength)
-	imageBytes, err := io.ReadAll(image.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	sourceImage := Image{
-		Status:       image.StatusCode,
-		EdgeControl:  image.Header.Get("Edge-Control"),
-		CacheControl: image.Header.Get("Cache-Control"),
-		LastModified: image.Header.Get("Last-Modified"),
-		Etag:         image.Header.Get("Etag"),
-		Format:       vips.ImageTypes[vips.DetermineImageType(imageBytes)],
-		Size:         imageSize,
-		Bytes:        imageBytes,
-	}
-
-	if image.StatusCode != 200 {
-		return nil, &StatusError{
-			Message:    fmt.Sprintf("failed to fetch image from %s", imageUrl),
-			StatusCode: image.StatusCode,
+func FetchImage(imageSource string, timeout time.Duration) (*Image, error) {
+	for _, fetcher := range imageBackends {
+		if fetcher.CanHandle(imageSource) {
+			return fetcher.FetchImage(imageSource, timeout)
 		}
 	}
 
-	return &sourceImage, nil
+	config := ReadConfig()
+	if config.ImageBackend != "http" {
+		for _, fetcher := range imageBackends {
+			if fetcher.Name() == config.ImageBackend {
+				return fetcher.FetchImage(imageSource, timeout)
+			}
+		}
+	}
+
+	return nil, NewStatusError(400, "Unsupported image source: "+imageSource)
 }
 
 func NewJpegExportParams(options JpegCompression, stripMetadata bool) *vips.JpegExportParams {

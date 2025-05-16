@@ -43,21 +43,11 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 
 // Validate verifies the signature of the image resize is valid.
 func (v5 *Request) Validate() bool {
-	return ValidateSignature(v5.Signature, v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey)
-}
+	expectedSignature := v5.sign(v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey)
 
-func ValidateSignature(signature, imageUrl string, signedParams map[string]string, command string, signingKey string) bool {
-	mac := hmac.New(sha256.New, []byte(signingKey))
-	mac.Write([]byte(command))
-	mac.Write([]byte(imageUrl))
-
-	for _, signedParam := range signedParams {
-		mac.Write([]byte(signedParam))
-	}
-
-	expectedSignature := mac.Sum(nil)[0:31]
-	gotSignature, err := hex.DecodeString(signature)
+	gotSignature, err := hex.DecodeString(v5.Signature)
 	if err != nil {
+		slog.Error("decoding signature failed.", "error", err)
 		return false
 	}
 
@@ -67,7 +57,30 @@ func ValidateSignature(signature, imageUrl string, signedParams map[string]strin
 
 	slog.Error("verifySignature failed.",
 		"expected", hex.EncodeToString(expectedSignature),
-		"got", signature)
+		"got", v5.Signature)
 
 	return false
+}
+
+func (v5 *Request) sign(imageUrl string, signedParams map[string]string, command string, signingKey string) []byte {
+	mac := hmac.New(sha256.New, []byte(signingKey))
+	mac.Write([]byte(command))
+	mac.Write([]byte(imageUrl))
+
+	for _, signedParam := range signedParams {
+		mac.Write([]byte(signedParam))
+	}
+
+	return mac.Sum(nil)[0:31]
+}
+
+func (v5 *Request) SignedUrl() string {
+	signature := hex.EncodeToString(v5.sign(v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey))
+
+	u := v5.URL
+	q := u.Query()
+	q.Set("sig", signature)
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }

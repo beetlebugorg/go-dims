@@ -147,7 +147,7 @@ func (r *Request) SendError(err error) error {
 		return err
 	}
 
-	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
+	if err := errorImage.BandJoinConst([]float64{0, 0, 255}); err != nil {
 		return err
 	}
 
@@ -161,7 +161,11 @@ func (r *Request) SendError(err error) error {
 	greenI := float64(green) / 65535 * 255
 	blueI := float64(blue) / 65535 * 255
 
-	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
+	if err := errorImage.Linear([]float64{0, 0, 0, 0}, []float64{redI, greenI, blueI, 255}); err != nil {
+		return err
+	}
+
+	if err := errorImage.Cast(vips.BandFormatUchar); err != nil {
 		return err
 	}
 

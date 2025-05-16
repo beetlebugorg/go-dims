@@ -19,5 +19,4 @@ It can improve your development and publishing experience by:
 Running in development mode disables signature verification:
 
 ```
-docker run -p 8080:8080 ghcr.io/beetlebugorg/go-dims serve --dev --debug --bind ":8080"
-```
+docker run -e DIMS_DEVELOPMENT_MODE=true -e DIMS_DEBUG_MODE=true -e DIMS_SIGNING_KEY=devmode -p 8080:8080 ghcr.io/beetlebugorg/go-dims serve```

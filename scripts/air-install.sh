@@ -38,7 +38,7 @@ parse_args() {
   shift $((OPTIND - 1))
   TAG=$1
 }
-# this function wraps all the destructive operations
+# this function wraps all the destructive commands
 # if a curl|bash cuts off the end of the script due to
 # network, either nothing will happen or will syntax error
 # out preventing half-done work

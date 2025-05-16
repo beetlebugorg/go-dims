@@ -12,41 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package commands
 
 import (
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
-	"log/slog"
-	"net/http"
-	"os"
-
-	"github.com/beetlebugorg/go-dims/pkg/dims"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type ServeCmd struct {
+type OperationError struct {
+	core.StatusError
+	Command string
+	Args    string
 }
 
-func (s *ServeCmd) Run() error {
-	config := core.ReadConfig()
-
-	vips.LoggingSettings(nil, vips.LogLevelError)
-	vips.Startup(nil)
-
-	var opts *slog.HandlerOptions
-	if config.DebugMode {
-		opts = &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}
+func NewOperationError(command string, args string, message string) *OperationError {
+	return &OperationError{
+		StatusError: *core.NewStatusError(400, message),
+		Command:     command,
+		Args:        args,
 	}
+}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
-
-	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
-	if err != nil {
-		slog.Error("Server failed.", "error", err)
-		return err
-	}
-	return nil
+func (e *OperationError) Error() string {
+	return fmt.Sprintf("OperationError: %s (status: %d) (command: %s) (args: %s)", e.Message, e.StatusCode, e.Command, e.Args)
 }

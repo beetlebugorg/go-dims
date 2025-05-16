@@ -15,21 +15,18 @@
 package dims
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/internal/v4"
+	"github.com/beetlebugorg/go-dims/internal/v5"
 	"log/slog"
 	"net/http"
 
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/beetlebugorg/go-dims/internal/dims/core"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
 func NewHandler(config core.Config) http.Handler {
 
 	mux := http.NewServeMux()
-
-	vips.LoggingSettings(nil, vips.LogLevelError)
-
-	vips.Startup(nil)
 
 	slog.Debug("startup", "config", config)
 
@@ -38,14 +35,18 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "md5"
 
-			request, err := dims.ParseAndValidateV4Request(r, config)
+			request, err := v4.NewRequest(r, w, config)
 			if err != nil {
-				request.SendError(w, err)
+				if err := request.SendError(err); err != nil {
+					slog.Error("error sending error response", "error", err)
+				}
 				return
 			}
 
-			if err := dims.Handler(*request, config, w); err != nil {
-				request.SendError(w, err)
+			if err := dims.Handler(request); err != nil {
+				if err := request.SendError(err); err != nil {
+					slog.Error("error sending error response", "error", err)
+				}
 				return
 			}
 		})
@@ -55,15 +56,18 @@ func NewHandler(config core.Config) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			config.EtagAlgorithm = "hmac-sha256"
 
-			request, err := dims.ParseAndValidateV5Request(r, config)
+			request, err := v5.NewRequest(r, w, config)
 			if err != nil {
-				request.SendError(w, err)
+				if err := request.SendError(err); err != nil {
+					slog.Error("error sending error response", "error", err)
+				}
 				return
 			}
 
-			if err := dims.Handler(*request, config, w); err != nil {
-
-				request.SendError(w, err)
+			if err := dims.Handler(request); err != nil {
+				if err := request.SendError(err); err != nil {
+					slog.Error("error sending error response", "error", err)
+				}
 				return
 			}
 		})

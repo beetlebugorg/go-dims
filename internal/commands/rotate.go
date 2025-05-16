@@ -12,27 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !lambda
-
-package main
+package commands
 
 import (
-	"os"
+	"strconv"
 
-	"github.com/alecthomas/kong"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-var CLI struct {
-	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
-	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
-	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
-	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
-}
-
-func main() {
-	ctx := kong.Parse(&CLI)
-	err := ctx.Run()
+func RotateCommand(image *vips.ImageRef, args string) error {
+	degrees, err := strconv.ParseFloat(args, 64)
 	if err != nil {
-		os.Exit(1)
+		return NewOperationError("rotate", args, err.Error())
 	}
+
+	idx, idy, odx, ody := 0.0, 0.0, 0.0, 0.0
+	if degrees == 90 {
+		idx, idy = 0.0, 1.0
+		odx, ody = 1.0, 0.0
+	} else if degrees == 180 {
+		idx, idy = 0.0, 1.0
+		odx, ody = 1.0, 0.0
+	} else if degrees == 270 {
+		idx, idy = 1.0, 0.0
+		odx, ody = 0.0, -1.0
+	}
+
+	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, idx, idy, odx, ody)
 }

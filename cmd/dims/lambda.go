@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build lambda
+
 package main
 
 import (
+	"context"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/beetlebugorg/go-dims/internal/aws"
 	"github.com/beetlebugorg/go-dims/internal/core"
-	"log/slog"
-	"net/http"
-	"os"
-
-	"github.com/beetlebugorg/go-dims/pkg/dims"
+	"github.com/beetlebugorg/go-dims/internal/dims"
 	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
+	"os"
 )
 
-type ServeCmd struct {
-}
-
-func (s *ServeCmd) Run() error {
+func main() {
 	config := core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
@@ -43,10 +44,20 @@ func (s *ServeCmd) Run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
-	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
-	if err != nil {
-		slog.Error("Server failed.", "error", err)
-		return err
+	handler := func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLStreamingResponse, error) {
+		request, err := aws.NewRequest(*event, config)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := dims.Handler(request); err != nil {
+			if err := request.SendError(err); err != nil {
+				return nil, err
+			}
+		}
+
+		return request.Response(), nil
 	}
-	return nil
+
+	lambda.Start(handler)
 }

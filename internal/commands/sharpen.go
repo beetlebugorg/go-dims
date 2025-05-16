@@ -12,27 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !lambda
-
-package main
+package commands
 
 import (
-	"os"
-
-	"github.com/alecthomas/kong"
+	"github.com/beetlebugorg/go-dims/internal/geometry"
+	"github.com/davidbyttow/govips/v2/vips"
 )
 
-var CLI struct {
-	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
-	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
-	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
-	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
-}
-
-func main() {
-	ctx := kong.Parse(&CLI)
-	err := ctx.Run()
+func SharpenCommand(image *vips.ImageRef, args string) error {
+	geo, err := geometry.ParseGeometry(args)
 	if err != nil {
-		os.Exit(1)
+		return NewOperationError("sharpen", args, err.Error())
 	}
+
+	x1 := geo.Width
+	m2 := geo.Height * 2
+	if m2 == 0 {
+		m2 = 2.0
+	}
+
+	err = image.Sharpen(float64(0.5), x1, m2)
+	if err != nil {
+		return NewOperationError("sharpen", args, err.Error())
+	}
+
+	return nil
 }

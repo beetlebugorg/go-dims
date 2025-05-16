@@ -16,7 +16,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
+	"net/url"
 )
 
 type SignCmd struct {
@@ -28,6 +30,27 @@ func (cmd *SignCmd) Run() error {
 	signedUrl, err := dims.SignUrl(cmd.ImageURL)
 	if err != nil {
 		return err
+	}
+
+	if cmd.Encrypt {
+		config := core.ReadConfig()
+
+		u, err := url.Parse(signedUrl)
+		if err != nil {
+			return err
+		}
+
+		query := u.Query()
+		imageUrl := query.Get("url")
+		encryptedUrl, err := dims.EncryptURL(config.SigningKey, imageUrl)
+		if err != nil {
+			return err
+		}
+		query.Set("eurl", encryptedUrl)
+		query.Del("url")
+		u.RawQuery = query.Encode()
+
+		signedUrl = u.String()
 	}
 
 	fmt.Printf("\n%s\n", signedUrl)

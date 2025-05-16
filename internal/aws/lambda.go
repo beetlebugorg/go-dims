@@ -49,7 +49,7 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 
 	// Commands can be v4 (/dims4/...) or v5 (/v5/...)
 	if strings.HasPrefix(requestUrl.Path, "/dims4/") {
-		path := strings.TrimLeft(requestUrl.Path, "/dims4/")
+		path := requestUrl.Path[7:]
 		parts := strings.SplitN(path, "/", 4)
 		if len(parts) < 4 {
 			return nil, fmt.Errorf("invalid dims4 path format")

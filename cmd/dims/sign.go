@@ -1,4 +1,4 @@
-// Copyright 2024 Jeremy Collins. All rights reserved.
+// Copyright 2025 Jeremy Collins. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,28 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !lambda
-
 package main
 
 import (
-	"os"
-
-	"github.com/alecthomas/kong"
+	"fmt"
+	"github.com/beetlebugorg/go-dims/pkg/dims"
 )
 
-var CLI struct {
-	Serve   ServeCmd      `cmd:"" help:"Runs the DIMS service."`
-	Encrypt EncryptionCmd `cmd:"" help:"Encrypt an eurl."`
-	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
-	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
-	Sign    SignCmd       `cmd:"" help:"Sign an image URL."`
+type SignCmd struct {
+	ImageURL string `arg:"" name:"imageUrl" help:"Image URL to sign. For v4 urls place any value in the signature position in the URL."`
+	Encrypt  bool   `help:"Encrypt the Image URL."`
 }
 
-func main() {
-	ctx := kong.Parse(&CLI)
-	err := ctx.Run()
+func (cmd *SignCmd) Run() error {
+	signedUrl, err := dims.SignUrl(cmd.ImageURL)
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
+
+	fmt.Printf("\n%s\n", signedUrl)
+
+	return nil
 }

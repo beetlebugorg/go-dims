@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	_ "github.com/beetlebugorg/go-dims/internal/aws"
 	"github.com/beetlebugorg/go-dims/internal/dims"
 )
 

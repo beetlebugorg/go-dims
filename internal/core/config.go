@@ -33,7 +33,6 @@ type EdgeControl struct {
 }
 
 type Error struct {
-	Image      string `env:"DIMS_ERROR_IMAGE" envDefault:""`
 	Background string `env:"DIMS_ERROR_BACKGROUND" envDefault:"#5ADAFD"`
 }
 
@@ -85,6 +84,7 @@ type ImageOutputOptions struct {
 }
 
 type S3 struct {
+	Region string `env:"DIMS_S3_REGION" envDefault:""`
 	Bucket string `env:"DIMS_S3_BUCKET" envDefault:""`
 	Prefix string `env:"DIMS_S3_PREFIX" envDefault:""`
 }
@@ -93,6 +93,7 @@ type Config struct {
 	BindAddress     string `env:"DIMS_BIND_ADDRESS" envDefault:":8080"`
 	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
 	DebugMode       bool   `env:"DIMS_DEBUG_MODE" envDefault:"false"`
+	ImageBackend    string `env:"DIMS_DEFAULT_IMAGE_BACKEND" envDefault:"http"`
 	EtagAlgorithm   string
 
 	Timeout
@@ -103,7 +104,6 @@ type Config struct {
 	OutputFormat
 	Options
 	ImageOutputOptions
-	S3
 }
 
 func ReadConfig() Config {

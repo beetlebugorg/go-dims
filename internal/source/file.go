@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
+	"github.com/davidbyttow/govips/v2/vips"
 	"io"
 	"os"
 	"path/filepath"
@@ -79,6 +80,7 @@ func (f fileSourceBackend) FetchImage(imageSource string, timeout time.Duration)
 		Status: 200,
 		Size:   len(imageBytes),
 		Bytes:  imageBytes,
+		Format: vips.DetermineImageType(imageBytes),
 	}, nil
 }
 

@@ -95,7 +95,7 @@ func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Durat
 		Etag:         *response.ETag,
 		Size:         size,
 		Bytes:        imageBytes,
-		Format:       vips.ImageTypes[vips.DetermineImageType(imageBytes)],
+		Format:       vips.DetermineImageType(imageBytes),
 		LastModified: lastModified,
 	}
 

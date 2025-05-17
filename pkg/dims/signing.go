@@ -24,11 +24,10 @@ func SignUrl(imageUrl string) (string, error) {
 	config := core.ReadConfig()
 
 	if config.SigningKey == "" {
-		println("Signing key is required, set DIMS_SIGNING_KEY environment variable.")
 		return "", fmt.Errorf("signing key is required")
 	}
 
-	signer, err := signing.NewSigner(imageUrl, config)
+	signer, err := signing.NewSigner(imageUrl, *config)
 	if err != nil {
 		return "", err
 	}

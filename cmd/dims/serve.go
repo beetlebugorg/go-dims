@@ -24,13 +24,11 @@ import (
 	"os"
 )
 
-var config core.Config
-
 type ServeCmd struct {
 }
 
 func (s *ServeCmd) Run() error {
-	config = core.ReadConfig()
+	config := core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(nil)
@@ -55,7 +53,7 @@ func (s *ServeCmd) Run() error {
 		return fmt.Errorf("signing key is required in production mode")
 	}
 
-	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
+	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(*config))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)
 		return err

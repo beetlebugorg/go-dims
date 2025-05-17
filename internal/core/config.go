@@ -83,17 +83,25 @@ type ImageOutputOptions struct {
 	Webp WebpCompression
 }
 
+type Source struct {
+	Default string   `env:"DIMS_DEFAULT_SOURCE_BACKEND" envDefault:"http"`
+	Allowed []string `env:"DIMS_ALLOWED_SOURCE_BACKENDS" envDefault:"http"`
+}
+
 type S3 struct {
 	Region string `env:"DIMS_S3_REGION" envDefault:""`
 	Bucket string `env:"DIMS_S3_BUCKET" envDefault:""`
 	Prefix string `env:"DIMS_S3_PREFIX" envDefault:""`
 }
 
+type FileSource struct {
+	BaseDir string `env:"DIMS_FILE_BASE_DIR" envDefault:"./resources"`
+}
+
 type Config struct {
 	BindAddress     string `env:"DIMS_BIND_ADDRESS" envDefault:":8080"`
 	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
 	DebugMode       bool   `env:"DIMS_DEBUG_MODE" envDefault:"false"`
-	ImageBackend    string `env:"DIMS_DEFAULT_IMAGE_BACKEND" envDefault:"http"`
 	EtagAlgorithm   string
 
 	Timeout

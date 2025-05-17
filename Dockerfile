@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
 # -- Final
 FROM scratch
 
-LABEL org.opencontainers.image.description "On-the-fly dynamic image resizing server."
+LABEL org.opencontainers.image.description="On-the-fly dynamic image management server."
 
 COPY --from=go-dims /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=go-dims /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
@@ -36,6 +36,8 @@ COPY --from=go-dims /build/go-dims/build/dims /dims
 COPY --from=go-dims /etc/passwd /etc/passwd
 COPY --from=go-dims /etc/group /etc/group
 COPY --from=go-dims --chown=10001:10001 /tmp /tmp
+
+ENV DIMS_LOG_FORMAT=json
 
 HEALTHCHECK --interval=5s --timeout=2s --start-period=5s --retries=3 \
     CMD /dims health-check || exit 1

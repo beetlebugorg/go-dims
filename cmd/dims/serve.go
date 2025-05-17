@@ -16,19 +16,17 @@ package main
 
 import (
 	"github.com/beetlebugorg/go-dims/internal/core"
+	"github.com/beetlebugorg/go-dims/pkg/dims"
+	"github.com/davidbyttow/govips/v2/vips"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/beetlebugorg/go-dims/pkg/dims"
-	"github.com/davidbyttow/govips/v2/vips"
 )
 
-type ServeCmd struct {
-}
+var config core.Config
 
-func (s *ServeCmd) Run() error {
-	config := core.ReadConfig()
+func init() {
+	config = core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(nil)
@@ -42,7 +40,12 @@ func (s *ServeCmd) Run() error {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
+}
 
+type ServeCmd struct {
+}
+
+func (s *ServeCmd) Run() error {
 	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)

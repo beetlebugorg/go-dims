@@ -65,12 +65,18 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 		}
 	}
 
+	var sendContentDisposition = config.IncludeDisposition
+	if url.Query().Get("download") == "1" || url.Query().Get("download") == "true" {
+		sendContentDisposition = true
+	}
+
 	return &Request{
-		URL:          url,
-		ImageUrl:     imageUrl,
-		RawCommands:  cmds,
-		SignedParams: signedParams,
-		config:       config,
+		URL:                    url,
+		ImageUrl:               imageUrl,
+		RawCommands:            cmds,
+		SignedParams:           signedParams,
+		SendContentDisposition: sendContentDisposition,
+		config:                 config,
 	}
 }
 

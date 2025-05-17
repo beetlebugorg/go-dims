@@ -24,10 +24,13 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	v4 "github.com/beetlebugorg/go-dims/internal/v4"
 	v5 "github.com/beetlebugorg/go-dims/internal/v5"
+	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Request struct {
@@ -42,7 +45,11 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 		return nil, err
 	}
 
-	request := &Request{}
+	request := &Request{
+		response: &events.LambdaFunctionURLStreamingResponse{
+			Headers: map[string]string{},
+		},
+	}
 	httpRequest := &http.Request{
 		URL: requestUrl,
 	}
@@ -84,10 +91,9 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 	return request, nil
 }
 
-func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) error {
-	response := &events.LambdaFunctionURLStreamingResponse{}
-
+func (r *Request) sendHeaders() {
 	headers := make(map[string]string)
+
 	if r.RequestContext.CacheControl() != "" {
 		headers["Cache-Control"] = r.CacheControl()
 	}
@@ -112,9 +118,19 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 		headers["Edge-Control"] = r.EdgeControl()
 	}
 
+	r.response.Headers = headers
+}
+
+func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) error {
+	if status == http.StatusOK {
+		r.sendHeaders()
+	}
+
+	headers := r.Response().Headers
 	headers["Content-Type"] = fmt.Sprintf("image/%s", strings.ToLower(imageFormat))
 	headers["Content-Length"] = strconv.Itoa(len(imageBlob))
 
+	response := &events.LambdaFunctionURLStreamingResponse{}
 	response.StatusCode = status
 	response.Headers = headers
 	response.Body = bytes.NewReader(imageBlob)
@@ -125,27 +141,53 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 }
 
 func (r *Request) SendError(err error) error {
-	response := &events.LambdaFunctionURLStreamingResponse{}
-
 	message := err.Error()
 
+	// Send error headers.
+	headers := r.Response().Headers
+	maxAge := r.Config().OriginCacheControl.Error
+	if maxAge > 0 {
+		headers["Cache-Control"] = fmt.Sprintf("max-age=%d, public", maxAge)
+		headers["Expires"] = time.Now().Add(time.Duration(maxAge) * time.Second).UTC().Format(http.TimeFormat)
+	}
+
+	// Strip stack from vips errors.
+	if strings.HasPrefix(message, "VipsOperation:") {
+		message = message[0:strings.Index(message, "\n")]
+	}
+
+	slog.Error("SendError", "message", message)
+
+	// Set status code.
+	status := http.StatusInternalServerError
 	var statusError *core.StatusError
 	var operationError *commands.OperationError
 	if errors.As(err, &statusError) {
-		response.StatusCode = statusError.StatusCode
+		status = statusError.StatusCode
 	} else if errors.As(err, &operationError) {
-		response.StatusCode = operationError.StatusCode
+		status = operationError.StatusCode
 	}
 
-	headers := make(map[string]string)
-	headers["Content-Type"] = "text/plain"
-	headers["Content-Length"] = strconv.Itoa(len(message))
+	errorImage, err := core.ErrorImage(r.Config().Error.Background)
+	if err != nil {
+		return err
+	}
 
-	response.StatusCode = 500
-	response.Headers = headers
-	response.Body = bytes.NewReader([]byte(message))
+	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
+	if err != nil {
+		// If processing failed because of a bad command then return the image as-is.
+		exportOptions := vips.NewJpegExportParams()
+		exportOptions.Quality = 1
+		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
 
-	return nil
+		return r.SendImage(status, "jpg", imageBytes)
+	}
+
+	if imageType == "" {
+		imageType = "jpg"
+	}
+
+	return r.SendImage(status, imageType, imageBlob)
 }
 
 func (r *Request) Response() *events.LambdaFunctionURLStreamingResponse {

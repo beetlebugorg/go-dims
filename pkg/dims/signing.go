@@ -15,12 +15,18 @@
 package dims
 
 import (
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/signing"
 )
 
 func SignUrl(imageUrl string) (string, error) {
 	config := core.ReadConfig()
+
+	if config.SigningKey == "" {
+		println("Signing key is required, set DIMS_SIGNING_KEY environment variable.")
+		return "", fmt.Errorf("signing key is required")
+	}
 
 	signer, err := signing.NewSigner(imageUrl, config)
 	if err != nil {

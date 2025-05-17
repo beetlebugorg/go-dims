@@ -17,7 +17,6 @@ package dims
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/commands"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
@@ -291,28 +290,13 @@ func adjustCropAfterShrink(args string, factor int) (string, error) {
 	rect.X = int(float64(rect.X) / float64(factor))
 	rect.Y = int(float64(rect.Y) / float64(factor))
 
-	if rect.Width > 0 {
-		rect.Width = float64(rect.Width) / float64(factor)
+	if rect.Width > 0 && !rect.Flags.WidthPercent {
+		rect.Width = rect.Width / float64(factor)
 	}
 
-	if rect.Height > 0 {
-		rect.Height = float64(rect.Height) / float64(factor)
+	if rect.Height > 0 && !rect.Flags.HeightPercent {
+		rect.Height = rect.Height / float64(factor)
 	}
 
-	// Output full geometry
-	if rect.Y > 0 {
-		return fmt.Sprintf("%dx%d+%d+%d", int(rect.Width), int(rect.Height), int(rect.X), int(rect.Y)), nil
-	}
-
-	// Output geometry without Y
-	if rect.X > 0 {
-		return fmt.Sprintf("%dx%d+%d", int(rect.Width), int(rect.Height), int(rect.X)), nil
-	}
-
-	// Output geometry without offsets
-	if rect.Height > 0 {
-		return fmt.Sprintf("%dx%d", int(rect.Width), int(rect.Height)), nil
-	}
-
-	return fmt.Sprintf("%dx", int(rect.Width)), nil
+	return rect.String(), nil
 }

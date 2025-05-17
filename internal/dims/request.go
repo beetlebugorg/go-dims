@@ -54,13 +54,11 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 	}
 
 	// Signed Parameters
-	// _keys query parameter is a comma-delimited list of keys to include in the signature.
+	// Include all parameters except for the signature, the image URL, and "eurl".
 	var signedParams = make(map[string]string)
-	params := url.Query().Get("_keys")
-	if params != "" {
-		keys := strings.Split(params, ",")
-		for _, key := range keys {
-			value := url.Query().Get(key)
+	for key, _ := range url.Query() {
+		value := url.Query().Get(key)
+		if key != "sig" && key != "eurl" && key != "_keys" && key != "url" && key != "download" {
 			if value != "" {
 				signedParams[key] = value
 			}

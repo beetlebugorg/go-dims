@@ -82,7 +82,7 @@ func (backend httpSourceBackend) FetchImage(imageUrl string, timeout time.Durati
 		CacheControl: image.Header.Get("Cache-Control"),
 		LastModified: image.Header.Get("Last-Modified"),
 		Etag:         image.Header.Get("Etag"),
-		Format:       vips.ImageTypes[vips.DetermineImageType(imageBytes)],
+		Format:       vips.DetermineImageType(imageBytes),
 		Size:         imageSize,
 		Bytes:        imageBytes,
 	}

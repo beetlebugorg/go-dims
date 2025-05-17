@@ -112,7 +112,7 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 	defer task.End()
 
 	opts := commands.ExportOptions{
-		ImageType:        core.ImageTypes[r.SourceImage.Format],
+		ImageType:        r.outputFormat(),
 		JpegExportParams: core.NewJpegExportParams(r.config.ImageOutputOptions.Jpeg, r.config.StripMetadata),
 		PngExportParams:  core.NewPngExportParams(r.config.ImageOutputOptions.Png, r.config.StripMetadata),
 		WebpExportParams: core.NewWebpExportParams(r.config.ImageOutputOptions.Webp, r.config.StripMetadata),
@@ -262,6 +262,20 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 	}
 
 	return geometry.Geometry{}, errors.New("no resize or thumbnail command found")
+}
+
+func (r *Request) outputFormat() vips.ImageType {
+	// If default is configured, use that first.
+	if r.config.OutputFormat.Default != "" {
+		return core.ImageTypes[r.config.OutputFormat.Default]
+	}
+
+	// If not configured and image is either GIF or SVG, default to PNG, otherwise return "".
+	if r.SourceImage.Format == vips.ImageTypeGIF || r.SourceImage.Format == vips.ImageTypeSVG {
+		return vips.ImageTypePNG
+	}
+
+	return r.SourceImage.Format
 }
 
 func adjustCropAfterShrink(args string, factor int) (string, error) {

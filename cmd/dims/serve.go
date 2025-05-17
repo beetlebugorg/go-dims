@@ -41,7 +41,12 @@ func (s *ServeCmd) Run() error {
 		}
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	var logger *slog.Logger
+	if config.LogFormat == "json" {
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	} else {
+		logger = slog.New(slog.NewTextHandler(os.Stdout, opts))
+	}
 	slog.SetDefault(logger)
 
 	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))

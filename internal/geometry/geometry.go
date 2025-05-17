@@ -1,3 +1,17 @@
+// Copyright 2025 Jeremy Collins. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package geometry
 
 import (
@@ -5,6 +19,7 @@ import (
 	parser2 "github.com/beetlebugorg/go-dims/internal/geometry/parser"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -29,7 +44,7 @@ type Geometry struct {
 	Flags  Flags
 }
 
-// Parse a geometry string in the form of "WIDTHxHEIGHT{+}X{+}Y{!<>}"
+// ParseGeometry parse a geometry string in the form of "WIDTHxHEIGHT{+}X{+}Y{!<>}"
 //
 // WIDTH and HEIGHT are integers, and can be followed by '%' to indicate percentage.
 //
@@ -102,9 +117,9 @@ func ParseGeometry(geometry string) (Geometry, error) {
 //	o x,y:  The x and y offset, set according to the geometry specification.
 //	o width,height:  The width and height of original image, modified by
 //	  the given geometry specification.
-func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
+func (g Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	// Copy the original geometry
-	var meta = *g
+	var meta = &g
 
 	// Get original image dimensions
 	origWidth := float64(image.Width())
@@ -114,28 +129,28 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 
 	// Set width and height to original image dimensions if not specified
 	if meta.Width == 0 {
-		meta.Width = float64(origWidth)
+		meta.Width = origWidth
 	}
 
 	if meta.Height == 0 {
-		meta.Height = float64(origHeight)
+		meta.Height = origHeight
 	}
 
 	// Apply width and height percentage if specified
 	if g.Flags.WidthPercent {
-		meta.Width = float64(origWidth) * float64(g.Width) / 100.0
+		meta.Width = origWidth * g.Width / 100.0
 	}
 	if g.Flags.HeightPercent {
-		meta.Height = float64(origHeight) * float64(g.Height) / 100.0
+		meta.Height = origHeight * g.Height / 100.0
 	}
 
 	// Apply offset x and y percentage if specified
 	if g.Flags.OffsetXPercent {
-		meta.X = int(float64(origWidth) * float64(g.X) / 100.0)
+		meta.X = int(origWidth * float64(g.X) / 100.0)
 	}
 
 	if g.Flags.OffsetYPercent {
-		meta.Y = int(float64(origHeight) * float64(g.Y) / 100.0)
+		meta.Y = int(origHeight * float64(g.Y) / 100.0)
 	}
 
 	if g.Flags.Fill {
@@ -154,11 +169,11 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	if !g.Flags.Force {
 		if requestedWidth != 0 || requestedHeight != 0 {
 			// Fill the width and height from the original image ratio
-			ratio := float64(origWidth) / float64(origHeight)
-			if float64(meta.Width)/float64(meta.Height) > ratio {
-				meta.Width = float64(meta.Height) * ratio
+			ratio := origWidth / origHeight
+			if meta.Width/meta.Height > ratio {
+				meta.Width = meta.Height * ratio
 			} else {
-				meta.Height = float64(meta.Width) / ratio
+				meta.Height = meta.Width / ratio
 			}
 		}
 	}
@@ -183,11 +198,44 @@ func (g *Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 	}
 
-	return meta
+	return *meta
 }
 
 func (g Geometry) String() string {
-	return fmt.Sprintf("%.0fx%0.f+%d+%d", g.Width, g.Height, g.X, g.Y)
+	var builder strings.Builder
+	builder.WriteString(strconv.Itoa(int(g.Width)))
+	if g.Flags.WidthPercent {
+		builder.WriteString("%")
+	}
+
+	if g.Height > 0 {
+		builder.WriteString("x")
+		builder.WriteString(strconv.Itoa(int(g.Height)))
+
+		if g.Flags.HeightPercent {
+			builder.WriteString("%")
+		}
+	}
+
+	if g.X >= 0 {
+		builder.WriteString("+")
+		builder.WriteString(strconv.Itoa(g.X))
+
+		if g.Flags.OffsetXPercent {
+			builder.WriteString("%")
+		}
+	}
+
+	if g.Y >= 0 {
+		builder.WriteString("+")
+		builder.WriteString(strconv.Itoa(g.Y))
+
+		if g.Flags.OffsetYPercent {
+			builder.WriteString("%")
+		}
+	}
+
+	return builder.String()
 }
 
 //-- ErrorListener

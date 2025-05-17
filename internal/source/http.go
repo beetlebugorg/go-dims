@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package http
+package source
 
 import (
 	"fmt"
@@ -26,22 +26,22 @@ import (
 	"time"
 )
 
-type imageBackend struct {
+type httpSourceBackend struct {
 }
 
 func init() {
-	core.RegisterImageBackend(NewImageBackend())
+	core.RegisterImageBackend(NewHttpSourceBackend())
 }
 
-func NewImageBackend() core.ImageBackend {
-	return imageBackend{}
+func NewHttpSourceBackend() core.SourceBackend {
+	return httpSourceBackend{}
 }
 
-func (backend imageBackend) Name() string {
+func (backend httpSourceBackend) Name() string {
 	return "http"
 }
 
-func (backend imageBackend) CanHandle(imageSource string) bool {
+func (backend httpSourceBackend) CanHandle(imageSource string) bool {
 	if strings.HasPrefix(imageSource, "http://") || strings.HasPrefix(imageSource, "https://") {
 		return true
 	}
@@ -49,7 +49,7 @@ func (backend imageBackend) CanHandle(imageSource string) bool {
 	return false
 }
 
-func (backend imageBackend) FetchImage(imageUrl string, timeout time.Duration) (*core.Image, error) {
+func (backend httpSourceBackend) FetchImage(imageUrl string, timeout time.Duration) (*core.Image, error) {
 	slog.Debug("downloadImage", "url", imageUrl)
 
 	_, err := url.ParseRequestURI(imageUrl)

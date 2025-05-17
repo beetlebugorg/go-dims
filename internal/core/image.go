@@ -15,6 +15,7 @@
 package core
 
 import (
+	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -53,6 +54,37 @@ var imageBackends []ImageBackend
 
 func RegisterImageBackend(fetcher ImageBackend) {
 	imageBackends = append(imageBackends, fetcher)
+}
+
+func ErrorImage(color string) (*vips.ImageRef, error) {
+	errorImage, err := vips.Black(512, 512)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := errorImage.BandJoinConst([]float64{0, 0, 255}); err != nil {
+		return nil, err
+	}
+
+	backgroundColor, err := colorx.ParseHexColor(color)
+	if err != nil {
+		return nil, err
+	}
+
+	red, green, blue, _ := backgroundColor.RGBA()
+	redI := float64(red) / 65535 * 255
+	greenI := float64(green) / 65535 * 255
+	blueI := float64(blue) / 65535 * 255
+
+	if err := errorImage.Linear([]float64{0, 0, 0, 0}, []float64{redI, greenI, blueI, 255}); err != nil {
+		return nil, err
+	}
+
+	if err := errorImage.Cast(vips.BandFormatUchar); err != nil {
+		return nil, err
+	}
+
+	return errorImage, nil
 }
 
 func FetchImage(imageSource string, timeout time.Duration) (*Image, error) {

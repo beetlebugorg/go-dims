@@ -131,15 +131,6 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 		region := trace.StartRegion(ctx, command.Name)
 
 		if operation, ok := commands.VipsTransformCommands[command.Name]; ok {
-			if command.Name == "crop" {
-				adjustedArgs, err := adjustCropAfterShrink(command.Args, r.shrinkFactor)
-				if err != nil {
-					return "", nil, err
-				}
-
-				command.Args = adjustedArgs
-			}
-
 			if command.Name == "strip" && command.Args != "true" {
 				stripMetadata = false
 			}
@@ -279,24 +270,4 @@ func (r *Request) outputFormat() vips.ImageType {
 	}
 
 	return r.SourceImage.Format
-}
-
-func adjustCropAfterShrink(args string, factor int) (string, error) {
-	rect, err := geometry.ParseGeometry(args)
-	if err != nil {
-		return "", commands.NewOperationError("crop", args, err.Error())
-	}
-
-	rect.X = int(float64(rect.X) / float64(factor))
-	rect.Y = int(float64(rect.Y) / float64(factor))
-
-	if rect.Width > 0 && !rect.Flags.WidthPercent {
-		rect.Width = rect.Width / float64(factor)
-	}
-
-	if rect.Height > 0 && !rect.Flags.HeightPercent {
-		rect.Height = rect.Height / float64(factor)
-	}
-
-	return rect.String(), nil
 }

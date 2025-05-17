@@ -8,49 +8,46 @@ Designed for use in websites, publishing platforms, and CDN-backed applications,
 generate image variants on-the-fly — without the need for precomputing or storing multiple
 renditions.
 
-## Features
+## ✨ Features
 - ✅ Resize, crop, rotate, flip, grayscale, and more
 - ✅ Add watermarks
 - ✅ Strip metadata, control quality, convert formats
 - ✅ Export in JPEG, PNG, and WebP
-- ✅ Support for both dims4 and legacy URL structures
 - ✅ Sign and validate requests for secure public access
 - ✅ Load images from file, a URL, or S3
 - ✅ Deploy as a Docker image, or AWS Lambda function
-
+- ✅ Drop-in replacement for [mod_dims](https://github.com/beetlebugorg/mod_dims)
+  
 ## Why use go-dims?
 
-**💡 On-demand image transformation**
+** 💡 On-demand image transformation**
 
 - Resize, crop, convert formats, and more — all defined via URL.
 - Built-in support for signatures to prevent misuse and ensure cacheability.
 - Avoid bloated image storage by rendering variants only when requested.
 
-**⚡ Fast, minimal, portable**
+** ⚡ Fast, minimal, portable**
 
 - Built on [libvips](https://libvips.github.io/libvips/), the fastest image processing library.
 - Single static binary with zero runtime dependencies.
 - Docker image is just **~9MB** compressed.
 - Built for **linux/amd64** and **linux/arm64**.
  
-**🔒 Secure**
+** 🔒 Secure**
 - Clean, HMAC-SHA256 signed URLs to ensure safe, tamperproof transformations.
 - The go-dims Docker image is built from scratch with a statically compiled binary, no shell, no package manager, and no extraneous libraries — minimizing the attack surface.
 
-**🛠 Developer-friendly**
+** 🛠 Developer-friendly**
 - Easily define image variants directly in frontend code or templates.
 - Uses minimal memory — perfect for local development.
 - Runs equally well locally, in containers, or as an AWS Lambda function.
-
 
 ## 📦 Deployment Options
 - Static binary: Just download and run.
 - Standalone Docker: Launch anywhere in seconds.
 - AWS Lambda: Compile and deploy as a fast, small Lambda function.
- 
----
 
-## Getting Started
+## 🚀 Getting Started
 
 Run locally in development mode (no signature required):
 
@@ -69,7 +66,7 @@ Then, open your browser and navigate to:
 http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg
 ```
 
-## 🧩 Supported Transformations
+## ⛶ Supported Transformations
 
 | Type          | Command                              | Example              |
 |---------------|--------------------------------------|----------------------|
@@ -87,7 +84,7 @@ http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg
 | Flip/Flop     | `flipflop/<horizontal\|vertical>`    | `flip/horizontal`    |
 | Invert        | `invert/<bool>`                      | `invert/true`        |
 
-## Examples
+## 📸 Examples
 
 ### **Original**
 

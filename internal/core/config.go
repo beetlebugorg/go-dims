@@ -41,8 +41,8 @@ type Signing struct {
 }
 
 type OutputFormat struct {
-	OutputFormat string   `env:"DIMS_OUTPUT_FORMAT"`
-	Exclude      []string `env:"DIMS_OUTPUT_FORMAT_EXCLUDE"`
+	Default  string   `env:"DIMS_DEFAULT_OUTPUT_FORMAT"`
+	Excluded []string `env:"DIMS_EXCLUDED_OUTPUT_FORMATS"`
 }
 
 type Timeout struct {

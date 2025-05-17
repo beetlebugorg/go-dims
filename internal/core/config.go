@@ -37,7 +37,7 @@ type Error struct {
 }
 
 type Signing struct {
-	SigningKey string `env:"DIMS_SIGNING_KEY,notEmpty"`
+	SigningKey string `env:"DIMS_SIGNING_KEY"`
 }
 
 type OutputFormat struct {

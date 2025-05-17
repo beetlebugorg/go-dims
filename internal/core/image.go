@@ -69,13 +69,13 @@ func RegisterImageBackend(sourceBackend SourceBackend) {
 	allowed := config.Allowed
 
 	if slices.Contains(allowed, sourceBackend.Name()) {
-		slog.Info("Registering image backend", "name", sourceBackend.Name())
+		slog.Debug("Registering image backend", "name", sourceBackend.Name())
 		sourceBackends = append(sourceBackends, sourceBackend)
 	} else if config.Default == sourceBackend.Name() {
-		slog.Info("Registering image backend", "name", sourceBackend.Name())
+		slog.Debug("Registering image backend", "name", sourceBackend.Name())
 		sourceBackends = append(sourceBackends, sourceBackend)
 	} else {
-		slog.Warn("Image backend not registered", "name", sourceBackend.Name(), "reason", "not in allowed list")
+		slog.Debug("Image backend not registered", "name", sourceBackend.Name(), "reason", "not in allowed list")
 	}
 
 	if sourceBackend.Name() == config.Default {

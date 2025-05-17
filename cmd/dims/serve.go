@@ -25,7 +25,10 @@ import (
 
 var config core.Config
 
-func init() {
+type ServeCmd struct {
+}
+
+func (s *ServeCmd) Run() error {
 	config = core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
@@ -40,12 +43,7 @@ func init() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
-}
 
-type ServeCmd struct {
-}
-
-func (s *ServeCmd) Run() error {
 	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)

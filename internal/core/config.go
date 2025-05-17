@@ -37,7 +37,7 @@ type Error struct {
 }
 
 type Signing struct {
-	SigningKey string `env:"DIMS_SIGNING_KEY,notEmpty"`
+	SigningKey string `env:"DIMS_SIGNING_KEY"`
 }
 
 type OutputFormat struct {
@@ -102,6 +102,7 @@ type Config struct {
 	BindAddress     string `env:"DIMS_BIND_ADDRESS" envDefault:":8080"`
 	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
 	DebugMode       bool   `env:"DIMS_DEBUG_MODE" envDefault:"false"`
+	LogFormat       string `env:"DIMS_LOG_FORMAT" envDefault:"text"`
 	EtagAlgorithm   string
 
 	Timeout
@@ -114,11 +115,15 @@ type Config struct {
 	ImageOutputOptions
 }
 
-func ReadConfig() Config {
-	cfg := Config{}
-	if err := env.Parse(&cfg); err != nil {
+var config *Config
+
+func init() {
+	config = &Config{}
+	if err := env.Parse(config); err != nil {
 		fmt.Printf("%+v\n", err)
 	}
+}
 
-	return cfg
+func ReadConfig() *Config {
+	return config
 }

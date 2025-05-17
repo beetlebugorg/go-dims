@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -23,10 +24,11 @@ import (
 	"os"
 )
 
-var config core.Config
+type ServeCmd struct {
+}
 
-func init() {
-	config = core.ReadConfig()
+func (s *ServeCmd) Run() error {
+	config := core.ReadConfig()
 
 	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(nil)
@@ -38,15 +40,20 @@ func init() {
 		}
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	var logger *slog.Logger
+	if config.LogFormat == "json" {
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	} else {
+		logger = slog.New(slog.NewTextHandler(os.Stdout, opts))
+	}
 	slog.SetDefault(logger)
-}
 
-type ServeCmd struct {
-}
+	if !config.DevelopmentMode && config.SigningKey == "" {
+		slog.Error("Signing key is required in production mode.")
+		return fmt.Errorf("signing key is required in production mode")
+	}
 
-func (s *ServeCmd) Run() error {
-	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
+	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(*config))
 	if err != nil {
 		slog.Error("Server failed.", "error", err)
 		return err

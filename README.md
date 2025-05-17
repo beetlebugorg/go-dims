@@ -8,6 +8,7 @@ and powered by [libvips](https://libvips.github.io/libvips/). It’s a modern, d
 Designed for use in websites, publishing platforms, and CDN-backed applications, `go-dims` helps you
 generate image variants on-the-fly — without the need for precomputing or storing multiple
 renditions.
+
 ---
 
 ## Features

@@ -32,7 +32,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -102,7 +101,9 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 		return fmt.Errorf("image is empty")
 	}
 
-	r.SendHeaders()
+	if status == http.StatusOK {
+		r.SendHeaders()
+	}
 
 	// Set content type.
 	r.httpResponse.Header().Set("Content-Type", fmt.Sprintf("image/%s", strings.ToLower(imageFormat)))
@@ -142,32 +143,9 @@ func (r *Request) SendError(err error) error {
 		status = operationError.StatusCode
 	}
 
-	errorImage, err := vips.Black(512, 512)
+	errorImage, err := core.ErrorImage(r.Config().Error.Background)
 	if err != nil {
 		return err
-	}
-
-	if err := errorImage.BandJoinConst([]float64{0, 0}); err != nil {
-		return err
-	}
-
-	backgroundColor, err := colorx.ParseHexColor(r.Config().Error.Background)
-	if err != nil {
-		return err
-	}
-
-	red, green, blue, _ := backgroundColor.RGBA()
-	redI := float64(red) / 65535 * 255
-	greenI := float64(green) / 65535 * 255
-	blueI := float64(blue) / 65535 * 255
-
-	if err := errorImage.Linear([]float64{0, 0, 0}, []float64{redI, greenI, blueI}); err != nil {
-		return err
-	}
-
-	r.SourceImage = core.Image{
-		Status: status,
-		Format: vips.ImageTypes[vips.ImageTypeJPEG],
 	}
 
 	// Send error headers.

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -48,6 +49,11 @@ func (s *ServeCmd) Run() error {
 		logger = slog.New(slog.NewTextHandler(os.Stdout, opts))
 	}
 	slog.SetDefault(logger)
+
+	if !config.DevelopmentMode && config.SigningKey == "" {
+		slog.Error("Signing key is required in production mode.")
+		return fmt.Errorf("signing key is required in production mode")
+	}
 
 	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(config))
 	if err != nil {

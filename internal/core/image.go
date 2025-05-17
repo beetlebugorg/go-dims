@@ -44,16 +44,16 @@ var ImageTypes = map[string]vips.ImageType{
 	"psd":  vips.ImageTypePSD,
 }
 
-type ImageBackend interface {
+type SourceBackend interface {
 	Name() string
 	CanHandle(imageSource string) bool
 	FetchImage(imageSource string, timeout time.Duration) (*Image, error)
 }
 
-var imageBackends []ImageBackend
+var sourceBackends []SourceBackend
 
-func RegisterImageBackend(fetcher ImageBackend) {
-	imageBackends = append(imageBackends, fetcher)
+func RegisterImageBackend(fetcher SourceBackend) {
+	sourceBackends = append(sourceBackends, fetcher)
 }
 
 func ErrorImage(color string) (*vips.ImageRef, error) {
@@ -88,7 +88,7 @@ func ErrorImage(color string) (*vips.ImageRef, error) {
 }
 
 func FetchImage(imageSource string, timeout time.Duration) (*Image, error) {
-	for _, fetcher := range imageBackends {
+	for _, fetcher := range sourceBackends {
 		if fetcher.CanHandle(imageSource) {
 			return fetcher.FetchImage(imageSource, timeout)
 		}
@@ -96,7 +96,7 @@ func FetchImage(imageSource string, timeout time.Duration) (*Image, error) {
 
 	config := ReadConfig()
 	if config.ImageBackend != "http" {
-		for _, fetcher := range imageBackends {
+		for _, fetcher := range sourceBackends {
 			if fetcher.Name() == config.ImageBackend {
 				return fetcher.FetchImage(imageSource, timeout)
 			}

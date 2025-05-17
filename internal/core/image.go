@@ -15,7 +15,11 @@
 package core
 
 import (
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
+	"github.com/caarlos0/env/v10"
+	"golang.org/x/exp/slices"
+	"log/slog"
 	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -51,9 +55,32 @@ type SourceBackend interface {
 }
 
 var sourceBackends []SourceBackend
+var allSourceBackends []SourceBackend
+var defaultSourceBackend SourceBackend
 
-func RegisterImageBackend(fetcher SourceBackend) {
-	sourceBackends = append(sourceBackends, fetcher)
+func RegisterImageBackend(sourceBackend SourceBackend) {
+	config := Source{}
+	if err := env.Parse(&config); err != nil {
+		fmt.Printf("%+v\n", err)
+	}
+
+	allSourceBackends = append(allSourceBackends, sourceBackend)
+
+	allowed := config.Allowed
+
+	if slices.Contains(allowed, sourceBackend.Name()) {
+		slog.Info("Registering image backend", "name", sourceBackend.Name())
+		sourceBackends = append(sourceBackends, sourceBackend)
+	} else if config.Default == sourceBackend.Name() {
+		slog.Info("Registering image backend", "name", sourceBackend.Name())
+		sourceBackends = append(sourceBackends, sourceBackend)
+	} else {
+		slog.Warn("Image backend not registered", "name", sourceBackend.Name(), "reason", "not in allowed list")
+	}
+
+	if sourceBackend.Name() == config.Default {
+		defaultSourceBackend = sourceBackend
+	}
 }
 
 func ErrorImage(color string) (*vips.ImageRef, error) {
@@ -88,19 +115,26 @@ func ErrorImage(color string) (*vips.ImageRef, error) {
 }
 
 func FetchImage(imageSource string, timeout time.Duration) (*Image, error) {
-	for _, fetcher := range sourceBackends {
-		if fetcher.CanHandle(imageSource) {
-			return fetcher.FetchImage(imageSource, timeout)
+	// Check which source backend can handle the image source first, if
+	// none are found, use the default source backend.
+	for _, sourceBackend := range sourceBackends {
+		if sourceBackend.CanHandle(imageSource) {
+			return sourceBackend.FetchImage(imageSource, timeout)
 		}
 	}
 
-	config := ReadConfig()
-	if config.ImageBackend != "http" {
-		for _, fetcher := range sourceBackends {
-			if fetcher.Name() == config.ImageBackend {
-				return fetcher.FetchImage(imageSource, timeout)
+	// If a default is set and another backend could have handled it but isn't
+	// allowed, don't use the default backend.
+	if defaultSourceBackend != nil && defaultSourceBackend.Name() != "http" || defaultSourceBackend == nil {
+		for _, sourceBackend := range allSourceBackends {
+			if sourceBackend.CanHandle(imageSource) && sourceBackend.Name() != defaultSourceBackend.Name() {
+				return nil, NewStatusError(400, "Supported image source '"+sourceBackend.Name()+
+					"' is not allowed: "+
+					imageSource)
 			}
 		}
+
+		return defaultSourceBackend.FetchImage(imageSource, timeout)
 	}
 
 	return nil, NewStatusError(400, "Unsupported image source: "+imageSource)

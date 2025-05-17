@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   cmd = "make"
   bin = "./build/dims serve"
-  full_bin = "DIMS_DEVELOPMENT_MODE=true DIMS_DEBUG_MODE=true ./build/dims"
+  full_bin = "DIMS_DEVELOPMENT_MODE=true DIMS_DEBUG_MODE=true DIMS_ALLOWED_SOURCE_BACKENDS=s3,file,http DIMS_DEFAULT_SOURCE_BACKEND=file ./build/dims"
   args_bin = ["serve"]
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", "internal/geometry/parser"]

@@ -21,8 +21,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	_ "github.com/beetlebugorg/go-dims/internal/aws"
 	"github.com/beetlebugorg/go-dims/internal/dims"
+	_ "github.com/beetlebugorg/go-dims/internal/source"
 )
 
 func NewHandler(config core.Config) http.Handler {

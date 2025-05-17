@@ -1,6 +1,5 @@
 # go-dims
 
----
 **go-dims** is a fast, lightweight HTTP microservice for real-time image processing, written in Go
 and powered by [libvips](https://libvips.github.io/libvips/). It’s a modern, drop-in replacement for
 [mod_dims](https://github.com/beetlebugorg/mod_dims), fully compatible with the DIMS API.
@@ -8,8 +7,6 @@ and powered by [libvips](https://libvips.github.io/libvips/). It’s a modern, d
 Designed for use in websites, publishing platforms, and CDN-backed applications, `go-dims` helps you
 generate image variants on-the-fly — without the need for precomputing or storing multiple
 renditions.
-
----
 
 ## Features
 - ✅ Resize, crop, rotate, flip, grayscale, and more
@@ -123,8 +120,6 @@ http://localhost:8080/v5/thumbnail/200x200/sharpen/1x2/watermark/1,.35,se?url=pe
 ```
 
 ![Watermark](./resources/readme/watermark.jpg)
-
----
 
 ## 🔑 Generating a Signed URL
 

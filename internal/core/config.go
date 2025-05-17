@@ -115,11 +115,15 @@ type Config struct {
 	ImageOutputOptions
 }
 
-func ReadConfig() Config {
-	cfg := Config{}
-	if err := env.Parse(&cfg); err != nil {
+var config *Config
+
+func init() {
+	config = &Config{}
+	if err := env.Parse(config); err != nil {
 		fmt.Printf("%+v\n", err)
 	}
+}
 
-	return cfg
+func ReadConfig() *Config {
+	return config
 }

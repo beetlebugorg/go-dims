@@ -1,4 +1,4 @@
-package aws
+package source
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 
 var client *s3.Client
 
-type imageBackend struct {
+type s3SourceBackend struct {
 	Config core.S3
 }
 
@@ -36,20 +36,20 @@ func init() {
 
 	client = s3.NewFromConfig(cfg)
 
-	core.RegisterImageBackend(NewImageBackend(envConfig))
+	core.RegisterImageBackend(NewS3SourceBackend(envConfig))
 }
 
-func NewImageBackend(config core.S3) core.ImageBackend {
-	return imageBackend{
+func NewS3SourceBackend(config core.S3) core.SourceBackend {
+	return s3SourceBackend{
 		Config: config,
 	}
 }
 
-func (backend imageBackend) Name() string {
+func (backend s3SourceBackend) Name() string {
 	return "s3"
 }
 
-func (backend imageBackend) CanHandle(imageSource string) bool {
+func (backend s3SourceBackend) CanHandle(imageSource string) bool {
 	if strings.HasPrefix(imageSource, "s3://") {
 		return true
 	}
@@ -57,7 +57,7 @@ func (backend imageBackend) CanHandle(imageSource string) bool {
 	return false
 }
 
-func (backend imageBackend) FetchImage(imageSource string, timeout time.Duration) (*core.Image, error) {
+func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Duration) (*core.Image, error) {
 	slog.Info("downloadImageS3", "url", imageSource)
 
 	bucketName := backend.Config.Bucket

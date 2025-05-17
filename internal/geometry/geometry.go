@@ -139,18 +139,22 @@ func (g Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 	// Apply width and height percentage if specified
 	if g.Flags.WidthPercent {
 		meta.Width = origWidth * g.Width / 100.0
+		meta.Flags.WidthPercent = false
 	}
 	if g.Flags.HeightPercent {
 		meta.Height = origHeight * g.Height / 100.0
+		meta.Flags.HeightPercent = false
 	}
 
 	// Apply offset x and y percentage if specified
 	if g.Flags.OffsetXPercent {
 		meta.X = int(origWidth * float64(g.X) / 100.0)
+		meta.Flags.OffsetXPercent = false
 	}
 
 	if g.Flags.OffsetYPercent {
 		meta.Y = int(origHeight * float64(g.Y) / 100.0)
+		meta.Flags.OffsetYPercent = false
 	}
 
 	if g.Flags.Fill {

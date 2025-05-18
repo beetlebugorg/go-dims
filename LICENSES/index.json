@@ -1,0 +1,127 @@
+[
+  {
+    "project": "libvips",
+    "spdx": "LGPL-2.1",
+    "file": "LICENSES/libvips.LGPL-2.1"
+  },
+  {
+    "project": "govips",
+    "spdx": "MIT",
+    "file": "LICENSES/govips.MIT"
+  },
+  {
+    "project": "glib-2.0",
+    "spdx": "LGPL-2.1-or-later",
+    "file": "LICENSES/glib-2.0.LGPL-2.1-or-later"
+  },
+  {
+    "project": "lcms2",
+    "spdx": "MIT",
+    "file": "LICENSES/lcms2.MIT"
+  },
+  {
+    "project": "libbzip2",
+    "spdx": "bzip2",
+    "file": "LICENSES/libbzip2.bzip2"
+  },
+  {
+    "project": "libjpeg-turbo",
+    "spdx": "ILG",
+    "file": "LICENSES/libjpeg-turbo.ILG"
+  },
+  {
+    "project": "libjpeg-turbo",
+    "spdx": "Modified-BSD",
+    "file": "LICENSES/libjpeg-turbo.Modified-BSD"
+  },
+  {
+    "project": "libjpeg",
+    "spdx": "BSD-3-Clause",
+    "file": "LICENSES/libjpeg.BSD-3-Clause"
+  },
+  {
+    "project": "libpng",
+    "spdx": "zlib",
+    "file": "LICENSES/libpng.zlib"
+  },
+  {
+    "project": "libtiff",
+    "spdx": "libtiff",
+    "file": "LICENSES/libtiff.libtiff"
+  },
+  {
+    "project": "libwepb",
+    "spdx": "BSD-3-Revised",
+    "file": "LICENSES/libwepb.BSD-3-Revised"
+  },
+  {
+    "project": "zlib",
+    "spdx": "zlib",
+    "file": "LICENSES/zlib.zlib"
+  },
+  {
+    "project": "kong",
+    "spdx": "MIT",
+    "file": "LICENSES/kong.MIT"
+  },
+  {
+    "project": "antlr",
+    "spdx": "BSD",
+    "file": "LICENSES/antlr.BSD"
+  },
+  {
+    "project": "expat",
+    "spdx": "MIT",
+    "file": "LICENSES/expat.MIT"
+  },
+  {
+    "project": "github.com/alecthomas/assert/v2",
+    "spdx": "MIT",
+    "file": "LICENSES/github.com_alecthomas_assert_v2"
+  },
+  {
+    "project": "github.com/alecthomas/kong",
+    "spdx": "MIT",
+    "file": "LICENSES/github.com_alecthomas_kong"
+  },
+  {
+    "project": "github.com/alecthomas/repr",
+    "spdx": "MIT",
+    "file": "LICENSES/github.com_alecthomas_repr"
+  },
+  {
+    "project": "github.com/antlr4-go/antlr/v4",
+    "spdx": "BSD",
+    "file": "LICENSES/github.com_antlr4-go_antlr_v4"
+  },
+  {
+    "project": "github.com/aws/aws-lambda-go",
+    "spdx": "Apache 2.0",
+    "file": "LICENSES/github.com_aws_aws-lambda-go"
+  },
+  {
+    "project": "github.com/aws/aws-sdk-go-v2",
+    "spdx": "Apache 2.0",
+    "file": "LICENSES/github.com_aws_aws-sdk-go-v2"
+  },
+  {
+    "project": "github.com/aws/aws-sdk-go-v2/config",
+    "spdx": "Apache 2.0",
+    "file": "LICENSES/github.com_aws_aws-sdk-go-v2_config"
+  },
+  {
+    "project": "github.com/aws/aws-sdk-go-v2/service/s3",
+    "spdx": "Apache 2.0",
+    "file": "LICENSES/github.com_aws_aws-sdk-go-v2_service_s3"
+  },
+  {
+    "project": "github.com/aws/smithy-go",
+    "spdx": "Apache 2.0",
+    "file": "LICENSES/github.com_aws_smithy-go"
+  },
+  {
+    "project": "github.com/caarlos0/env/v10",
+    "spdx": "MIT",
+    "file": "LICENSES/github.com_caarlos0_env_v10"
+  }
+]

@@ -32,10 +32,14 @@ LABEL org.opencontainers.image.description="On-the-fly dynamic image management 
 
 COPY --from=go-dims /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=go-dims /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=go-dims /build/go-dims/build/dims /dims
 COPY --from=go-dims /etc/passwd /etc/passwd
 COPY --from=go-dims /etc/group /etc/group
 COPY --from=go-dims --chown=10001:10001 /tmp /tmp
+
+COPY --from=go-dims /build/go-dims/build/dims /dims
+COPY --from=go-dims /build/go-dims/LICENSES /LICENSES
+COPY --from=go-dims /build/go-dims/LICENSE /LICENSE
+COPY --from=go-dims /build/go-dims/NOTICE /NOTICE
 
 ENV DIMS_LOG_FORMAT=json
 

@@ -146,7 +146,7 @@ RUN tar -xf vips-${VIPS_VERSION}.tar.xz && \
     rm -rf ${PREFIX}/libvips/bin
 
 # -- Build base
-FROM golang:1.24.2-alpine
+FROM golang:1.24.2-alpine as builder
 
 WORKDIR /build
 

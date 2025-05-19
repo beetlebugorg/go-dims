@@ -30,7 +30,7 @@ renditions.
 
 - Built on [libvips](https://libvips.github.io/libvips/), the fastest image processing library.
 - Single static binary with zero runtime dependencies.
-- Docker image is just **~9MB** compressed.
+- Docker image is just **~11MB** compressed.
 - Built for **linux/amd64** and **linux/arm64**.
  
 **🔒 Secure**
@@ -126,3 +126,10 @@ Use the built-in CLI to generate secure, signed URLs:
 ❯ ./build/dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg"
 
 http://localhost:8080/v5/resize/200x200/?sig=33032505c0f4b3d43674b49575d9e379470ac6d7e7fa3e055b248802ee6867&url=pexels-photo-1539116.jpeg
+```
+
+## License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for details.
+
+For software used by this project, and their licenses, see the [NOTICE](NOTICE) file.

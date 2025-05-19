@@ -50,7 +50,7 @@ jobs:
 
       - name: Build Container
         uses: docker/build-push-action@v5
-        id: build
+        id: container
         with:
           context: .
           push: true
@@ -59,7 +59,15 @@ jobs:
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-amd64
 
       - name: Build Lambda Function
-        run: make lambda
+        uses: docker/build-push-action@v5
+        id: lambda
+        with:
+          context: .
+          file: Dockerfile.lambda
+          push: false
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=build
 
       - name: Upload Lambda zip
         uses: actions/upload-artifact@v4

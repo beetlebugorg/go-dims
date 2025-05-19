@@ -49,4 +49,12 @@ jobs:
           platforms: ${{ matrix.platform }}
 
       - name: Build Lambda Function
-        run: make lambda
+        uses: docker/build-push-action@v5
+        id: lambda
+        with:
+          context: .
+          file: Dockerfile.lambda
+          push: false
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=build

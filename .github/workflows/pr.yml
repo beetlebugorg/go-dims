@@ -41,9 +41,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
+      - name: Build Container
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
           platforms: ${{ matrix.platform }}
+
+      - name: Build Lambda Function
+        uses: docker/build-push-action@v5
+        id: lambda
+        with:
+          context: .
+          file: Dockerfile.lambda
+          push: false
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=build

@@ -130,6 +130,6 @@ http://localhost:8080/v5/resize/200x200/?sig=33032505c0f4b3d43674b49575d9e379470
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for details.
 
 For software used by this project, and their licenses, see the [NOTICE](NOTICE) file.

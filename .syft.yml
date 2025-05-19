@@ -1,0 +1,29 @@
+catalogers:
+  - sbom-cataloger
+  - go-module-file-cataloger
+  - go-module-binary-cataloger
+  - file
+
+exclude:
+  - ./.github/*
+  - ./terraform/*
+  - ./build/*
+  - ./bin/*
+
+format:
+  spdx-json:
+    pretty: true
+  json:
+    pretty: true
+
+golang:
+  search-remote-licenses: true
+
+go-module:
+  license-detectors:
+    - file            # Detect from local LICENSE files
+    - go-module-metadata
+    - github          # Parse GitHub repo contents
+    - github-api      # Use GitHub API for license info (requires GH token)
+    - licensee        # Use licensee logic (like GitHub does)
+    - regex           # Fallback: match license text via regex

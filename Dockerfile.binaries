@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.7-labs
+
+FROM ghcr.io/beetlebugorg/go-dims:builder AS go-dims
+ARG TARGETARCH
+RUN apk add zip
+COPY --exclude=build . /build/go-dims
+RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
+    cd go-dims && \
+    go env -w GOCACHE=/go-cache && \
+    go env -w GOMODCACHE=/gomod-cache && \
+    go mod download && \
+    make static
+
+# Generate sbom for binary distribution
+RUN sh go-dims/scripts/install-syft.sh && \
+    cd go-dims && mkdir build/sbom && \
+    /build/bin/syft file:build/dims -o spdx-json > build/sbom/go-dims.sbom.spdx.json && \
+    cp /build/apk.sbom.cdx.json build/sbom/apk.sbom.cdx.json && \
+    cp /usr/local/dims/libpng/sbom.cdx.json build/sbom/libpng.sbom.cdx.json && \
+    cp /usr/local/dims/libwebp/sbom.cdx.json build/sbom/libwebp.sbom.cdx.json && \
+    cp /usr/local/dims/libtiff/sbom.cdx.json build/sbom/libtiff.sbom.cdx.json && \
+    cp /usr/local/dims/glib-2.0/sbom.cdx.json build/sbom/glib-2.0.sbom.cdx.json && \
+    cp /usr/local/dims/libvips/sbom.cdx.json build/sbom/libvips.sbom.cdx.json && \
+    /build/bin/syft dir:build/sbom -o cyclonedx-json > build/sbom.cdx.json
+
+RUN cd go-dims && strip build/dims && upx build/dims && \
+    cp NOTICE build/NOTICE && cp LICENSE build/LICENSE && \
+    cd build && zip dims-linux-${TARGETARCH}.zip dims sbom.cdx.json LICENSE NOTICE
+
+FROM scratch AS export
+ARG TARGETARCH
+COPY --from=go-dims /build/go-dims/build/dims-linux-${TARGETARCH}.zip /dims-linux-${TARGETARCH}.zip

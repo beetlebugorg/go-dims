@@ -78,7 +78,7 @@ jobs:
 
       - name: Build Standalone Binary
         uses: docker/build-push-action@v5
-        id: lambda
+        id: binaries
         with:
           context: .
           file: Dockerfile.binaries

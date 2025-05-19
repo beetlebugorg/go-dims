@@ -1,4 +1,4 @@
-FROM ghcr.io/beetlebugorg/go-dims:builder-local AS go-dims
+FROM ghcr.io/beetlebugorg/go-dims:builder AS go-dims
 
 ARG VERSION="v0.0.0"
 

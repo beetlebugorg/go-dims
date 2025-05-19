@@ -30,7 +30,7 @@ renditions.
 
 - Built on [libvips](https://libvips.github.io/libvips/), the fastest image processing library.
 - Single static binary with zero runtime dependencies.
-- Docker image is just **~9MB** compressed.
+- Docker image is just **~11MB** compressed.
 - Built for **linux/amd64** and **linux/arm64**.
  
 **🔒 Secure**

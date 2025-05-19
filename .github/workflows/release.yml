@@ -7,8 +7,6 @@ on:
       - '.github/workflows/docs.yml'
       - '.github/workflows/pr.yml'
       - '*.md'
-    branches:
-      - main
     tags:
       - v*
 

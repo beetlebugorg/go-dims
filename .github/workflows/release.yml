@@ -28,8 +28,10 @@ jobs:
         include:
           - platform: linux/amd64
             os: ubuntu-24.04
+            targetarch: amd64
           - platform: linux/arm64
             os: ubuntu-24.04-arm
+            targetarch: arm64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -46,15 +48,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push
+      - name: Build Container
         uses: docker/build-push-action@v5
-        id: build
+        id: container
         with:
           context: .
           push: true
           build-args: VERSION=${{ env.TRACKING_TAG }}
           platforms: ${{ matrix.platform }}
           tags: ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG }}-amd64
+
+      - name: Build Lambda Function
+        uses: docker/build-push-action@v5
+        id: lambda
+        with:
+          context: .
+          file: Dockerfile.lambda
+          push: false
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=build
+
+      - name: Upload Lambda zip
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: lambda-${{ matrix.targetarch }}
+          path: build/lambda-${{ matrix.targetarch }}.zip
 
   manifest:
     needs: [build]
@@ -80,7 +100,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create and push manifest
+      - name: Push manifest
         run: |
           docker buildx imagetools create \
             -t ghcr.io/beetlebugorg/go-dims:${{ steps.tag.outputs.release_tag }} \
@@ -89,6 +109,7 @@ jobs:
             ghcr.io/beetlebugorg/go-dims:${{ env.TRACKING_TAG}}-arm64
 
   release:
+    needs: [build]
     name: Release
     if: ${{ startsWith(github.ref_name, 'v') }}
     runs-on: ubuntu-latest
@@ -100,3 +121,19 @@ jobs:
         run: gh release create ${{ github.ref }} --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-arm64
+          path: ./build
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-amd64
+          path: ./build
+
+      - name: Upload to GitHub Release
+        run: gh release upload "$TAG_NAME" ./build/lambda-*.zip --repo "$GITHUB_REPOSITORY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}

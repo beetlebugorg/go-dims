@@ -31,7 +31,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	handler := func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLStreamingResponse, error) {
-		request, err := aws.NewRequest(*event, config)
+		request, err := aws.NewRequest(*event, *config)
 		if err != nil {
 			return nil, err
 		}

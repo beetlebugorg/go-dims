@@ -33,14 +33,14 @@ lambda-amd64:
 	docker buildx build \
       --platform linux/amd64 \
       --build-arg TARGETARCH=amd64 \
-      -f Dockerfile.make \
+      -f Dockerfile.lambda \
       --output type=local,dest=build .
 
 lambda-arm64:
 	docker buildx build \
       --platform linux/arm64 \
       --build-arg TARGETARCH=arm64 \
-      -f Dockerfile.make \
+      -f Dockerfile.lambda \
       --output type=local,dest=build .
 
 deploy-lambda-arm64: lambda-arm64

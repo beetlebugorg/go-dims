@@ -73,8 +73,26 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           retention-days: 1
-          name: lambda-${{ matrix.targetarch }}
-          path: build/lambda-${{ matrix.targetarch }}.zip
+          name: lambda-linux-${{ matrix.targetarch }}
+          path: build/lambda-linux-${{ matrix.targetarch }}.zip
+
+      - name: Build Standalone Binary
+        uses: docker/build-push-action@v5
+        id: lambda
+        with:
+          context: .
+          file: Dockerfile.binaries
+          push: false
+          build-args: VERSION=${{ env.TRACKING_TAG }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=local,dest=build
+
+      - name: Upload Standalone Binary
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: dims-linux-${{ matrix.targetarch }}
+          path: build/dims-linux-${{ matrix.targetarch }}.zip
 
   manifest:
     needs: [build]
@@ -124,16 +142,26 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: lambda-arm64
+          name: lambda-linux-arm64
           path: ./build
 
       - uses: actions/download-artifact@v4
         with:
-          name: lambda-amd64
+          name: lambda-linux-amd64
+          path: ./build
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dims-linux-arm64
+          path: ./build
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dims-linux-amd64
           path: ./build
 
       - name: Upload to GitHub Release
-        run: gh release upload "$TAG_NAME" ./build/lambda-*.zip --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG_NAME" ./build/lambda-*.zip ./build/dims-*.zip --repo "$GITHUB_REPOSITORY"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}

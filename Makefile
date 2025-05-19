@@ -21,12 +21,25 @@ static:
 	go generate ./...
 	go build -o $(BINARY) -ldflags $(STATIC_LDFLAGS) ./cmd/dims
 
+binary-amd64:
+	docker buildx build \
+      --platform linux/amd64 \
+      --build-arg TARGETARCH=amd64 \
+      -f Dockerfile.binaries \
+      --output type=local,dest=build .
+
+binary-arm64:
+	docker buildx build \
+      --platform linux/arm64 \
+      --build-arg TARGETARCH=arm64 \
+      -f Dockerfile.binaries \
+      --output type=local,dest=build .
+
 #-- Lambda targets
 
 lambda:
 	go generate ./...
 	go build -o $(LAMBDA_BINARY) -tags "lambda.norpc lambda" -ldflags $(STATIC_LDFLAGS) ./cmd/dims
-	upx $(BUILD_DIR)/bootstrap
 	cd $(BUILD_DIR) && zip lambda.zip bootstrap
 
 lambda-amd64:

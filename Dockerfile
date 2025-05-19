@@ -24,10 +24,17 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
     go mod download && \
     make static VERSION=${VERSION}
 
-# Generate sbom for go-dims binary
+# Generate sbom for distribution
 RUN sh go-dims/scripts/install-syft.sh && \
-    cd go-dims && \
-    /build/bin/syft file:build/dims -o spdx-json > go-dims.sbom.spdx.json
+    cd go-dims && mkdir -p build/sbom && \
+    /build/bin/syft file:build/dims -o spdx-json > build/sbom/go-dims.sbom.spdx.json && \
+    cp /build/apk.sbom.cdx.json build/sbom/apk.sbom.cdx.json && \
+    cp /usr/local/dims/libpng/sbom.cdx.json build/sbom/libpng.sbom.cdx.json && \
+    cp /usr/local/dims/libwebp/sbom.cdx.json build/sbom/libwebp.sbom.cdx.json && \
+    cp /usr/local/dims/libtiff/sbom.cdx.json build/sbom/libtiff.sbom.cdx.json && \
+    cp /usr/local/dims/glib-2.0/sbom.cdx.json build/sbom/glib-2.0.sbom.cdx.json && \
+    cp /usr/local/dims/libvips/sbom.cdx.json build/sbom/libvips.sbom.cdx.json && \
+    /build/bin/syft dir:build/sbom -o cyclonedx-json > build/sbom.cdx.json
 
 RUN cd go-dims && strip build/dims && upx build/dims
 
@@ -47,14 +54,8 @@ COPY --from=go-dims /build/go-dims/LICENSES /LICENSES
 COPY --from=go-dims /build/go-dims/LICENSE /LICENSE
 COPY --from=go-dims /build/go-dims/NOTICE /NOTICE
 
-# SBOMs
-COPY --from=go-dims /build/go-dims/go-dims.sbom.spdx.json /sbom.spdx.json
-COPY --from=go-dims /build/apk.sbom.cdx.json /sbom/apk.sbom.cdx.json
-COPY --from=go-dims /usr/local/dims/libpng/sbom.cdx.json /sbom/libpng.sbom.cdx.json
-COPY --from=go-dims /usr/local/dims/libwebp/sbom.cdx.json /sbom/libwebp.sbom.cdx.json
-COPY --from=go-dims /usr/local/dims/libtiff/sbom.cdx.json /sbom/libtiff.sbom.cdx.json
-COPY --from=go-dims /usr/local/dims/glib-2.0/sbom.cdx.json /sbom/glib-2.0.sbom.cdx.json
-COPY --from=go-dims /usr/local/dims/libvips/sbom.cdx.json /sbom/libvips.sbom.cdx.json
+# SBOM
+COPY --from=go-dims /build/go-dims/build/sbom.cdx.json /sbom.cdx.json
 
 ENV DIMS_LOG_FORMAT=json
 

@@ -9,11 +9,12 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
     go env -w GOCACHE=/go-cache && \
     go env -w GOMODCACHE=/gomod-cache && \
     go mod download && \
-    make lambda
+    make static
 
+# Generate sbom for binary distribution
 RUN sh go-dims/scripts/install-syft.sh && \
     cd go-dims && mkdir build/sbom && \
-    /build/bin/syft file:build/bootstrap -o spdx-json > build/sbom/go-dims.sbom.spdx.json && \
+    /build/bin/syft file:build/dims -o spdx-json > build/sbom/go-dims.sbom.spdx.json && \
     cp /build/apk.sbom.cdx.json build/sbom/apk.sbom.cdx.json && \
     cp /usr/local/dims/libpng/sbom.cdx.json build/sbom/libpng.sbom.cdx.json && \
     cp /usr/local/dims/libwebp/sbom.cdx.json build/sbom/libwebp.sbom.cdx.json && \
@@ -22,10 +23,10 @@ RUN sh go-dims/scripts/install-syft.sh && \
     cp /usr/local/dims/libvips/sbom.cdx.json build/sbom/libvips.sbom.cdx.json && \
     /build/bin/syft dir:build/sbom -o cyclonedx-json > build/sbom.cdx.json
 
-RUN cd go-dims && strip build/bootstrap && upx build/bootstrap && \
+RUN cd go-dims && strip build/dims && upx build/dims && \
     cp NOTICE build/NOTICE && cp LICENSE build/LICENSE && \
-    cd build && zip lambda-linux-${TARGETARCH}.zip bootstrap sbom.cdx.json LICENSE NOTICE
+    cd build && zip dims-linux-${TARGETARCH}.zip dims sbom.cdx.json LICENSE NOTICE
 
 FROM scratch AS export
 ARG TARGETARCH
-COPY --from=go-dims /build/go-dims/build/lambda-linux-${TARGETARCH}.zip /lambda-linux-${TARGETARCH}.zip
+COPY --from=go-dims /build/go-dims/build/dims-linux-${TARGETARCH}.zip /dims-linux-${TARGETARCH}.zip

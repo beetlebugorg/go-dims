@@ -30,7 +30,7 @@ renditions.
 
 - Built on [libvips](https://libvips.github.io/libvips/), the fastest image processing library.
 - Single static binary with zero runtime dependencies.
-- Docker image is just **~11MB** compressed.
+- Docker image is just **~11MB** compressed, standalone binary is just **~9MB**.
 - Built for **linux/amd64** and **linux/arm64**.
  
 **🔒 Secure**
@@ -44,7 +44,7 @@ renditions.
 
 ## 📦 Deployment Options
 - Static binary: Just download and run.
-- Standalone Docker: Launch anywhere in seconds.
+- Docker: Launch anywhere in seconds.
 - AWS Lambda: Compile and deploy as a fast, small Lambda function.
 
 ## 🚀 Getting Started
@@ -63,7 +63,7 @@ docker run \
 Then, open your browser and navigate to:
 
 ```
-http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg
+http://127.0.0.1:8080/v5/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
 ```
 
 ## ⛶ Supported Transformations

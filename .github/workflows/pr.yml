@@ -4,7 +4,8 @@ on:
   pull_request:
     paths-ignore:
       - 'docs/**'
-      - '.github/workflows/docs-*.yml'
+      - '.github/workflows/docs-pr.yml'
+      - '.github/workflows/docs-deploy.yml'
       - '.github/workflows/release.yml'
       - '*.md'
 

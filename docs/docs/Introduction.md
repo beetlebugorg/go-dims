@@ -1,7 +1,7 @@
 ---
 slug: /
 sidebar_position: 1
-title: Introduction
+title: go-dims
 ---
 
 **go-dims** is a fast, lightweight HTTP microservice for real-time image processing, written in Go

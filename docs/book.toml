@@ -1,7 +1,7 @@
 [book]
-title = "Dynamic Image Manipulation Service"
+title = "go-dims Documentation"
 authors = ["Jeremy Collins"]
-description = "HTTP microservice for on-the-fly image manipulation written in Go."
+description = "🚀 Fast, on-the-fly dynamic image management server, written in Go."
 language = "en"
 multilingual = false
 src = "src"

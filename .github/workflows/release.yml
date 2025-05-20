@@ -4,7 +4,7 @@ on:
   push:
     paths-ignore:
       - 'docs/**'
-      - '.github/workflows/docs.yml'
+      - '.github/workflows/docs-*.yml'
       - '.github/workflows/pr.yml'
       - '*.md'
     tags:

@@ -39,7 +39,7 @@ To disable globally:
 DIMS_STRIP_METADATA=false
 ```
 
-You can also override this per-request using the [`strip`](../operations/strip.md) command.
+You can also override this per-request using the [`strip`](../operations/output/strip.md) command.
 
 ---
 

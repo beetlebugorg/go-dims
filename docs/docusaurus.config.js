@@ -65,25 +65,15 @@ const config = {
       navbar: {
         title: 'go-dims',
         logo: {
-          alt: 'PixelJet Logo',
+          alt: 'Logo',
           src: 'img/image.png',
         },
         items: [],
       },
       footer: {
         style: 'dark',
-        links: [
-          {
-            title: 'Docs',
-            items: [
-              {
-                label: 'Docs',
-                to: '/docs/Introduction',
-              },
-            ],
-          },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        links: [],
+        copyright: `Copyright © ${new Date().getFullYear()} Jeremy Collins.`,
       },
       prism: {
         theme: prismThemes.github,

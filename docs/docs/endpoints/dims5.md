@@ -25,17 +25,17 @@ From the [Getting Started](../installation.md) guide:
 
 ### Path: Commands
 
-| Parameter   | Value             | Description                                      |
-|-------------|-------------------|--------------------------------------------------|
-| `commands`  | `resize/100x100`  | One or more [commands](#commands), slash-separated |
+| Parameter   | Value             | Description                                              |
+|-------------|-------------------|----------------------------------------------------------|
+| `commands`  | `resize/100x100`  | One or more [operations](../operations), slash-separated |
 
 ### Query String
 
-| Parameter   | Value             | Description                                                                 |
-|-------------|-------------------|-----------------------------------------------------------------------------|
-| `url`       | `https://images.pexels.com/...` | The image to manipulate                                       |
-| `sig`       | `6d3dcb6...`      | [Signature](#signing) to verify the request                                 |
-| `download`  | `1` (optional)    | Forces the image to download instead of displaying inline (`Content-Disposition`) |
+| Parameter  | Value                           | Description                                                                       |
+|------------|---------------------------------|-----------------------------------------------------------------------------------|
+| `url`      | `https://images.pexels.com/...` | The image to manipulate                                                           |
+| `sig`      | `6d3dcb6...`                    | [Signature](../configuration/signing) to verify the request                       |
+| `download` | `1` (optional)                  | Forces the image to download instead of displaying inline (`Content-Disposition`) |
 
 ---
 

@@ -1,6 +1,7 @@
 ---
 slug: /
 sidebar_position: 1
+title: Introduction
 ---
 
 **go-dims** is a fast, lightweight HTTP microservice for real-time image processing, written in Go
@@ -52,6 +53,6 @@ renditions.
 
 ## License
 
-go-dims is licensed under the MIT license. See the [LICENSE](LICENSE) file for details.
+go-dims is licensed under the MIT license. See the [LICENSE](https://github.com/beetlebugorg/go-dims/blob/main/LICENSE) file for details.
 
-For software used by this project, and their licenses, see the [NOTICE](NOTICE) file.
+For software used by this project, and their licenses, see the [NOTICE](https://github.com/beetlebugorg/go-dims/blob/main/NOTICE) file.

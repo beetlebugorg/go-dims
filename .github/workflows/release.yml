@@ -107,7 +107,9 @@ jobs:
         id: tag
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "release_tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+            # Remove leading 'v' if present
+            TAG="${GITHUB_REF_NAME#v}"
+            echo "release_tag=${TAG}" >> $GITHUB_OUTPUT
           else
             SHORT_SHA=$(git rev-parse --short=8 HEAD)
             echo "release_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT

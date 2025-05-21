@@ -61,9 +61,9 @@ The signature is a **HMAC-SHA256 hash (32 bytes)** of the following, concatenate
 1. The **signing key**
 2. The **command path** (no leading or trailing slashes)
 3. The **raw image URL** (not URL-encoded)
-4. The **values of any signed query parameters**, in iteration order
+4. The **values of any additional query parameters**
 
----
+If additional query parameters are used, they must be provided in the `_keys` query parameter.
 
 ### 🧾 Signed Query Parameters
 

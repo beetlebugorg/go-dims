@@ -42,12 +42,11 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 	// Signed Parameters
 	// Include all parameters except for the signature, the image URL, and "eurl".
 	var signedParams = make(map[string]string)
-	for key, _ := range url.Query() {
+	_keys := url.Query().Get("_keys")
+	for _, key := range strings.Split(_keys, ",") {
 		value := url.Query().Get(key)
-		if key != "sig" && key != "eurl" && key != "_keys" && key != "url" && key != "download" {
-			if value != "" {
-				signedParams[key] = value
-			}
+		if value != "" {
+			signedParams[key] = value
 		}
 	}
 

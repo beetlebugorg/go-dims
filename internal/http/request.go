@@ -34,11 +34,13 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 	requestUrl := r.URL
 	cmds := r.PathValue("commands")
 
+	request, err := dims.NewRequest(requestUrl, cmds, config)
+
 	return &Request{
-		Request:      *dims.NewRequest(requestUrl, cmds, config),
+		Request:      *request,
 		httpRequest:  r,
 		httpResponse: w,
-	}, nil
+	}, err
 }
 
 func (r *Request) HashId() string {

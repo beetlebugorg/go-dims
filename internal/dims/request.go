@@ -7,7 +7,6 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
-	"log/slog"
 	"net/url"
 	"runtime/trace"
 	"strings"
@@ -26,13 +25,13 @@ type Request struct {
 	shrinkFactor           int
 }
 
-func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
+func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error) {
 	imageUrl := url.Query().Get("url")
 	eurl := url.Query().Get("eurl")
 	if eurl != "" {
-		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
+		decryptedUrl, err := core.DecryptURL(eurl)
 		if err != nil {
-			slog.Error("DecryptURL failed.", "error", err)
+			return &Request{}, err
 		}
 
 		imageUrl = decryptedUrl
@@ -62,7 +61,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 		SignedParams:           signedParams,
 		SendContentDisposition: sendContentDisposition,
 		config:                 config,
-	}
+	}, nil
 }
 
 func (r *Request) Config() core.Config {

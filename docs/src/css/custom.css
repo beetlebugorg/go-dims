@@ -28,3 +28,24 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+.header-github-link::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url('https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png') no-repeat center;
+  background-size: contain;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Light mode icon */
+html[data-theme='light'] .header-github-link::before {
+  background-image: url('../../docs/assets/github/gitHub-mark.png'); /* black */
+}
+
+/* Dark mode icon */
+html[data-theme='dark'] .header-github-link::before {
+  background-image: url('../../docs/assets/github/gitHub-mark-white.png'); /* white */
+}

@@ -21,7 +21,11 @@ This color will appear when an error image is generated, which can happen when:
 
 Think of it as the visual "error signal" for `go-dims`. When you see this image, it’s usually a sign to check your logs.
 
-> Note: mod_dims allowed setting a `NOIMAGE` fallback file — `go-dims` no longer supports that. Error images are now generated dynamically using libvips.
+:::note 
+
+mod_dims allowed setting a `NOIMAGE` fallback file — `go-dims` no longer supports that. Error images are now generated dynamically using libvips.
+
+:::
 
 ---
 

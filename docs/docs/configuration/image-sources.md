@@ -42,7 +42,10 @@ Comma-separated list of backends that are permitted.
 
 Only the specified backends will be allowed to handle requests. If a backend is not listed, requests using that scheme will return an error.
 
-⚠️ By default, s3 and file are disabled. You must explicitly enable them to allow access.
+:::note
+
+By default, s3 and file are disabled. You must explicitly enable them to allow access.
+
 
 ```
 DIMS_ALLOWED_SOURCE_BACKENDS=http,s3
@@ -53,6 +56,8 @@ To allow all supported backends:
 ```
 DIMS_ALLOWED_SOURCE_BACKENDS=http,s3,file
 ```
+
+:::
 
 ---
 
@@ -102,7 +107,3 @@ DIMS_FILE_BASE_DIR=/var/images
 ```
 
 A request for `sample.jpg` would resolve to `/var/images/sample.jpg`.
-
-> ⚠️ For security, all file access is sandboxed within this directory. Symlinks outside this path will be blocked.
-
----

@@ -23,15 +23,15 @@ If you encounter signature mismatch errors, double-check that:
 This key is used to validate every incoming image request. If the signature doesn’t match, the
 request will be rejected.
 
-> 🔒 **Security Warning:** 
-> Never expose or commit this value to source control.  
-> Treat it like a production secret — store it in a secure environment variable, secret manager, or encrypted config.
+:::warning
 
-**Best Practices:** - Use at least 32 characters of high-entropy random data - Generate using your
-password manager or a secure CLI tool
+Never expose or commit this value to source control.  
+Treat it like a production secret — store it in a secure environment variable, secret manager, or encrypted config.
 
-Example:
+:::
 
-``` 
-DIMS_SIGNING_KEY=ht3uf9wJq9zKdBjX5t9ZrS8v7KdGm2Lp 
-```
+:::tip Best Practice
+
+Use at least 32 characters of high-entropy random data - Generate using your password manager or a secure CLI tool
+
+:::

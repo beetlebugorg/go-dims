@@ -63,7 +63,8 @@ The `eurl` value is an **AES-128-GCM–encrypted and base64-encoded** string tha
 
 ### Signature Calculation
 
-> When using signed requests, the **unencrypted image URL** must be used during signature generation — not the `eurl` value.
+When using signed requests, the **unencrypted image URL** must be used during signature generation
+— not the `eurl` value.
 
 This ensures consistency on the server side, where decryption happens **before** signature validation.
 

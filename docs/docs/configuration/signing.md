@@ -23,14 +23,13 @@ If you encounter signature mismatch errors, double-check that:
 This key is used to validate every incoming image request. If the signature doesn’t match, the
 request will be rejected.
 
-:::warning
+This key is also used to decrypt the `eurl` query parameter. For mod_dims compatibility, prepend
+`sha1:` to the key.
 
-Never expose or commit this value to source control.  
-Treat it like a production secret — store it in a secure environment variable, secret manager, or encrypted config.
+:::tip
 
-:::
-
-:::tip Best Practice
+Never expose or commit this value to source control. Treat it like a production secret — store it in
+a secure environment variable, secret manager, or encrypted config.
 
 Use at least 32 characters of high-entropy random data - Generate using your password manager or a secure CLI tool
 

@@ -7,6 +7,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
 	"github.com/davidbyttow/govips/v2/vips"
+	"log/slog"
 	"net/url"
 	"runtime/trace"
 	"strings"
@@ -31,6 +32,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 	if eurl != "" {
 		decryptedUrl, err := core.DecryptURL(eurl)
 		if err != nil {
+			slog.Error("failed to decrypt eurl, ensure DIMS_SIGNING_KEY matches key used to encrypt. For mod_dims compatibility you must prepend 'sha1:' to the key.", "error", err)
 			return &Request{}, err
 		}
 

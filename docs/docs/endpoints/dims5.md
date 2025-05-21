@@ -37,8 +37,6 @@ From the [Getting Started](../installation.md) guide:
 | `sig`      | `6d3dcb6...`                    | [Signature](../configuration/signing) to verify the request                       |
 | `download` | `1` (optional)                  | Forces the image to download instead of displaying inline (`Content-Disposition`) |
 
----
-
 ## 🛑 Error Handling
 
 This endpoint will **always try to return an image**, even when something goes wrong.
@@ -51,8 +49,6 @@ The error image will be cropped/resized as needed to match the requested dimensi
 remains consistent on your page. In some cases it may not be able to match the requested dimensions,
 for example when a transformation command's argument has a syntax error. In those cases a 512x512
 image will be returned.
-
----
 
 ## 🔐 Signing
 
@@ -77,8 +73,8 @@ Included in signature:
 - Any query parameter **except** the following:
     - `sig` (the signature itself)
     - `url` (the image URL)
-    - `eurl` (an encoded version of `url`, not used in signing)
-    - `_keys` (optional debugging/tracking param)
+    - `eurl` (an encrypted version of `url`, not used in signing)
+    - `_keys` (additional query parameters to using in signing)
     - `download` (controls content disposition, excluded from signing)
 
 Example:
@@ -92,7 +88,33 @@ Signature input becomes:
 - `https://example.com/image.jpg`
 - `http://example.com/overlay.png` (value of `overlay`)
 
----
+## 🔐 `eurl` encryption
+
+The `eurl` query parameter allows you to encrypt a full image URL, so that it is not exposed in
+plaintext. This is useful when you want to:
+
+- Obscure or protect source URLs (e.g. signed S3 links)
+- Watermark images with a URL that should not be visible to users
+
+### Implementing `eurl` Encryption
+
+To generate an `eurl` compatible with go-dims, follow these steps:
+
+1. **Key Derivation**  
+  - Use the HKDF-SHA256 key derivation function to derive a 16-byte (128-bit) AES key from the secret shared in `DIMS_SIGNING_KEY`.
+  - Use the string `go-dims` for the salt.
+
+2. **Encryption**  
+  - Use AES-128-GCM to encrypt the original image URL.
+  - Generate a 12-byte random IV (nonce).
+  - Encrypt the URL using the derived key and IV.
+
+3. **Output Format**  
+   - Concatenate the IV, ciphertext, and tag in that order.
+   - Base64-encode the entire byte sequence. 
+   - The resulting string should be used as the value for the `eurl` parameter.
+
+Any mismatch in the key, salt, IV size, or output format will result in a decryption failure (`cipher: message authentication failed`).
 
 ### ✅ Use the CLI
 

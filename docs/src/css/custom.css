@@ -42,10 +42,10 @@
 
 /* Light mode icon */
 html[data-theme='light'] .header-github-link::before {
-  background-image: url('../../docs/assets/github/gitHub-mark.png'); /* black */
+  background-image: url('../../docs/assets/github/github-mark.png'); /* black */
 }
 
 /* Dark mode icon */
 html[data-theme='dark'] .header-github-link::before {
-  background-image: url('../../docs/assets/github/gitHub-mark-white.png'); /* white */
+  background-image: url('../../docs/assets/github/github-mark-white.png'); /* white */
 }

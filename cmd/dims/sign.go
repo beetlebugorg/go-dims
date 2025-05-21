@@ -18,25 +18,23 @@ type SignCmd struct {
 }
 
 func (cmd *SignCmd) Run() error {
-	var signingKey string
+	config := core.ReadConfig()
+
 	if cmd.KeyFile != "" {
 		keyBytes, err := os.ReadFile(cmd.KeyFile)
 		if err != nil {
 			return err
 		}
 
-		signingKey = string(keyBytes)
+		config.SigningKey = strings.Trim(string(keyBytes), "\n\r ")
 	} else if cmd.KeyFromStdin {
 		keyBytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			os.Exit(1)
 		}
 
-		signingKey = string(keyBytes)
+		config.SigningKey = strings.Trim(string(keyBytes), "\n\r ")
 	}
-
-	config := core.ReadConfig()
-	config.SigningKey = strings.Trim(signingKey, "\n\r ")
 
 	signedUrl, err := dims.SignUrl(cmd.ImageURL)
 	if err != nil {

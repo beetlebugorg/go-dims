@@ -68,7 +68,14 @@ const config = {
           alt: 'Logo',
           src: 'img/image.png',
         },
-        items: [],
+        items: [
+          {
+            href: 'https://github.com/beetlebugorg/go-dims',
+            position: 'right',
+            className: 'header-github-link',
+            'aria-label': 'GitHub  repository',
+          },
+        ],
       },
       footer: {
         style: 'dark',

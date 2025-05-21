@@ -33,7 +33,7 @@ Compose, AWS Lambda environment variables, etc.).
 - [📡 Image Sources](./image-sources): Configure sources like HTTP, S3, and local files.
 - [🚚 Migrating from mod_dims](./mod-dims): Migration guide for mod_dims users.
 
-## 💡 Tips
+:::tip Tips
 
 All values are read once during startup.
 
@@ -43,3 +43,5 @@ Lists (e.g., excluded formats) are comma-separated: `DIMS_EXCLUDED_OUTPUT_FORMAT
 
 If you're deploying go-dims in production, we recommend using environment-specific secrets managers
 to safely handle values like `DIMS_SIGNING_KEY`.
+
+:::

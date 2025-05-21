@@ -22,7 +22,11 @@ Sets the default `max-age` (in seconds) for the `Cache-Control` header on succes
 
 A long cache lifetime is safe because every image variant is URL-based and includes a signature — changes to transformations automatically bust caches.
 
-> Previously known as `DimsCacheExpire` in mod-dims.
+:::info 
+
+Previously known as `DimsCacheExpire` in mod-dims.
+
+:::
 
 ---
 
@@ -53,7 +57,11 @@ Response:
 < Expires: [11 seconds after request]  
 ```
 
-> Previously known as `DimsNoImageCacheExpire` in mod-dims.
+:::info
+
+Previously known as `DimsNoImageCacheExpire` in mod-dims.
+
+:::
 
 ---
 
@@ -65,8 +73,12 @@ Delegates cache duration to the `Cache-Control` header set by the origin server.
 
 Useful if you control the origin (e.g., S3) and want fine-grained control on a per-image basis.
 
-> ⚠️ Only enable this if you fully control the origin.  
-> If the origin sets an inappropriately long or short `max-age`, it could lead to excessive load or stale content.
+:::warning 
+
+Only enable this if you fully control the origin.  
+If the origin sets an inappropriately long or short `max-age`, it could lead to excessive load or stale content.
+
+:::
 
 ---
 

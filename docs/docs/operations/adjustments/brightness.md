@@ -43,6 +43,8 @@ Original on the left, brightened and contrast increased on the right:
 ![Original](../../assets/original128x.jpg)
 ![Dark + Low Contrast](../../assets/brightness-5x5.jpg)
 
-## Notes
+:::tip
 
-- If you only care about brightness, you can use `brightness/60x0`
+If you only care about brightness, you can use `brightness/60x0`
+
+:::

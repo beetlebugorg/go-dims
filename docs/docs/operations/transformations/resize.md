@@ -31,19 +31,17 @@ exactly match the specified dimensions, which may result in stretching or squish
 
 ![Listing 1 - resize/100x100!](../../assets/resize100x100exclamation.jpg "Listing 1")
 
-<span class="caption">Listing 1 – `/v4/.../resize/100x100!/?url=...` produces a **100×100** image</span>
-
 #### Proportional Resize (no `!`)
 
 ![Listing 2 - resize/100x100](../../assets/resize100x100.jpg "Listing 2")
 
-<span class="caption">Listing 2 – `/v4/.../resize/100x100/?url=...` produces an **80×100** image</span>
-
-## ⚠️ URL Escaping
+:::warning URL Escaping
 
 Some geometry formats include symbols like `%` that must be URL-encoded.
 
 - For example, to resize to **15%** of the original size:  
   Use `resize/15%25`, where `%25` is the encoded form of `%`.
 
-> Always ensure resize arguments are properly escaped when constructing URLs.
+Always ensure resize arguments are properly escaped when constructing URLs.
+
+:::

@@ -156,8 +156,12 @@ aws lambda create-function-url-config \
 
 This will return a FunctionUrl that you can use in a browser or with any HTTP client. 
 
+:::note
+
 ⚠️ Your function is publicly accessible. Production deployments should be deployed behind a CDN such
 as CloudFront to cache image resize requests.
+
+:::
 
 **Step 5: Test the Function**
 

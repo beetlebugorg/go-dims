@@ -26,13 +26,14 @@ type Request struct {
 	shrinkFactor           int
 }
 
-func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
+func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error) {
 	imageUrl := url.Query().Get("url")
 	eurl := url.Query().Get("eurl")
 	if eurl != "" {
-		decryptedUrl, err := core.DecryptURL(config.SigningKey, eurl)
+		decryptedUrl, err := core.DecryptURL(eurl)
 		if err != nil {
-			slog.Error("DecryptURL failed.", "error", err)
+			slog.Error("failed to decrypt eurl, ensure DIMS_SIGNING_KEY matches key used to encrypt. For mod_dims compatibility you must prepend 'sha1:' to the key.", "error", err)
+			return &Request{}, err
 		}
 
 		imageUrl = decryptedUrl
@@ -41,12 +42,11 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 	// Signed Parameters
 	// Include all parameters except for the signature, the image URL, and "eurl".
 	var signedParams = make(map[string]string)
-	for key, _ := range url.Query() {
+	_keys := url.Query().Get("_keys")
+	for _, key := range strings.Split(_keys, ",") {
 		value := url.Query().Get(key)
-		if key != "sig" && key != "eurl" && key != "_keys" && key != "url" && key != "download" {
-			if value != "" {
-				signedParams[key] = value
-			}
+		if value != "" {
+			signedParams[key] = value
 		}
 	}
 
@@ -62,7 +62,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) *Request {
 		SignedParams:           signedParams,
 		SendContentDisposition: sendContentDisposition,
 		config:                 config,
-	}
+	}, nil
 }
 
 func (r *Request) Config() core.Config {

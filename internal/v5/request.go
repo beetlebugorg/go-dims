@@ -8,6 +8,7 @@ import (
 	dims "github.com/beetlebugorg/go-dims/internal/http"
 	"log/slog"
 	"net/http"
+	"strings"
 )
 
 type Request struct {
@@ -49,7 +50,9 @@ func (v5 *Request) Validate() bool {
 }
 
 func (v5 *Request) sign(imageUrl string, signedParams map[string]string, command string, signingKey string) []byte {
-	mac := hmac.New(sha256.New, []byte(signingKey))
+	key := strings.Replace(signingKey, "sha1:", "", 1)
+
+	mac := hmac.New(sha256.New, []byte(key))
 	mac.Write([]byte(command))
 	mac.Write([]byte(imageUrl))
 

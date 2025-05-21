@@ -3,47 +3,79 @@ package core
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hkdf"
 	"crypto/rand"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"github.com/caarlos0/env/v10"
 	"io"
 	"log/slog"
 	"strings"
 )
 
-func EncryptionKey(secretKey string) []byte {
-	// Step 1: SHA-1 hash the secret key
-	hash := sha1.Sum([]byte(secretKey)) // returns [20]byte
+var encryptionKey []byte
+var salt = []byte("go-dims")
 
-	// Step 2: Convert the hash to hex
-	hexEncoded := hex.EncodeToString(hash[:]) // 40 hex chars
+func init() {
+	envConfig := Signing{}
+	if err := env.Parse(&envConfig); err != nil {
+		fmt.Printf("%+v\n", err)
+	}
 
-	// Step 3: Use first 16 characters of the hex string as the key
-	keyFragment := strings.ToUpper(hexEncoded[:16])
-	return []byte(keyFragment)
+	var err error
+	if encryptionKey, err = deriveKey(envConfig.SigningKey); err != nil {
+		slog.Error("failed to derive encryption key", "error", err)
+		return
+	}
 }
 
-func EncryptURL(secretKey string, url string) (string, error) {
-	key := EncryptionKey(secretKey)
+func deriveKey(secretKey string) ([]byte, error) {
+	if strings.HasPrefix(secretKey, "sha1:") {
+		secret := secretKey[5:]
+		hash := sha1.Sum([]byte(secret))          // returns [20]byte
+		hexEncoded := hex.EncodeToString(hash[:]) // 40 hex chars
+		keyFragment := strings.ToUpper(hexEncoded[:16])
 
-	encryptedURL, err := EncryptAES128GCM(key, url)
+		return []byte(keyFragment), nil
+	} else {
+		hash := sha256.New
+		secret := secretKey
+		if strings.HasPrefix(secret, "hkdf:") {
+			secret = secret[5:]
+		}
+		return hkdf.Key(hash, []byte(secret), salt, "", 16)
+	}
+}
+
+func EncryptURLKey(secretKey string, url string) (string, error) {
+	key, err := deriveKey(secretKey)
 	if err != nil {
 		return "", err
 	}
 
-	return encryptedURL, nil
+	return EncryptAES128GCM(key, url)
 }
 
-// DecryptURL decrypts the given eurl string using a derived AES-128-GCM key.
-func DecryptURL(secretKey string, base64Eurl string) (string, error) {
-	key := EncryptionKey(secretKey)
+func DecryptURL(url string) (string, error) {
+	url = strings.ReplaceAll(url, " ", "+")
 
-	// Handle spaces in base64Eurl
-	base64Eurl = strings.ReplaceAll(base64Eurl, " ", "+")
+	return DecryptAES128GCM(encryptionKey, url)
+}
 
-	return DecryptAES128GCM(key, base64Eurl)
+// DecryptURLKey decrypts the given eurl string using a derived AES-128-GCM key.
+func DecryptURLKey(secretKey string, url string) (string, error) {
+	key, err := deriveKey(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	url = strings.ReplaceAll(url, " ", "+")
+
+	return DecryptAES128GCM(key, url)
 }
 
 // DecryptAES128GCM takes a base64-encoded ciphertext and decrypts it using AES-128-GCM.
@@ -52,21 +84,8 @@ func DecryptAES128GCM(key []byte, base64EncryptedText string) (string, error) {
 	// Decode the base64 input
 	encryptedData, err := base64.StdEncoding.DecodeString(base64EncryptedText)
 	if err != nil {
-		slog.Error("base64 decode failed.", "data", base64EncryptedText)
 		return "", err
 	}
-
-	if len(encryptedData) < 12+16 {
-		return "", errors.New("invalid encrypted data length")
-	}
-
-	// Extract IV, ciphertext, and tag
-	iv := encryptedData[:12]
-	tag := encryptedData[len(encryptedData)-16:]
-	ciphertext := encryptedData[12 : len(encryptedData)-16]
-
-	// Concatenate ciphertext and tag for Go's AEAD interface
-	ciphertextWithTag := append(ciphertext, tag...)
 
 	// Create AES cipher
 	block, err := aes.NewCipher(key)
@@ -78,6 +97,18 @@ func DecryptAES128GCM(key []byte, base64EncryptedText string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if len(encryptedData) < aesgcm.NonceSize()+block.BlockSize() {
+		return "", errors.New("invalid encrypted data length")
+	}
+
+	// Extract IV, ciphertext, and tag
+	iv := encryptedData[:aesgcm.NonceSize()]
+	tag := encryptedData[len(encryptedData)-block.BlockSize():]
+	ciphertext := encryptedData[aesgcm.NonceSize() : len(encryptedData)-block.BlockSize()]
+
+	// Concatenate ciphertext and tag for Go's AEAD interface
+	ciphertextWithTag := append(ciphertext, tag...)
 
 	// Decrypt
 	plaintext, err := aesgcm.Open(nil, iv, ciphertextWithTag, nil)
@@ -95,12 +126,6 @@ func EncryptAES128GCM(key []byte, plaintext string) (string, error) {
 		return "", errors.New("key must be 16 bytes for AES-128")
 	}
 
-	// Generate a 12-byte IV (nonce)
-	iv := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
-	}
-
 	// Create AES cipher
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -109,6 +134,12 @@ func EncryptAES128GCM(key []byte, plaintext string) (string, error) {
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
+		return "", err
+	}
+
+	// Generate a 12-byte IV (nonce)
+	iv := make([]byte, aesgcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
 

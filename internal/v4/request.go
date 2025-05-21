@@ -60,9 +60,11 @@ func (v4 *Request) Validate() bool {
 }
 
 func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams map[string]string, signingKey string) string {
+	key := strings.Replace(signingKey, "sha1:", "", 1)
+
 	h := md5.New()
 	h.Write([]byte(timestamp))
-	h.Write([]byte(signingKey))
+	h.Write([]byte(key))
 	h.Write([]byte(commands))
 	h.Write([]byte(imageUrl))
 

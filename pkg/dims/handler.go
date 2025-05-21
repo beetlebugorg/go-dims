@@ -24,9 +24,8 @@ func NewHandler(config core.Config) http.Handler {
 
 			request, err := v4.NewRequest(r, w, config)
 			if err != nil {
-				if err := request.SendError(err); err != nil {
-					slog.Error("error sending error response", "error", err)
-				}
+				w.WriteHeader(400)
+				slog.Error("error parsing request", "error", err)
 				return
 			}
 
@@ -45,9 +44,8 @@ func NewHandler(config core.Config) http.Handler {
 
 			request, err := v5.NewRequest(r, w, config)
 			if err != nil {
-				if err := request.SendError(err); err != nil {
-					slog.Error("error sending error response", "error", err)
-				}
+				w.WriteHeader(400)
+				slog.Error("error parsing request", "error", err)
 				return
 			}
 

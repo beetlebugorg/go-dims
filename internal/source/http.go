@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/davidbyttow/govips/v2/vips"
-	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -119,8 +118,7 @@ func (backend httpSourceBackend) FetchImage(imageUrl string, timeout time.Durati
 	}
 	defer image.Body.Close()
 
-	imageSize := int(image.ContentLength)
-	imageBytes, err := io.ReadAll(image.Body)
+	imageBytes, err := core.ReadSource(image.Body, image.ContentLength)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +130,6 @@ func (backend httpSourceBackend) FetchImage(imageUrl string, timeout time.Durati
 		LastModified: image.Header.Get("Last-Modified"),
 		Etag:         image.Header.Get("Etag"),
 		Format:       vips.DetermineImageType(imageBytes),
-		Size:         imageSize,
 		Bytes:        imageBytes,
 	}
 

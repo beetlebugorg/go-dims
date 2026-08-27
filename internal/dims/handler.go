@@ -36,7 +36,7 @@ func Handler(request RequestContext) error {
 
 	// Download image.
 	timeout := time.Duration(request.Config().Timeout.Download) * time.Millisecond
-	sourceImage, err := request.FetchImage(timeout)
+	sourceImage, err := fetchImage(request, timeout)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func Handler(request RequestContext) error {
 
 	// Take a processing slot. The download above is waiting on an origin and
 	// does not need one; everything below this competes for CPU.
-	release, err := defaultLimiter().acquire()
+	release, err := processLimiter().acquire()
 	if err != nil {
 		return err
 	}
@@ -76,4 +76,18 @@ func Handler(request RequestContext) error {
 	}
 
 	return nil
+}
+
+// fetchImage downloads the source image while it holds a download slot. The
+// byte limit bounds one body; this bounds how many bodies are resident at
+// once. The slot is released as soon as the download ends, so it is never
+// held across the processing that follows.
+func fetchImage(request RequestContext, timeout time.Duration) (*core.Image, error) {
+	release, err := downloadLimiter().acquire()
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	return request.FetchImage(timeout)
 }

@@ -21,6 +21,16 @@ func withNetwork(t *testing.T, apply func(n *core.Network)) {
 	t.Cleanup(func() { config.Network = original })
 }
 
+func withMaxSourceBytes(t *testing.T, limit int) {
+	t.Helper()
+
+	config := core.ReadConfig()
+	original := config.MaxSourceBytes
+	config.MaxSourceBytes = limit
+
+	t.Cleanup(func() { config.MaxSourceBytes = original })
+}
+
 func requireRefused(t *testing.T, err error) {
 	t.Helper()
 
@@ -114,4 +124,53 @@ func TestFetchImageAllowsPrivateWhenEnabled(t *testing.T) {
 	image, err := NewHttpSourceBackend().FetchImage(server.URL+"/a.jpg", 5*time.Second)
 	require.NoError(t, err)
 	require.Len(t, image.Bytes, len(body))
+}
+
+// An origin that declares a size above the limit is refused before the body
+// is read.
+func TestFetchImageRefusesADeclaredSizeAboveTheLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "4096")
+		w.Write(make([]byte, 4096))
+	}))
+	defer server.Close()
+
+	withNetwork(t, func(n *core.Network) { n.AllowPrivateNetworks = true })
+	withMaxSourceBytes(t, 1024)
+
+	_, err := NewHttpSourceBackend().FetchImage(server.URL+"/a.jpg", 3*time.Second)
+	requireRefused(t, err)
+	require.Contains(t, err.Error(), "the origin declares 4096 bytes")
+}
+
+// A chunked response declares no size, so only the read can find it. The
+// limit has to hold there as well.
+func TestFetchImageRefusesAnUndeclaredBodyAboveTheLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Transfer-Encoding", "chunked")
+		w.Write(make([]byte, 4096))
+	}))
+	defer server.Close()
+
+	withNetwork(t, func(n *core.Network) { n.AllowPrivateNetworks = true })
+	withMaxSourceBytes(t, 1024)
+
+	_, err := NewHttpSourceBackend().FetchImage(server.URL+"/a.jpg", 3*time.Second)
+	requireRefused(t, err)
+	require.Contains(t, err.Error(), "above the 1024 byte limit")
+	require.NotContains(t, err.Error(), "declares", "the response must carry no Content-Length")
+}
+
+func TestFetchImageAcceptsABodyUnderTheLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(make([]byte, 512))
+	}))
+	defer server.Close()
+
+	withNetwork(t, func(n *core.Network) { n.AllowPrivateNetworks = true })
+	withMaxSourceBytes(t, 1024)
+
+	image, err := NewHttpSourceBackend().FetchImage(server.URL+"/a.jpg", 3*time.Second)
+	require.NoError(t, err)
+	require.Len(t, image.Bytes, 512)
 }

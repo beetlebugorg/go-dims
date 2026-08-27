@@ -5,7 +5,6 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
-	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -61,7 +60,6 @@ func (f fileSourceBackend) FetchImage(imageSource string, timeout time.Duration)
 
 	return &core.Image{
 		Status: 200,
-		Size:   len(imageBytes),
 		Bytes:  imageBytes,
 		Format: vips.DetermineImageType(imageBytes),
 	}, nil
@@ -94,7 +92,13 @@ func readFileWithTimeout(baseDir string, name string, timeout time.Duration) ([]
 		}
 		defer file.Close()
 
-		data, err := io.ReadAll(file)
+		info, err := file.Stat()
+		if err != nil {
+			errCh <- err
+			return
+		}
+
+		data, err := core.ReadSource(file, info.Size())
 		if err != nil {
 			errCh <- err
 			return

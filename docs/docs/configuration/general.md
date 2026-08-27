@@ -96,7 +96,7 @@ Processing cost is close to linear in the number of pixels produced. Measured on
 | 10000x10000 | 100 MP | 3.2 s |
 | 14000x14000 | 196 MP | 6.5 s |
 
-That is roughly 30 megapixels per second per thread, so a pixel limit is a direct way to bound how long one request can occupy a worker. A limit on the source *bytes* is not: an upscale from a small image is cheap to download and expensive to produce.
+That is roughly 30 megapixels per second per thread, so a pixel limit bounds how long one request can occupy a worker.
 
 ### `DIMS_MAX_OUTPUT_PIXELS`
 
@@ -120,6 +120,22 @@ Checked once the source header is read. This mainly guards against a small file 
 
 Set either to `0` to disable that check.
 
+### `DIMS_MAX_SOURCE_BYTES`
+
+The largest source image the service will download, in bytes.
+
+- **Default:** `67108864` (64 MB)
+
+A `Content-Length` above the limit is refused before the body is read. A body that passes the limit during the read is refused as well. Both return `400`.
+
+The limit applies to every source backend, and to the `overlay` image the [watermark](../operations/special/watermark.md) command downloads.
+
+Set it to `0` to disable the check.
+
+```
+DIMS_MAX_SOURCE_BYTES=16777216
+```
+
 ### `DIMS_MAX_CONCURRENT`
 
 How many images may be processed at once.
@@ -136,9 +152,23 @@ DIMS_MAX_CONCURRENT=8
 
 The slot is taken after the source image has been downloaded, since a request waiting on an origin is not competing for CPU.
 
+### `DIMS_MAX_DOWNLOAD_CONCURRENT`
+
+How many source images may be downloaded at once.
+
+- **Default:** `0`, which derives a value from the CPU count
+
+A download takes a slot from this limit. Processing takes a slot from `DIMS_MAX_CONCURRENT`.
+
+Set a positive number to choose the limit directly, or `-1` to remove it.
+
+```
+DIMS_MAX_DOWNLOAD_CONCURRENT=16
+```
+
 ### `DIMS_MAX_CONCURRENT_WAIT`
 
-How long a request queues for a slot before it is refused, in milliseconds.
+How long a request queues for a slot before it is refused, in milliseconds. It applies to both limits above.
 
 - **Default:** `5000`
 

@@ -63,6 +63,17 @@ type Limits struct {
 	// MaxConcurrentWait is how long a request queues for a slot before it is
 	// refused, in milliseconds.
 	MaxConcurrentWait int `env:"DIMS_MAX_CONCURRENT_WAIT" envDefault:"5000"`
+
+	// MaxSourceBytes caps the size of one source image, in bytes. The pixel
+	// caps do not bound memory, because the whole body is resident before any
+	// pixel check runs. Zero disables the check.
+	MaxSourceBytes int `env:"DIMS_MAX_SOURCE_BYTES" envDefault:"67108864"`
+
+	// MaxDownloadConcurrent caps how many source downloads run at once. Each
+	// download holds a whole source body, so this and MaxSourceBytes together
+	// bound the memory a burst can reach. Zero derives a value from the CPU
+	// count. A negative value removes the limit.
+	MaxDownloadConcurrent int `env:"DIMS_MAX_DOWNLOAD_CONCURRENT" envDefault:"0"`
 }
 
 type Network struct {

@@ -60,7 +60,7 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 
 		request.RequestContext = v4Request
 	} else if strings.HasPrefix(requestUrl.Path, "/v5/") {
-		cmds := strings.TrimLeft(requestUrl.Path, "/v5/")
+		cmds := strings.TrimPrefix(requestUrl.Path, "/v5/")
 
 		httpRequest.SetPathValue("commands", cmds)
 

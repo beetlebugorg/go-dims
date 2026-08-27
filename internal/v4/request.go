@@ -89,11 +89,11 @@ func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams []str
 func (v4 *Request) SignedUrl() string {
 	signature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
 
-	unsignedPath := fmt.Sprintf("/dims4/%s/%s/%s", v4.clientId, v4.Signature, v4.timestamp)
-	signedPath := fmt.Sprintf("/dims4/%s/%s/%s", v4.clientId, signature, v4.timestamp)
+	// Rebuild the path from its parts. Substituting the placeholder went
+	// wrong whenever it happened to equal the client id or the timestamp.
+	// The URL is copied so signing does not alter the request it was given.
+	signed := *v4.URL
+	signed.Path = fmt.Sprintf("/dims4/%s/%s/%s/%s", v4.clientId, signature, v4.timestamp, v4.RawCommands)
 
-	u := v4.URL
-	u.Path = strings.Replace(u.Path, unsignedPath, signedPath, 1)
-
-	return u.String()
+	return signed.String()
 }

@@ -30,7 +30,7 @@ func (cmd *SignCmd) Run() error {
 	} else if cmd.KeyFromStdin {
 		keyBytes, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			os.Exit(1)
+			return fmt.Errorf("failed to read the key from standard input: %w", err)
 		}
 
 		config.SigningKey = strings.Trim(string(keyBytes), "\n\r ")

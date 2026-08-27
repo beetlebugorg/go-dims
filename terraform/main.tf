@@ -3,6 +3,8 @@ module "go-dims-lambda" {
   aws_region         = var.aws_region
   authorization_type = var.authorization_type
   platform           = var.platform
+  allow_origins      = var.allow_origins
+  allow_headers      = var.allow_headers
 
   environment = merge(
     {

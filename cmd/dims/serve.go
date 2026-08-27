@@ -39,6 +39,10 @@ func (s *ServeCmd) Run() error {
 	}
 	slog.SetDefault(logger)
 
+	if core.LegacyKey(config.SigningKey) {
+		slog.Warn("the sha1 signing key prefix derives an encryption key from 16 hex characters. It exists for mod_dims compatibility. A key without the prefix is stronger.")
+	}
+
 	if err := config.Validate(); err != nil {
 		slog.Error("Invalid configuration.", "error", err)
 		return err

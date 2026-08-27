@@ -28,6 +28,7 @@ package commands
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -42,6 +43,9 @@ import (
 
 const sourceImageDir = "../../resources/"
 const goldenImageDir = "../../resources/golden/"
+
+// updateGolden creates or rewrites golden files instead of comparing against them.
+var updateGolden = flag.Bool("update", false, "create or rewrite golden image files")
 
 func runGoldenTest(
 	t *testing.T,
@@ -110,25 +114,28 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	goldenPath := fmt.Sprintf("%s%s.%s-%s.golden%s", goldenImageDir, base, testName, env, ext)
 	failedPath := fmt.Sprintf("%s%s.%s-%s.failed%s", goldenImageDir, base, testName, env, ext)
 
-	// Check for existing golden file
-	golden, err := os.ReadFile(goldenPath)
-	if err == nil {
-		if !bytes.Equal(buf, golden) {
-			t.Logf("assertGoldenMatch: mismatch with golden file: %s", goldenPath)
-			t.Logf("actual size=%d, expected size=%d", len(buf), len(golden))
-
-			if err := os.WriteFile(failedPath, buf, 0666); err != nil {
-				t.Fatalf("assertGoldenMatch: failed to write failed image: %v", err)
-			}
-			assert.Fail(t, "image mismatch", "wrote failed image to: %s", failedPath)
+	// Write the golden file when the caller asks for an update.
+	if *updateGolden {
+		t.Logf("assertGoldenMatch: writing golden file: %s", goldenPath)
+		if err := os.WriteFile(goldenPath, buf, 0644); err != nil {
+			t.Fatalf("assertGoldenMatch: failed to write golden file: %v", err)
 		}
 		return
 	}
 
-	// No golden file found; write new one
-	t.Logf("assertGoldenMatch: writing new golden file: %s", goldenPath)
-	if err := os.WriteFile(goldenPath, buf, 0644); err != nil {
-		t.Fatalf("assertGoldenMatch: failed to write golden file: %v", err)
+	golden, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatalf("assertGoldenMatch: no golden file at %s. Run go test -update to create it.", goldenPath)
+	}
+
+	if !bytes.Equal(buf, golden) {
+		t.Logf("assertGoldenMatch: mismatch with golden file: %s", goldenPath)
+		t.Logf("actual size=%d, expected size=%d", len(buf), len(golden))
+
+		if err := os.WriteFile(failedPath, buf, 0644); err != nil {
+			t.Fatalf("assertGoldenMatch: failed to write failed image: %v", err)
+		}
+		assert.Fail(t, "image mismatch", "wrote failed image to: %s", failedPath)
 	}
 }
 

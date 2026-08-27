@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -61,20 +62,33 @@ func (backend s3SourceBackend) CanHandle(imageSource string) bool {
 	return false
 }
 
-func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Duration) (*core.Image, error) {
-	slog.Info("downloadImageS3", "url", imageSource)
-
-	bucketName := backend.Config.Bucket
-	key := strings.TrimPrefix(imageSource, "/")
-
+// resolve turns an image source into a bucket and key. DIMS_S3_PREFIX applies
+// to a bare key, which is what arrives when s3 is the default backend. An
+// s3:// URL already names its own bucket and path, so the prefix is left off.
+func (backend s3SourceBackend) resolve(imageSource string) (string, string, error) {
 	if strings.HasPrefix(imageSource, "s3://") {
 		u, err := url.Parse(imageSource)
 		if err != nil {
-			return nil, err
+			return "", "", err
 		}
 
-		bucketName = u.Hostname()
-		key = strings.TrimPrefix(u.Path, "/")
+		return u.Hostname(), strings.TrimPrefix(u.Path, "/"), nil
+	}
+
+	key := strings.TrimPrefix(imageSource, "/")
+	if backend.Config.Prefix != "" {
+		key = path.Join(backend.Config.Prefix, key)
+	}
+
+	return backend.Config.Bucket, key, nil
+}
+
+func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Duration) (*core.Image, error) {
+	slog.Info("downloadImageS3", "url", imageSource)
+
+	bucketName, key, err := backend.resolve(imageSource)
+	if err != nil {
+		return nil, err
 	}
 
 	client, err := s3Client()

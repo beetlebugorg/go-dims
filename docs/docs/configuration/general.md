@@ -118,15 +118,20 @@ This is useful if you want all images to be served in a modern format by default
 
 ---
 
-## `DIMS_OUTPUT_FORMAT_EXCLUDE`
+## `DIMS_EXCLUDED_OUTPUT_FORMATS`
 
-Specifies a comma-separated list of image formats that should **not** be converted by the default output format setting.
+Comma-separated list of **source** image formats that `DIMS_DEFAULT_OUTPUT_FORMAT` does not apply to.
 
 - **Default:** *(unset)*
 
 Example:
 ```
-DIMS_OUTPUT_FORMAT_EXCLUDE=GIF,SVG
+DIMS_DEFAULT_OUTPUT_FORMAT=webp
+DIMS_EXCLUDED_OUTPUT_FORMATS=gif,svg
 ```
 
-This allows certain image types (like animated GIFs or vector SVGs) to bypass the default format conversion logic.
+That converts everything to WebP except images that arrived as GIF or SVG, which keep their normal handling. Matching ignores case.
+
+The list names the format an image **arrives** in, not the format it would be converted to. This matches mod_dims, which reads the input format before deciding whether to apply its default.
+
+An explicit [`format`](../operations/output/format.md) command in the request always wins, whatever this is set to.

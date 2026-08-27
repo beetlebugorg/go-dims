@@ -279,8 +279,9 @@ func (r *Request) requestedImageSize() (geometry.Geometry, error) {
 }
 
 func (r *Request) outputFormat() vips.ImageType {
-	// If default is configured, use that first.
-	if r.config.OutputFormat.Default != "" {
+	// If default is configured, use that first, unless the source format opts
+	// out of it.
+	if r.config.OutputFormat.Default != "" && !r.excludedFromDefaultFormat() {
 		return core.ImageTypes[r.config.OutputFormat.Default]
 	}
 
@@ -341,4 +342,24 @@ func LegacyValues(u *url.URL) []string {
 	}
 
 	return values
+}
+
+// excludedFromDefaultFormat reports whether the source image format is listed
+// in DIMS_EXCLUDED_OUTPUT_FORMATS. The list names source formats, matching
+// mod_dims, which reads the input format before deciding whether to apply its
+// default. That lets a deployment convert everything to webp while leaving
+// animated GIF and vector SVG as they arrived.
+func (r *Request) excludedFromDefaultFormat() bool {
+	for _, name := range r.config.OutputFormat.Excluded {
+		name = strings.ToLower(strings.TrimSpace(name))
+		if name == "" {
+			continue
+		}
+
+		if imageType, ok := core.ImageTypes[name]; ok && imageType == r.SourceImage.Format {
+			return true
+		}
+	}
+
+	return false
 }

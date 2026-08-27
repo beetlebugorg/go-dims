@@ -103,9 +103,12 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	}
 	base := file[:extIndex]
 
-	// Construct golden file name. There is one set: libvips produces the same
-	// bytes on every architecture we build for, so keying these by platform
-	// only ever meant one of them went stale unnoticed.
+	// Construct the golden file name. There is one set, because libvips
+	// produces the same bytes on every architecture the project builds for.
+	//
+	// The bytes do change between libvips versions. The set is pinned to the
+	// version in Dockerfile.builder, so run these tests on the builder image.
+	// Regenerate the set with -update on that image when the pin moves.
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	testName = strings.TrimPrefix(testName, "TestImage_")
 	ext := format.FileExt()

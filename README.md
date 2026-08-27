@@ -87,6 +87,21 @@ http://127.0.0.1:8080/v5/resize/100x100/?url=https://images.pexels.com/photos/15
 
 ## 📸 Examples
 
+These examples name a file in `resources/`. A bare name resolves only when the file backend is the default:
+
+```bash
+docker run \
+  -e DIMS_DEVELOPMENT_MODE=true \
+  -e DIMS_SIGNING_KEY=devmode \
+  -e DIMS_DEFAULT_SOURCE_BACKEND=file \
+  -e DIMS_FILE_BASE_DIR=/resources \
+  -v "$PWD/resources:/resources" \
+  -p 8080:8080 \
+  ghcr.io/beetlebugorg/go-dims serve
+```
+
+The Getting Started command above keeps the `http` default, which takes a full URL.
+
 ### **Original**
 
 <img src="./resources/pexels-photo-1539116.jpeg" alt="Example" width="300">
@@ -124,10 +139,15 @@ http://localhost:8080/v5/thumbnail/200x200/sharpen/1x2/watermark/1,.35,se?url=pe
 Use the built-in CLI to generate secure, signed URLs:
 
 ```bash
+❯ cat signing-key.txt
+0123456789abcdef0123456789abcdef
+
 ❯ ./build/dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg"
 
-http://localhost:8080/v5/resize/200x200/?sig=33032505c0f4b3d43674b49575d9e379470ac6d7e7fa3e055b248802ee6867&url=pexels-photo-1539116.jpeg
+http://localhost:8080/v5/resize/200x200/?sig=8c7b7e370c62d9026dc518357dda1c2f5b8f4a029010e8c52fca9bef6b0d5be0&url=pexels-photo-1539116.jpeg
 ```
+
+The signature depends on the key, so this example shows the key that produced it.
 
 ## License
 

@@ -6,31 +6,31 @@ sidebar_position: 4
 
 `go-dims` supports multiple source backends for fetching original images: `http`, `s3`, and `file`.
 
-You can explicitly specify the backend using a scheme-style prefix:
+A source with a scheme prefix goes to the backend that owns the scheme:
 
 - `http://example.com/image.jpg`
 - `s3://bucket/key/image.jpg`
 - `file://path/to/image.jpg`
 
-If the URL **does not** include a scheme prefix (e.g., just `?url=cat.jpg`), `go-dims` will fall back to the backend defined by:
+A source without a scheme prefix, such as `cat.jpg`, goes to the default backend.
 
 ### `DIMS_DEFAULT_SOURCE_BACKEND`
 
 - **Default:** `http`
 
-To support simplified URLs with S3 or file sources, you must set that backend as the default:
+A bare name resolves only when the default backend is `file` or `s3`. The `http` backend accepts a `http://` or `https://` prefix alone, so a bare name returns `400` under the `http` default.
 
 ```
 DIMS_DEFAULT_SOURCE_BACKEND=s3
 ```
 
-This allows you to make requests like:
+That resolves a request for:
 
 ```
 ?url=my-folder/image.jpg
 ```
 
-And `go-dims` will resolve it using the configured S3.
+Naming a backend as the default also registers it. It does not have to appear in `DIMS_ALLOWED_SOURCE_BACKENDS` as well.
 
 ---
 

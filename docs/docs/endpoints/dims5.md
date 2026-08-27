@@ -133,8 +133,13 @@ Any mismatch in the key, salt, IV size, or output format will result in a decryp
 To simplify signing, you can use the `sign` command. It will compute the signature correctly based
 on the same rules used by the server:
 
+The signature depends on the key, so this example shows the key that produced it.
+
 ``` 
+❯ cat dims.key
+0123456789abcdef0123456789abcdef
+
 ❯ ./dims sign --key-file=dims.key 'https://myhost.com/v5/resize/100x100/?url=https://example.com/image.jpg&overlay=http://example.com/overlay.png'
 
-https://myhost.com/v5/resize/100x100/?overlay=http%3A%2F%2Fexample.com%2Foverlay.png&sig=f598fe37ff0e9e0a5794504f779f76ca0ce5596518b65850900d2c3247e12dce&url=https%3A%2F%2Fexample.com%2Fimage.jpg
+https://myhost.com/v5/resize/100x100/?overlay=http%3A%2F%2Fexample.com%2Foverlay.png&sig=f1898dcc75252b818390bc961734344c2169b9b0995df2bc2780ce6de92ecaf6&url=https%3A%2F%2Fexample.com%2Fimage.jpg
 ```

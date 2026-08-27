@@ -2,7 +2,6 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -19,9 +18,7 @@ type fileSourceBackend struct {
 
 func init() {
 	envConfig := core.FileSource{}
-	if err := env.Parse(&envConfig); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	core.RecordStartupError(env.Parse(&envConfig))
 
 	core.RegisterImageBackend(NewFileSourceBackend(envConfig.BaseDir))
 }

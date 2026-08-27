@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
 	"github.com/caarlos0/env/v10"
 	"golang.org/x/exp/slices"
@@ -46,9 +45,7 @@ var defaultSourceBackend SourceBackend
 
 func RegisterImageBackend(sourceBackend SourceBackend) {
 	config := Source{}
-	if err := env.Parse(&config); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	RecordStartupError(env.Parse(&config))
 
 	allSourceBackends = append(allSourceBackends, sourceBackend)
 

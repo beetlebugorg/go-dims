@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"github.com/caarlos0/env/v10"
 	"io"
-	"log/slog"
 	"strings"
 )
 
@@ -22,13 +21,11 @@ var salt = []byte("go-dims")
 
 func init() {
 	envConfig := Signing{}
-	if err := env.Parse(&envConfig); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	RecordStartupError(env.Parse(&envConfig))
 
 	var err error
 	if encryptionKey, err = deriveKey(envConfig.SigningKey); err != nil {
-		slog.Error("failed to derive encryption key", "error", err)
+		RecordStartupError(fmt.Errorf("failed to derive the encryption key: %w", err))
 		return
 	}
 }

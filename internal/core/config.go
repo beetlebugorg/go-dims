@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/caarlos0/env/v10"
@@ -137,11 +138,23 @@ type Config struct {
 
 var config *Config
 
+// startupErrors collects configuration failures raised while packages
+// initialise. They cannot be logged where they happen, because logging is not
+// configured until the command runs, and printing them bypasses the
+// configured log format. Validate reports them instead.
+var startupErrors []error
+
+// RecordStartupError stores a configuration failure for Validate to report.
+// Only safe to call during package initialisation, which is single threaded.
+func RecordStartupError(err error) {
+	if err != nil {
+		startupErrors = append(startupErrors, err)
+	}
+}
+
 func init() {
 	config = &Config{}
-	if err := env.Parse(config); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	RecordStartupError(env.Parse(config))
 }
 
 func ReadConfig() *Config {
@@ -150,6 +163,10 @@ func ReadConfig() *Config {
 
 // Validate reports settings that would otherwise fail quietly at request time.
 func (c *Config) Validate() error {
+	if len(startupErrors) > 0 {
+		return fmt.Errorf("invalid configuration: %w", errors.Join(startupErrors...))
+	}
+
 	if c.OutputFormat.Default == "" {
 		return nil
 	}

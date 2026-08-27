@@ -26,6 +26,11 @@ type Request struct {
 
 	httpRequest  *http.Request
 	httpResponse http.ResponseWriter
+
+	// committed records that the status line has been written. Writing it
+	// twice logs a superfluous WriteHeader and appends a second image to a
+	// partly written response.
+	committed bool
 }
 
 //-- Request/RequestContext Implementation
@@ -89,6 +94,11 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 		return fmt.Errorf("image is empty")
 	}
 
+	if r.committed {
+		return errors.New("response already sent")
+	}
+	r.committed = true
+
 	if status == http.StatusOK {
 		r.SendHeaders()
 	}
@@ -112,6 +122,11 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 }
 
 func (r *Request) SendError(err error) error {
+	if r.committed {
+		slog.Error("SendError after the response was sent", "error", err)
+		return err
+	}
+
 	message := err.Error()
 
 	// Strip stack from vips errors.
@@ -151,11 +166,11 @@ func (r *Request) SendError(err error) error {
 		exportOptions.Quality = 1
 		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
 
-		return r.SendImage(status, "jpg", imageBytes)
+		return r.SendImage(status, "jpeg", imageBytes)
 	}
 
 	if imageType == "" {
-		imageType = "jpg"
+		imageType = "jpeg"
 	}
 
 	return r.SendImage(status, imageType, imageBlob)
@@ -186,7 +201,9 @@ func (r *Request) Etag() string {
 			h.Write([]byte(r.SourceImage.Etag))
 		}
 
-		return fmt.Sprintf("%x", h.Sum(nil))
+		// RFC 9110 requires a quoted string. Some proxies drop an unquoted
+		// ETag, which silently disables revalidation.
+		return fmt.Sprintf("%q", fmt.Sprintf("%x", h.Sum(nil)))
 	}
 
 	return ""
@@ -255,21 +272,24 @@ func (r *Request) calculateMaxAge() int {
 	return maxAge
 }
 
+var maxAgePattern = regexp.MustCompile(`max-age=(\d+)`)
+
 func sourceMaxAge(header string) (int, error) {
 	if header == "" {
 		return 0, errors.New("empty header")
 	}
 
-	pattern, _ := regexp.Compile(`max-age=(\d+)`)
-	match := pattern.FindStringSubmatch(header)
-	if len(match) == 1 {
-		sourceMaxAge, err := strconv.Atoi(match[0])
-		if err != nil {
-			return 0, errors.New("unable to convert to int")
-		}
-
-		return sourceMaxAge, nil
+	// FindStringSubmatch returns the whole match and then each group, so a
+	// successful match has two entries and the number is the second.
+	match := maxAgePattern.FindStringSubmatch(header)
+	if len(match) != 2 {
+		return 0, errors.New("max-age not found in header")
 	}
 
-	return 0, errors.New("max-age not found in header")
+	sourceMaxAge, err := strconv.Atoi(match[1])
+	if err != nil {
+		return 0, errors.New("unable to convert to int")
+	}
+
+	return sourceMaxAge, nil
 }

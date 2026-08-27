@@ -167,11 +167,11 @@ func (r *Request) SendError(err error) error {
 		exportOptions.Quality = 1
 		imageBytes, _, _ := errorImage.ExportJpeg(exportOptions)
 
-		return r.SendImage(status, "jpg", imageBytes)
+		return r.SendImage(status, "jpeg", imageBytes)
 	}
 
 	if imageType == "" {
-		imageType = "jpg"
+		imageType = "jpeg"
 	}
 
 	return r.SendImage(status, imageType, imageBlob)

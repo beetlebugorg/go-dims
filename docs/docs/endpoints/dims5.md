@@ -37,6 +37,18 @@ From the [Getting Started](../installation.md) guide:
 | `sig`      | `6d3dcb6...`                    | [Signature](../configuration/signing) to verify the request                       |
 | `download` | `1` (optional)                  | Forces the image to download instead of displaying inline (`Content-Disposition`) |
 
+## ♻️ Conditional Requests
+
+The response carries an `ETag` derived from the commands, the image URL, and the origin's own `ETag`.
+
+A request that sends `If-None-Match` with a matching value gets `304 Not Modified` and no body. `*` matches anything, a comma separated list is searched, and the comparison is weak, so a `W/` prefix on either side is ignored.
+
+The source image is still fetched, because the `ETag` cannot be computed without the origin's. What a `304` skips is the decode, the transformation, and the encode, which is where the time is spent.
+
+If the origin sends no `ETag`, no `ETag` is sent and every request is answered in full.
+
+---
+
 ## 🛑 Error Handling
 
 This endpoint will **always try to return an image**, even when something goes wrong.

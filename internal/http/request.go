@@ -122,6 +122,51 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 	return nil
 }
 
+// NotModified reports whether the caller already holds this image. A
+// conditional request naming the current etag needs no body.
+func (r *Request) NotModified() bool {
+	if r.httpRequest == nil {
+		return false
+	}
+
+	etag := r.Etag()
+	if etag == "" {
+		return false
+	}
+
+	condition := r.httpRequest.Header.Get("If-None-Match")
+	if condition == "" {
+		return false
+	}
+
+	for _, candidate := range strings.Split(condition, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" {
+			return true
+		}
+
+		// RFC 9110 asks for a weak comparison here, so the W/ prefix on
+		// either side is ignored.
+		if strings.TrimPrefix(candidate, "W/") == strings.TrimPrefix(etag, "W/") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *Request) SendNotModified() error {
+	if r.committed {
+		return errors.New("response already sent")
+	}
+	r.committed = true
+
+	r.SendHeaders()
+	r.httpResponse.WriteHeader(http.StatusNotModified)
+
+	return nil
+}
+
 func (r *Request) SendError(err error) error {
 	if r.committed {
 		slog.Error("SendError after the response was sent", "error", err)

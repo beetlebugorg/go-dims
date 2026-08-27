@@ -37,7 +37,11 @@ func NewRequest(event events.LambdaFunctionURLRequest, config core.Config) (*Req
 		},
 	}
 	httpRequest := &http.Request{
-		URL: requestUrl,
+		URL:    requestUrl,
+		Header: make(http.Header),
+	}
+	for name, value := range event.Headers {
+		httpRequest.Header.Set(name, value)
 	}
 
 	// Commands can be v4 (/dims4/...) or v5 (/v5/...)
@@ -120,6 +124,18 @@ func (r *Request) SendImage(status int, imageFormat string, imageBlob []byte) er
 	response.StatusCode = status
 	response.Headers = headers
 	response.Body = bytes.NewReader(imageBlob)
+
+	r.response = response
+
+	return nil
+}
+
+func (r *Request) SendNotModified() error {
+	r.sendHeaders()
+
+	response := &events.LambdaFunctionURLStreamingResponse{}
+	response.StatusCode = http.StatusNotModified
+	response.Headers = r.Response().Headers
 
 	r.response = response
 

@@ -21,6 +21,8 @@ type RequestContext interface {
 	Config() core.Config
 	Validate() bool
 	FetchImage(timeout time.Duration) (*core.Image, error)
+	NotModified() bool
+	SendNotModified() error
 	LoadImage(image *core.Image) (*vips.ImageRef, error)
 	ProcessImage(img *vips.ImageRef, strip bool) (string, []byte, error)
 	SendImage(status int, imageFormat string, imageBlob []byte) error
@@ -37,6 +39,14 @@ func Handler(request RequestContext) error {
 	sourceImage, err := request.FetchImage(timeout)
 	if err != nil {
 		return err
+	}
+
+	// The etag covers the commands, the image URL, and the origin etag, so it
+	// can only be computed once the source has been fetched. Answering here
+	// still skips the decode, the transformation, and the encode, which is
+	// where the time goes.
+	if request.NotModified() {
+		return request.SendNotModified()
 	}
 
 	// Convert image to vips image.

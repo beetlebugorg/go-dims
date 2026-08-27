@@ -53,17 +53,21 @@ Controls whether to include the `Content-Disposition` header in image responses.
 
 - **Default:** `false`
 
-When enabled, the response will include:
+When enabled, the response includes:
 
 ```
 Content-Disposition: inline; filename=<filename>
 ```
 
-To trigger downloads instead of inline display, you can append `download=1` to the request URL. This changes the header to:
+To trigger downloads instead of inline display, append `download=1` to the request URL. That changes the header to:
 
 ```
 Content-Disposition: attachment; filename=<filename>
 ```
+
+`download=1` also sends the header on its own, whether or not this setting is enabled.
+
+The filename comes from the last path segment of the source URL. It is quoted and encoded, and the header is omitted when the name cannot be represented safely.
 
 ---
 

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,7 +15,13 @@ import (
 func newTestRequest(t *testing.T) *Request {
 	t.Helper()
 
-	u, err := url.Parse("http://localhost/v5/resize/10x10?url=http://example.com/a.jpg")
+	return newTestRequestWithQuery(t, "url=http://example.com/a.jpg")
+}
+
+func newTestRequestWithQuery(t *testing.T, rawQuery string) *Request {
+	t.Helper()
+
+	u, err := url.Parse("http://localhost/v5/resize/10x10?" + rawQuery)
 	require.NoError(t, err)
 
 	r := &http.Request{URL: u}
@@ -88,4 +95,64 @@ func TestSourceMaxAge(t *testing.T) {
 		require.NoError(t, err, "%q must parse", test.header)
 		require.Equal(t, test.want, got, "%q", test.header)
 	}
+}
+
+// The documented behaviour is inline unless the caller asks to download.
+func TestContentDispositionInlineByDefault(t *testing.T) {
+	request := newTestRequestWithQuery(t, "url=http://example.com/photo.jpg")
+	request.SendContentDisposition = true
+
+	require.Equal(t, `inline; filename=photo.jpg`, request.ContentDisposition())
+}
+
+func TestContentDispositionAttachmentOnDownload(t *testing.T) {
+	request := newTestRequestWithQuery(t, "url=http://example.com/photo.jpg&download=1")
+
+	require.True(t, request.SendContentDisposition)
+	require.Equal(t, `attachment; filename=photo.jpg`, request.ContentDisposition())
+}
+
+func TestContentDispositionOffByDefault(t *testing.T) {
+	require.Empty(t, newTestRequest(t).ContentDisposition())
+}
+
+// The filename comes from a caller supplied URL, so it must not be able to
+// add headers of its own.
+func TestContentDispositionEscapesFilename(t *testing.T) {
+	hostile := []string{
+		`a";b.jpg`,
+		"a\r\nX-Injected: yes.jpg",
+		`a;filename=other.jpg`,
+		`a b.jpg`,
+	}
+
+	for _, name := range hostile {
+		request := newTestRequestWithQuery(t, "url="+url.QueryEscape("http://example.com/"+name))
+		request.SendContentDisposition = true
+
+		got := request.ContentDisposition()
+
+		require.NotContains(t, got, "\r", "%s", name)
+		require.NotContains(t, got, "\n", "%s", name)
+
+		// FormatMediaType returns an empty string for a value it cannot
+		// encode, and SendHeaders omits an empty header. Anything it does
+		// return has to parse as one well formed value.
+		if got == "" {
+			continue
+		}
+
+		mediatype, params, err := mime.ParseMediaType(got)
+		require.NoError(t, err, "%s produced %q", name, got)
+		require.Equal(t, "inline", mediatype)
+		require.Len(t, params, 1)
+		require.Equal(t, name, params["filename"], "the filename must survive intact")
+	}
+}
+
+func TestContentDispositionWithoutAFilename(t *testing.T) {
+	request := newTestRequestWithQuery(t, "url=http://example.com/")
+	request.SendContentDisposition = true
+
+	require.Empty(t, request.ContentDisposition())
 }

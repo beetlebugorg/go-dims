@@ -18,7 +18,8 @@ import (
 type Request struct {
 	URL                    *url.URL    // The URL of the http.
 	ImageUrl               string      // The image URL that is being manipulated.
-	SendContentDisposition bool        // The content disposition of the http.
+	SendContentDisposition bool        // Whether to send a Content-Disposition header.
+	Download               bool        // Whether the caller asked for a download rather than inline.
 	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Signature              string      // The signature of the request.
 	SignedParams           []string    // Values of every signed query parameter, ordered by name.
@@ -44,10 +45,11 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 	signedParams := SignedValues(url)
 	legacyParams := LegacyValues(url)
 
-	var sendContentDisposition = config.IncludeDisposition
-	if url.Query().Get("download") == "1" || url.Query().Get("download") == "true" {
-		sendContentDisposition = true
-	}
+	download := url.Query().Get("download") == "1" || url.Query().Get("download") == "true"
+
+	// The header is sent when the deployment asks for it, or when this
+	// request asks to download. Only the second makes it an attachment.
+	sendContentDisposition := config.IncludeDisposition || download
 
 	return &Request{
 		URL:                    url,
@@ -56,6 +58,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		SignedParams:           signedParams,
 		LegacyParams:           legacyParams,
 		SendContentDisposition: sendContentDisposition,
+		Download:               download,
 		config:                 config,
 	}, nil
 }

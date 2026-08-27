@@ -10,6 +10,7 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/dims"
 	"hash"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -232,19 +233,29 @@ func (r *Request) EdgeControl() string {
 }
 
 func (r *Request) ContentDisposition() string {
-	if r.SendContentDisposition {
-		// Grab filename from imageUrl
-		u, err := url.Parse(r.ImageUrl)
-		if err != nil {
-			return ""
-		}
-
-		filename := filepath.Base(u.Path)
-
-		return fmt.Sprintf("attachment; filename=%s", filename)
+	if !r.SendContentDisposition {
+		return ""
 	}
 
-	return ""
+	u, err := url.Parse(r.ImageUrl)
+	if err != nil {
+		return ""
+	}
+
+	filename := filepath.Base(u.Path)
+	if filename == "." || filename == "/" || filename == "" {
+		return ""
+	}
+
+	disposition := "inline"
+	if r.Download {
+		disposition = "attachment"
+	}
+
+	// The filename comes from a caller supplied URL. FormatMediaType quotes
+	// and encodes it, so a name carrying a quote, a semicolon, or a newline
+	// cannot break out into the header.
+	return mime.FormatMediaType(disposition, map[string]string{"filename": filename})
 }
 
 func (r *Request) calculateMaxAge() int {

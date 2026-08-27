@@ -40,10 +40,20 @@ func TestGeometry(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.geometry, func(t *testing.T) {
-			value, _ := ParseGeometry(test.geometry)
+			value, err := ParseGeometry(test.geometry)
 
-			if value != test.expected && test.success {
-				t.Errorf("expected %v, got %v => '%s'", test.expected, value, test.geometry)
+			if test.success {
+				if err != nil {
+					t.Fatalf("expected a geometry, got error: %v", err)
+				}
+				if value != test.expected {
+					t.Errorf("expected %v, got %v", test.expected, value)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Errorf("expected an error, got %v", value)
 			}
 		})
 	}

@@ -79,6 +79,12 @@ func ParseGeometry(geometry string) (Geometry, error) {
 		return Geometry{}, errorListener.Errors[0]
 	}
 
+	// The lexer accepts a leading minus on any number. Offsets may be negative.
+	// Width and height may not.
+	if g.Width < 0 || g.Height < 0 {
+		return Geometry{}, fmt.Errorf("width and height must not be negative")
+	}
+
 	return *g.Geometry, nil
 }
 

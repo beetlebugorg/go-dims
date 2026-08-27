@@ -53,6 +53,16 @@ func (v4 *Request) Validate() bool {
 		return true
 	}
 
+	// Legacy mode also accepts a signature that covers only the parameters
+	// named by _keys. Every other parameter is unprotected in that mode.
+	if v4.Config().Compat == "legacy" {
+		legacy := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.LegacyParams, v4.Config().SigningKey)
+		if subtle.ConstantTimeCompare([]byte(legacy), []byte(v4.Signature)) == 1 {
+			slog.Warn("accepted a legacy signature", "url", v4.ImageUrl)
+			return true
+		}
+	}
+
 	slog.Error("verifySignature failed.",
 		"expected", expectedSignature,
 		"got", v4.Signature)

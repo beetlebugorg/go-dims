@@ -42,6 +42,16 @@ func (v5 *Request) Validate() bool {
 		return true
 	}
 
+	// Legacy mode also accepts the previous scheme: only the parameters named
+	// by _keys, and a digest truncated to 31 bytes.
+	if v5.Config().Compat == "legacy" {
+		legacy := v5.sign(v5.ImageUrl, v5.LegacyParams, v5.RawCommands, v5.Config().SigningKey)
+		if hmac.Equal(legacy[0:31], gotSignature) {
+			slog.Warn("accepted a legacy signature", "url", v5.ImageUrl)
+			return true
+		}
+	}
+
 	slog.Error("verifySignature failed.",
 		"expected", hex.EncodeToString(expectedSignature),
 		"got", v5.Signature)
@@ -60,7 +70,7 @@ func (v5 *Request) sign(imageUrl string, signedParams []string, command string, 
 		mac.Write([]byte(signedParam))
 	}
 
-	return mac.Sum(nil)[0:31]
+	return mac.Sum(nil)
 }
 
 func (v5 *Request) SignedUrl() string {

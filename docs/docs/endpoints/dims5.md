@@ -20,7 +20,7 @@ Commands are applied **in order**, from left to right.
 From the [Getting Started](../installation.md) guide:
 
 ```
-/v5/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&sign=6d3dcb6&expire=2147483647
+/v5/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg&sig=6d3dcb6
 ```
 
 ### Path: Commands
@@ -56,34 +56,34 @@ All `/v5/dims` requests must be signed to ensure the request has not been tamper
 
 ### How Signing Works
 
-The signature is a **HMAC-SHA256 hash (32 bytes)** of the following, concatenated in order:
+The signature is a **HMAC-SHA256 hash (32 bytes)**. The signing key is the HMAC key. The message is the following, concatenated in order:
 
-1. The **signing key**
-2. The **command path** (no leading or trailing slashes)
-3. The **raw image URL** (not URL-encoded)
-4. The **values of any additional query parameters**
+1. The **command path** (no leading or trailing slashes)
+2. The **raw image URL** (not URL-encoded)
+3. The **values of every signed query parameter**, ordered by parameter name
 
-If additional query parameters are used, they must be provided in the `_keys` query parameter.
+A parameter carrying several values contributes each of them, in the order the URL gives them.
+
+Every query parameter is signed apart from the exclusions below. You do not list them anywhere. The `_keys` parameter is accepted for backward compatibility and no longer selects what is signed.
 
 ### 🧾 Signed Query Parameters
 
-Only a specific set of query parameters are included in the signature:
-
-Included in signature:
-- Any query parameter **except** the following:
+Included in the signature:
+- Every query parameter **except** the following:
     - `sig` (the signature itself)
     - `url` (the image URL)
     - `eurl` (an encrypted version of `url`, not used in signing)
-    - `_keys` (additional query parameters to using in signing)
+    - `_keys` (retained for backward compatibility, ignored when signing)
     - `download` (controls content disposition, excluded from signing)
+
+This means `overlay` is signed. A signed watermark URL cannot be replayed against a different overlay image.
 
 Example:
 ```
 /v5/resize/100x100/?url=https://example.com/image.jpg&overlay=http://example.com/overlay.png
 ```
 
-Signature input becomes:
-- `<secret>` (value of `DIMS_SIGNING_KEY`)
+The HMAC key is `DIMS_SIGNING_KEY`. The signed message becomes:
 - `resize/100x100`
 - `https://example.com/image.jpg`
 - `http://example.com/overlay.png` (value of `overlay`)

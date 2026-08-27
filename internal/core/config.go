@@ -24,6 +24,11 @@ type Error struct {
 
 type Signing struct {
 	SigningKey string `env:"DIMS_SIGNING_KEY"`
+
+	// Compat set to "legacy" also accepts signatures that cover only the
+	// parameters named by _keys. Use it to migrate existing URLs, then clear
+	// it. Empty means strict.
+	Compat string `env:"DIMS_SIGNING_COMPAT"`
 }
 
 type OutputFormat struct {

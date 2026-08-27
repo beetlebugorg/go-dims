@@ -12,17 +12,26 @@ func RotateCommand(image *vips.ImageRef, args string) error {
 		return NewOperationError("rotate", args, err.Error())
 	}
 
-	idx, idy, odx, ody := 0.0, 0.0, 0.0, 0.0
-	if degrees == 90 {
-		idx, idy = 0.0, 1.0
-		odx, ody = 1.0, 0.0
-	} else if degrees == 180 {
-		idx, idy = 0.0, 1.0
-		odx, ody = 1.0, 0.0
-	} else if degrees == 270 {
-		idx, idy = 1.0, 0.0
-		odx, ody = 0.0, -1.0
+	if degrees < 0 || degrees > 360 {
+		return NewOperationError("rotate", args, "rotate must be between 0 and 360")
 	}
 
-	return image.Similarity(1.0, degrees, &vips.ColorRGBA{}, idx, idy, odx, ody)
+	// A quarter turn is an exact remapping of pixels. Similarity resamples it
+	// instead, which loses detail and costs more for no benefit.
+	switch degrees {
+	case 0, 360:
+		return nil
+	case 90:
+		return image.Rotate(vips.Angle90)
+	case 180:
+		return image.Rotate(vips.Angle180)
+	case 270:
+		return image.Rotate(vips.Angle270)
+	}
+
+	if err := image.Similarity(1.0, degrees, &vips.ColorRGBA{}, 0, 0, 0, 0); err != nil {
+		return NewOperationError("rotate", args, err.Error())
+	}
+
+	return nil
 }

@@ -124,7 +124,7 @@ ARG GLIB_LICENSE="LGPL-2.1-or-later"
 ARG GLIB_WEBSITE="https://docs.gtk.org/glib/"
 ARG GLIB_DOWNLOAD="https://download.gnome.org/sources/glib/${GLIB_MAJOR_MINOR_VERSION}/glib-${GLIB_VERSION}.tar.xz"
 
-RUN apk add --no-cache meson py3-pip xz upx
+RUN apk add --no-cache meson py3-pip xz
 
 WORKDIR /build
 
@@ -136,8 +136,7 @@ RUN tar -xvf glib-${GLIB_VERSION}.tar.xz && \
     meson setup build --prefix=${PREFIX}/glib-2.0 --default-library static --prefer-static --strip --buildtype release -Dauto_features=disabled && \
     cd build && \
     meson compile -j"$(nproc)" && \
-    meson install && \
-    upx --best --lzma ${PREFIX}/glib-2.0/bin/* || true
+    meson install
 
 # SBOM
 RUN cp "glib-${GLIB_VERSION}/COPYING" "${PREFIX}/glib-2.0/LICENSE" && \
@@ -197,7 +196,7 @@ RUN cp "vips-${VIPS_VERSION}/LICENSE" "${PREFIX}/libvips/LICENSE" && \
         --website ${VIPS_WEBSITE} > ${PREFIX}/libvips/sbom.cdx.json
 
 # -- Build base
-FROM golang:1.24.2-alpine AS builder
+FROM golang:1.27.0-alpine AS builder
 
 WORKDIR /build
 

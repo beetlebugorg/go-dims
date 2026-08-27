@@ -44,8 +44,9 @@ func Handler(request RequestContext) error {
 	if err != nil {
 		return err
 	}
+	defer vipsImage.Close()
 
-	// Execute Imagemagick commands.
+	// Execute the commands.
 	imageType, imageBlob, err := request.ProcessImage(vipsImage, false)
 	if err != nil {
 		return err

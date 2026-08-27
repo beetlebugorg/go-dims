@@ -13,6 +13,7 @@ func AutolevelCommand(image *vips.ImageRef, args string) error {
 	if err != nil {
 		return NewOperationError("autolevel", args, err.Error())
 	}
+	defer statsOut.Close()
 
 	if err := statsOut.Stats(); err != nil {
 		return NewOperationError("autolevel", args, err.Error())

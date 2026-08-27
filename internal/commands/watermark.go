@@ -37,6 +37,7 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	if err != nil {
 		return NewOperationError("watermark", args, err.Error())
 	}
+	defer overlayImage.Close()
 
 	// Resize image
 	if err := scaleOverlay(image, overlayImage, size); err != nil {
@@ -65,6 +66,7 @@ func reduceOpacity(image *vips.ImageRef, opacity float64) error {
 	if err != nil {
 		return err
 	}
+	defer alpha.Close()
 
 	if err := alpha.ExtractBand(alpha.Bands()-1, 1); err != nil {
 		return err

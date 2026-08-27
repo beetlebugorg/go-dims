@@ -83,6 +83,7 @@ http://127.0.0.1:8080/v5/resize/100x100/?url=https://images.pexels.com/photos/15
 | Brightness    | `brightness/<brightness>x<contrast>` | `brightness/5x25`    |
 | Flip/Flop     | `flipflop/<horizontal\|vertical>`    | `flip/horizontal`    |
 | Invert        | `invert/<bool>`                      | `invert/true`        |
+| Sepia         | `sepia/<0.0-1.0>`                    | `sepia/0.8`          |
 
 ## 📸 Examples
 

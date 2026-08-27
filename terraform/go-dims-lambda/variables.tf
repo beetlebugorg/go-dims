@@ -14,3 +14,8 @@ variable "platform" {
   type        = string
   default     = "arm64"
 }
+variable "authorization_type" {
+  description = "Authorization for the Lambda function URL. AWS_IAM requires a signed caller. NONE serves the endpoint to the public internet."
+  type        = string
+  default     = "AWS_IAM"
+}

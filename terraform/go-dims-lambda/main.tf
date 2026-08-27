@@ -59,13 +59,20 @@ resource "aws_lambda_function" "go-dims" {
 
 resource "aws_lambda_function_url" "go-dims" {
   function_name      = aws_lambda_function.go-dims.function_name
-  authorization_type = "NONE"
+  authorization_type = var.authorization_type
   invoke_mode        = "RESPONSE_STREAM"
 
   cors {
     allow_origins = ["*"]
     allow_methods = ["GET"]
     allow_headers = ["*"]
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.authorization_type != "NONE" || lookup(var.environment, "DIMS_DEVELOPMENT_MODE", "false") != "true"
+      error_message = "A public function URL requires signature validation. Set authorization_type to AWS_IAM, or set development_mode to false."
+    }
   }
 }
 

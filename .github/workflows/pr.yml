@@ -95,6 +95,6 @@ jobs:
           context: .
           file: Dockerfile.lambda
           push: false
-          build-args: VERSION=${{ env.TRACKING_TAG }}
+          build-args: VERSION=pr-${{ github.event.pull_request.number }}
           platforms: ${{ matrix.platform }}
           outputs: type=local,dest=build

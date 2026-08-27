@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net/url"
 	"runtime/trace"
-	"slices"
 	"strings"
 	"time"
 )
@@ -23,7 +22,7 @@ type Request struct {
 	Download               bool        // Whether the caller asked for a download rather than inline.
 	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Signature              string      // The signature of the request.
-	SignedParams           []string    // Values of every signed query parameter, ordered by name.
+	SignedQuery            string      // Every signed query parameter, canonically encoded.
 	LegacyParams           []string    // Values named by _keys, in _keys order. Legacy mode only.
 	SourceImage            core.Image  // The source image.
 	config                 core.Config // The global configuration.
@@ -44,7 +43,11 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		imageUrl = decryptedUrl
 	}
 
-	signedParams := SignedValues(url)
+	if err := checkSignedFields(cmds, imageUrl); err != nil {
+		return &Request{}, err
+	}
+
+	signedQuery := SignedQuery(url)
 	legacyParams := LegacyValues(url)
 
 	download := url.Query().Get("download") == "1" || url.Query().Get("download") == "true"
@@ -57,7 +60,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		URL:                    url,
 		ImageUrl:               imageUrl,
 		RawCommands:            cmds,
-		SignedParams:           signedParams,
+		SignedQuery:            signedQuery,
 		LegacyParams:           legacyParams,
 		SendContentDisposition: sendContentDisposition,
 		Download:               download,
@@ -342,26 +345,36 @@ var excludedFromSignature = map[string]bool{
 	"download": true,
 }
 
-// SignedValues returns the values of every query parameter that takes part in
-// the signature, ordered by parameter name. A parameter carrying several
-// values contributes each of them, in the order the URL gives them.
-func SignedValues(u *url.URL) []string {
-	query := u.Query()
-
-	names := make([]string, 0, len(query))
-	for name := range query {
+// SignedQuery returns the canonical form of every query parameter that takes
+// part in the signature: each one written as name=value, percent-encoded and
+// ordered by name. url.Values.Encode does both.
+//
+// The name is part of the string, so moving a character from one parameter to
+// the next changes it. The values alone do not: "ab" then "c" reads the same
+// as "a" then "bc". Percent-encoding keeps a value from carrying a separator
+// of its own.
+func SignedQuery(u *url.URL) string {
+	signed := url.Values{}
+	for name, values := range u.Query() {
 		if !excludedFromSignature[name] {
-			names = append(names, name)
+			signed[name] = values
 		}
 	}
-	slices.Sort(names)
 
-	values := make([]string, 0, len(names))
-	for _, name := range names {
-		values = append(values, query[name]...)
+	return signed.Encode()
+}
+
+// checkSignedFields refuses a control character in a field that the signature
+// covers. The signed message puts one field per line, so a field holding a
+// line break could otherwise stand in for two.
+func checkSignedFields(commands string, imageUrl string) error {
+	for _, field := range []string{commands, imageUrl} {
+		if strings.ContainsFunc(field, func(r rune) bool { return r < 0x20 || r == 0x7f }) {
+			return core.NewStatusError(400, "a control character is not allowed in a signed field")
+		}
 	}
 
-	return values
+	return nil
 }
 
 // LegacyValues returns the values named by _keys, in the order _keys lists

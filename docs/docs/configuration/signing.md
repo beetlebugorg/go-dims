@@ -14,6 +14,8 @@ If you encounter signature mismatch errors, double-check that:
 - The signing key matches exactly on both sides 
 - The signing algorithm is consistent
 
+The construction is described in [`/v5`](../endpoints/dims5.md#-signing), with an implementation in four languages.
+
 ---
 
 ## `DIMS_SIGNING_KEY`
@@ -39,7 +41,7 @@ Use at least 32 characters of high-entropy random data - Generate using your pas
 
 ## `DIMS_SIGNING_COMPAT`
 
-Accepts signatures made under the previous rule, where only the parameters named by `_keys` took part.
+Accepts the mod_dims signature, where only the parameters named by `_keys` took part.
 
 - **Default:** *(empty)*
 
@@ -50,6 +52,12 @@ DIMS_SIGNING_COMPAT=legacy
 ```
 
 `go-dims` logs a warning for every request that validates this way, so you can watch the count fall to zero. Clear the setting once it does.
+
+:::warning
+
+The canonical message changes every signature. A URL signed by an earlier `go-dims` release fails, and this setting does not accept it. Re-sign every URL before you upgrade.
+
+:::
 
 :::warning
 

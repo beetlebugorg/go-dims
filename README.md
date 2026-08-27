@@ -144,7 +144,7 @@ Use the built-in CLI to generate secure, signed URLs:
 
 ❯ ./build/dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg"
 
-http://localhost:8080/v5/resize/200x200/?sig=8c7b7e370c62d9026dc518357dda1c2f5b8f4a029010e8c52fca9bef6b0d5be0&url=pexels-photo-1539116.jpeg
+http://localhost:8080/v5/resize/200x200/?sig=95abae1df702bcb894cbcc2625f5b044e9b7af316b02e92483efa7f330968dce&url=pexels-photo-1539116.jpeg
 ```
 
 The signature depends on the key, so this example shows the key that produced it.

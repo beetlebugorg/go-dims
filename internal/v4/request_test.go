@@ -71,14 +71,15 @@ func query(extra string) string {
 }
 
 func signatureOf(r *Request) string {
-	return r.sign(testCommands, testTimestamp, testImageURL, r.SignedParams, testSecret)
+	return r.sign(testCommands, testTimestamp, testImageURL, r.SignedQuery, testSecret)
 }
 
-// Every query parameter takes part in the signature, ordered by name.
+// Every query parameter takes part in the signature, written as name=value
+// and ordered by name.
 func TestSignatureCoversEveryParameter(t *testing.T) {
 	request := newTestRequest(t, query("b=2&a=1&c=3"), "")
 
-	require.Equal(t, []string{"1", "2", "3"}, request.SignedParams)
+	require.Equal(t, "a=1&b=2&c=3", request.SignedQuery)
 }
 
 // _keys no longer selects what is signed, so it cannot change the digest.
@@ -116,7 +117,7 @@ func TestLegacySignatureMatchesModDims(t *testing.T) {
 
 	// _keys lists c,a,b so mod_dims concatenates 3,1,2.
 	expected := modDimsSignature(testTimestamp, testSecret, testCommands, testImageURL, []string{"3", "1", "2"})
-	require.Equal(t, expected, request.sign(testCommands, testTimestamp, testImageURL, request.LegacyParams, testSecret))
+	require.Equal(t, expected, request.signLegacy(testCommands, testTimestamp, testImageURL, request.LegacyParams, testSecret))
 }
 
 // A mod_dims signature is refused unless the operator opts in. The URL below
@@ -152,4 +153,25 @@ func TestLegacyModeLeavesUnlistedParametersOpen(t *testing.T) {
 	tampered.Signature = legacy
 
 	require.True(t, tampered.Validate(), "legacy mode does not cover unlisted parameters")
+}
+
+// The parameter name is part of the signed string, so moving a character from
+// one parameter to the next changes the signature. Signing the values alone
+// wrote "ab" then "c" as the same bytes as "a" then "bc".
+func TestAdjacentParametersAreBound(t *testing.T) {
+	first := newTestRequest(t, query("a=ab&b=c"), "")
+	second := newTestRequest(t, query("a=a&b=bc"), "")
+
+	require.NotEqual(t, first.SignedQuery, second.SignedQuery)
+	require.NotEqual(t, signatureOf(first), signatureOf(second))
+}
+
+// A value cannot carry a separator of its own, because the canonical query is
+// percent-encoded.
+func TestValueCannotForgeASeparator(t *testing.T) {
+	forged := newTestRequest(t, query("a="+url.QueryEscape("1&b=2")), "")
+	real := newTestRequest(t, query("a=1&b=2"), "")
+
+	require.Equal(t, "a=1%26b%3D2", forged.SignedQuery)
+	require.NotEqual(t, signatureOf(forged), signatureOf(real))
 }

@@ -112,6 +112,21 @@ func TestContentDispositionAttachmentOnDownload(t *testing.T) {
 	require.Equal(t, `attachment; filename=photo.jpg`, request.ContentDisposition())
 }
 
+// A URL carrying a line break is refused before a request is built, so it
+// never reaches the header at all. The signature covers the image URL, and
+// the signed message puts one field per line.
+func TestUrlWithALineBreakIsRefused(t *testing.T) {
+	u, err := url.Parse("http://localhost/v5/resize/10x10?url=" +
+		url.QueryEscape("http://example.com/a\r\nX-Injected: yes.jpg"))
+	require.NoError(t, err)
+
+	r := &http.Request{URL: u}
+	r.SetPathValue("commands", "resize/10x10")
+
+	_, err = NewRequest(r, httptest.NewRecorder(), *core.ReadConfig())
+	require.Error(t, err)
+}
+
 func TestContentDispositionOffByDefault(t *testing.T) {
 	require.Empty(t, newTestRequest(t).ContentDisposition())
 }
@@ -121,7 +136,6 @@ func TestContentDispositionOffByDefault(t *testing.T) {
 func TestContentDispositionEscapesFilename(t *testing.T) {
 	hostile := []string{
 		`a";b.jpg`,
-		"a\r\nX-Injected: yes.jpg",
 		`a;filename=other.jpg`,
 		`a b.jpg`,
 	}

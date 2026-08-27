@@ -1,6 +1,7 @@
 package source
 
 import (
+	"context"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/davidbyttow/govips/v2/vips"
@@ -13,6 +14,19 @@ import (
 )
 
 type httpSourceBackend struct {
+}
+
+// httpClient is shared by every request. The download deadline comes from the
+// request context, never from a field on the client.
+var httpClient = &http.Client{
+	Transport: &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 32,
+		IdleConnTimeout:     90 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+		ForceAttemptHTTP2:   true,
+	},
 }
 
 func init() {
@@ -43,18 +57,21 @@ func (backend httpSourceBackend) FetchImage(imageUrl string, timeout time.Durati
 		return nil, err
 	}
 
-	request, err := http.NewRequest("GET", imageUrl, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, imageUrl, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	request.Header.Set("User-Agent", fmt.Sprintf("go-dims/%s", core.Version))
 
-	http.DefaultClient.Timeout = timeout
-	image, err := http.DefaultClient.Do(request)
+	image, err := httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
+	defer image.Body.Close()
 
 	imageSize := int(image.ContentLength)
 	imageBytes, err := io.ReadAll(image.Body)

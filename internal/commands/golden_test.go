@@ -31,10 +31,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -106,14 +103,15 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	}
 	base := file[:extIndex]
 
-	// Construct golden file name
+	// Construct golden file name. There is one set: libvips produces the same
+	// bytes on every architecture we build for, so keying these by platform
+	// only ever meant one of them went stale unnoticed.
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	testName = strings.TrimPrefix(testName, "TestImage_")
-	env := getEnvironment()
 	ext := format.FileExt()
 
-	goldenPath := fmt.Sprintf("%s%s.%s-%s.golden%s", goldenImageDir, base, testName, env, ext)
-	failedPath := fmt.Sprintf("%s%s.%s-%s.failed%s", goldenImageDir, base, testName, env, ext)
+	goldenPath := fmt.Sprintf("%s%s.%s.golden%s", goldenImageDir, base, testName, ext)
+	failedPath := fmt.Sprintf("%s%s.%s.failed%s", goldenImageDir, base, testName, ext)
 
 	// Write the golden file when the caller asks for an update.
 	if *updateGolden {
@@ -139,24 +137,3 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 		assert.Fail(t, "image mismatch", "wrote failed image to: %s", failedPath)
 	}
 }
-
-var getEnvironment = sync.OnceValue(func() string {
-	switch runtime.GOOS {
-	case "linux":
-		out, _ := exec.Command("lsb_release", "-cs").Output()
-		if out == nil {
-			// Fallback to /etc/os-release if lsb_release is not available
-			out, err := exec.Command("sh", "-c", "source /etc/os-release && echo $ID").Output()
-			if err != nil {
-				return "linux-unknown_" + runtime.GOARCH
-			}
-
-			return "linux-" + strings.TrimSpace(string(out)) + "_" + runtime.GOARCH
-		}
-
-		strout := strings.TrimSuffix(string(out), "\n")
-		return "linux-" + strout + "_" + runtime.GOARCH
-	}
-	// default to unknown assets otherwise
-	return "ignore"
-})

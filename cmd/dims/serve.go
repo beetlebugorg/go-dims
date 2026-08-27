@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/pkg/dims"
@@ -8,6 +10,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type ServeCmd struct {
@@ -39,10 +44,62 @@ func (s *ServeCmd) Run() error {
 		return fmt.Errorf("signing key is required in production mode")
 	}
 
-	err := http.ListenAndServe(config.BindAddress, dims.NewHandler(*config))
-	if err != nil {
+	server := newServer(config)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	failed := make(chan error, 1)
+	go func() {
+		slog.Info("listening", "address", config.BindAddress)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			failed <- err
+		}
+	}()
+
+	select {
+	case err := <-failed:
 		slog.Error("Server failed.", "error", err)
+		vips.Shutdown()
 		return err
+	case <-ctx.Done():
+		stop()
 	}
-	return nil
+
+	// Let requests already in flight finish. Each one holds libvips buffers,
+	// so dropping them mid-encode wastes the work and truncates the response.
+	slog.Info("shutting down")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), milliseconds(config.ShutdownTimeout))
+	defer cancel()
+
+	err := server.Shutdown(shutdownCtx)
+	if err != nil {
+		slog.Error("Shutdown did not complete.", "error", err)
+	}
+
+	vips.Shutdown()
+
+	return err
+}
+
+// newServer builds the listener from configuration. Without these timeouts a
+// slow client holds a connection, and the libvips buffers attached to its
+// request, for as long as it likes.
+func newServer(config *core.Config) *http.Server {
+	return &http.Server{
+		Addr:              config.BindAddress,
+		Handler:           dims.NewHandler(*config),
+		ReadHeaderTimeout: milliseconds(config.ReadHeaderTimeout),
+		ReadTimeout:       milliseconds(config.ReadTimeout),
+		WriteTimeout:      milliseconds(config.WriteTimeout),
+		IdleTimeout:       milliseconds(config.IdleTimeout),
+		MaxHeaderBytes:    config.MaxHeaderBytes,
+	}
+}
+
+// milliseconds converts a configured value. Zero stays zero, which the http
+// package reads as no timeout.
+func milliseconds(value int) time.Duration {
+	return time.Duration(value) * time.Millisecond
 }

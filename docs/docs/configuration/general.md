@@ -80,6 +80,25 @@ DIMS_DOWNLOAD_TIMEOUT=5000
 
 ---
 
+## Server Timeouts
+
+All values are milliseconds. `0` disables a timeout, which is what the Go standard library does by default and the reason a slow client could previously hold a connection open indefinitely.
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `DIMS_READ_HEADER_TIMEOUT` | `5000` | Time allowed to send request headers |
+| `DIMS_READ_TIMEOUT` | `15000` | Time allowed to send the whole request |
+| `DIMS_WRITE_TIMEOUT` | `60000` | Time allowed to write the response |
+| `DIMS_IDLE_TIMEOUT` | `120000` | Time a keep-alive connection may sit idle |
+| `DIMS_SHUTDOWN_TIMEOUT` | `30000` | Time in-flight requests get to finish on shutdown |
+| `DIMS_MAX_HEADER_BYTES` | `65536` | Largest request header accepted |
+
+Raise `DIMS_WRITE_TIMEOUT` if you serve very large images, since it has to cover the download, the transformation, and the write.
+
+On `SIGTERM` or `SIGINT` the service stops accepting connections and lets requests already in flight finish, up to `DIMS_SHUTDOWN_TIMEOUT`. Each in-flight request holds libvips buffers, so dropping one mid-encode wastes the work and truncates the response.
+
+---
+
 ## `DIMS_DEFAULT_OUTPUT_FORMAT`
 
 Specifies the default image format to convert to when no format is explicitly requested.

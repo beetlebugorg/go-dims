@@ -36,6 +36,18 @@ type OutputFormat struct {
 	Excluded []string `env:"DIMS_EXCLUDED_OUTPUT_FORMATS"`
 }
 
+type Server struct {
+	// All values are milliseconds. Zero disables the timeout, which is the
+	// standard library default and the reason a slow client could previously
+	// hold a connection open for as long as it liked.
+	ReadHeaderTimeout int `env:"DIMS_READ_HEADER_TIMEOUT" envDefault:"5000"`
+	ReadTimeout       int `env:"DIMS_READ_TIMEOUT" envDefault:"15000"`
+	WriteTimeout      int `env:"DIMS_WRITE_TIMEOUT" envDefault:"60000"`
+	IdleTimeout       int `env:"DIMS_IDLE_TIMEOUT" envDefault:"120000"`
+	ShutdownTimeout   int `env:"DIMS_SHUTDOWN_TIMEOUT" envDefault:"30000"`
+	MaxHeaderBytes    int `env:"DIMS_MAX_HEADER_BYTES" envDefault:"65536"`
+}
+
 type Network struct {
 	// AllowedHosts limits which hosts an image may be fetched from. An entry
 	// starting with a dot matches any subdomain. An empty list allows any host
@@ -112,6 +124,7 @@ type Config struct {
 	EtagAlgorithm   string
 
 	Timeout
+	Server
 	Network
 	EdgeControl
 	Signing

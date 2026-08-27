@@ -17,8 +17,8 @@ type Flags struct {
 	OffsetXPercent bool
 	OffsetYPercent bool
 	Force          bool
-	OnlyGrow       bool
-	OnlyShrink     bool
+	ShrinkOnly     bool
+	EnlargeOnly    bool
 	Fill           bool
 }
 
@@ -174,8 +174,8 @@ func (g Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 	}
 
-	// Apply enlarge smaller images flag
-	if g.Flags.OnlyGrow && (origWidth < meta.Width || origHeight < meta.Height) {
+	// '>' shrinks a larger image and leaves a smaller one alone.
+	if g.Flags.ShrinkOnly && (origWidth < meta.Width || origHeight < meta.Height) {
 		if origWidth < meta.Width {
 			meta.Width = origWidth
 		}
@@ -184,8 +184,8 @@ func (g Geometry) ApplyMeta(image *vips.ImageRef) Geometry {
 		}
 	}
 
-	// Apply shrink larger images flag
-	if g.Flags.OnlyShrink && (origWidth > meta.Width || origHeight > meta.Height) {
+	// '<' enlarges a smaller image and leaves a larger one alone.
+	if g.Flags.EnlargeOnly && (origWidth > meta.Width || origHeight > meta.Height) {
 		if origWidth > meta.Width {
 			meta.Width = origWidth
 		}
@@ -316,11 +316,11 @@ func (g *geometryListener) ExitFlags(c *parser2.FlagsContext) {
 	}
 
 	if c.GT() != nil {
-		g.Flags.OnlyGrow = true
+		g.Flags.ShrinkOnly = true
 	}
 
 	if c.LT() != nil {
-		g.Flags.OnlyShrink = true
+		g.Flags.EnlargeOnly = true
 	}
 
 	if c.HAT() != nil {

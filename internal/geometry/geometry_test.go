@@ -97,3 +97,23 @@ func BenchmarkParseGeometry(b *testing.B) {
 		})
 	}
 }
+
+// The flag names describe what they do. '>' shrinks a larger image and leaves
+// a smaller one alone; '<' does the opposite.
+func TestFlagNamesMatchBehaviour(t *testing.T) {
+	shrinkOnly, err := ParseGeometry("256x256>")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !shrinkOnly.Flags.ShrinkOnly || shrinkOnly.Flags.EnlargeOnly {
+		t.Errorf("'>' must set ShrinkOnly, got %+v", shrinkOnly.Flags)
+	}
+
+	enlargeOnly, err := ParseGeometry("256x256<")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !enlargeOnly.Flags.EnlargeOnly || enlargeOnly.Flags.ShrinkOnly {
+		t.Errorf("'<' must set EnlargeOnly, got %+v", enlargeOnly.Flags)
+	}
+}

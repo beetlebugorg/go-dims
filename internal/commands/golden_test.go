@@ -34,6 +34,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/davidbyttow/govips/v2/vips"
@@ -139,7 +140,7 @@ func assertGoldenImageMatch(t *testing.T, file string, buf []byte, format vips.I
 	}
 }
 
-func getEnvironment() string {
+var getEnvironment = sync.OnceValue(func() string {
 	switch runtime.GOOS {
 	case "linux":
 		out, _ := exec.Command("lsb_release", "-cs").Output()
@@ -158,4 +159,4 @@ func getEnvironment() string {
 	}
 	// default to unknown assets otherwise
 	return "ignore"
-}
+})

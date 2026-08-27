@@ -1,10 +1,9 @@
 package commands
 
 import (
-	"context"
-	"github.com/beetlebugorg/go-dims/internal/core"
 	"net/url"
 
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/davidbyttow/govips/v2/vips"
 )
 
@@ -26,15 +25,6 @@ type ExportOptions struct {
 type VipsTransformOperation func(image *vips.ImageRef, args string) error
 type VipsExportOperation func(image *vips.ImageRef, args string, opts *ExportOptions) error
 type VipsRequestOperation func(image *vips.ImageRef, args string, data RequestOperation) error
-
-type VipsCommand[T any] struct {
-	Command
-	Operation T
-}
-
-func PassThroughCommand(ctx context.Context, args string) error {
-	return nil
-}
 
 type RequestOperation struct {
 	URL    *url.URL    // The URL of the image being processed

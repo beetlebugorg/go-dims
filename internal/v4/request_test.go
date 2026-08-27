@@ -175,3 +175,20 @@ func TestValueCannotForgeASeparator(t *testing.T) {
 	require.Equal(t, "a=1%26b%3D2", forged.SignedQuery)
 	require.NotEqual(t, signatureOf(forged), signatureOf(real))
 }
+
+// The ETag digest belongs to the endpoint, not to the configuration. v4 uses
+// md5. Held on the configuration it went unset on the Lambda path, so the
+// same URL produced a different ETag there.
+//
+// HashId comes from the embedded request, which covers the commands and the
+// image URL.
+func TestEtagUsesMd5(t *testing.T) {
+	request := newTestRequest(t, query(""), "")
+	request.SourceImage.Etag = `"origin"`
+
+	digest := md5.New()
+	digest.Write([]byte(request.HashId()))
+	digest.Write([]byte(`"origin"`))
+
+	require.Equal(t, fmt.Sprintf("%q", fmt.Sprintf("%x", digest.Sum(nil))), request.Etag())
+}

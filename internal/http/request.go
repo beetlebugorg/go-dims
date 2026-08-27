@@ -28,6 +28,12 @@ type Request struct {
 	httpRequest  *http.Request
 	httpResponse http.ResponseWriter
 
+	// EtagAlgorithm names the digest the endpoint uses for its ETag. It is a
+	// property of the endpoint, so each one sets it on its own request. Held
+	// on the shared configuration it was a field one handler wrote while
+	// another read it.
+	EtagAlgorithm string
+
 	// committed records that the status line has been written. Writing it
 	// twice logs a superfluous WriteHeader and appends a second image to a
 	// partly written response.
@@ -240,7 +246,7 @@ func (r *Request) CacheControl() string {
 func (r *Request) Etag() string {
 	if r.SourceImage.Etag != "" {
 		var h hash.Hash
-		if r.Config().EtagAlgorithm == "md5" {
+		if r.EtagAlgorithm == "md5" {
 			h = md5.New()
 		} else {
 			h = sha256.New()

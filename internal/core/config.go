@@ -166,7 +166,6 @@ type Config struct {
 	DevelopmentMode bool   `env:"DIMS_DEVELOPMENT_MODE" envDefault:"false"`
 	DebugMode       bool   `env:"DIMS_DEBUG_MODE" envDefault:"false"`
 	LogFormat       string `env:"DIMS_LOG_FORMAT" envDefault:"text"`
-	EtagAlgorithm   string
 
 	Timeout
 	Limits

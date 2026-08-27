@@ -2,7 +2,6 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -37,9 +36,7 @@ var s3Client = sync.OnceValues(func() (*s3.Client, error) {
 
 func init() {
 	envConfig := core.S3{}
-	if err := env.Parse(&envConfig); err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+	core.RecordStartupError(env.Parse(&envConfig))
 
 	core.RegisterImageBackend(NewS3SourceBackend(envConfig))
 }

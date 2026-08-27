@@ -12,7 +12,7 @@ RUN apk add --no-cache alpine-sdk xz zlib-dev zlib-static
 FROM alpine-base AS libpng
 
 ARG PREFIX=/usr/local/dims/libpng
-ARG NAME=libing
+ARG NAME=libpng
 ARG PNG_LICENSE="Zlib"
 ARG PNG_VERSION=1.6.58
 ARG PNG_WEBSITE="http://www.libpng.org/pub/png/libpng.html"
@@ -38,7 +38,7 @@ RUN tar xvf "libpng-${PNG_VERSION}.tar.xz" && \
 # SBOM
 RUN cp "libpng-${PNG_VERSION}/LICENSE" "${PREFIX}" && \
     /usr/local/bin/generate-compiled-sbom.sh \
-        --name libpng --version ${PNG_VERSION} --license ${PNG_LICENSE} \
+        --name ${NAME} --version ${PNG_VERSION} --license ${PNG_LICENSE} \
         --download ${PNG_DOWNLOAD} --checksum ${PNG_CHECKSUM} --license_file "LICENSE" \
         --website ${PNG_WEBSITE} > ${PREFIX}/sbom.cdx.json
 

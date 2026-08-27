@@ -28,3 +28,6 @@ devmedia/
 .DS_Store
 
 .idea/copilot
+
+# Local review/design notes
+specs/

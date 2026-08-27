@@ -1,4 +1,4 @@
-ARG ALPINE_VERSION=3.21
+ARG ALPINE_VERSION=3.24
 
 # -- Alpine Base
 FROM alpine:${ALPINE_VERSION} AS alpine-base
@@ -14,10 +14,10 @@ FROM alpine-base AS libpng
 ARG PREFIX=/usr/local/dims/libpng
 ARG NAME=libing
 ARG PNG_LICENSE="Zlib"
-ARG PNG_VERSION=1.6.48
+ARG PNG_VERSION=1.6.58
 ARG PNG_WEBSITE="http://www.libpng.org/pub/png/libpng.html"
 ARG PNG_DOWNLOAD="https://download.sourceforge.net/libpng/libpng16/${PNG_VERSION}/libpng-${PNG_VERSION}.tar.xz"
-ARG PNG_CHECKSUM="sha256:46fd06ff37db1db64c0dc288d78a3f5efd23ad9ac41561193f983e20937ece03"
+ARG PNG_CHECKSUM="sha256:28eb403f51f0f7405249132cecfe82ea5c0ef97f1b32c5a65828814ae0d34775"
 
 ENV PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 ENV LD_LIBRARY_PATH=${PREFIX}/lib
@@ -49,10 +49,10 @@ FROM alpine-base AS libwebp
 ARG PREFIX=/usr/local/dims/libwebp
 ARG NAME=libwebp
 ARG WEBP_LICENSE="BSD"
-ARG WEBP_VERSION=1.5.0
+ARG WEBP_VERSION=1.6.0
 ARG WEBP_WEBSITE="https://storage.googleapis.com/downloads.webmproject.org/releases/webp/index.html"
 ARG WEBP_DOWNLOAD="https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${WEBP_VERSION}.tar.gz"
-ARG WEBP_CHECKSUM="sha256:7d6fab70cf844bf6769077bd5d7a74893f8ffd4dfb42861745750c63c2a5c92c"
+ARG WEBP_CHECKSUM="sha256:e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564"
 
 WORKDIR /build
 
@@ -80,8 +80,8 @@ FROM alpine-base AS libtiff
 
 ARG PREFIX=/usr/local/dims
 ARG NAME=libtiff
-ARG TIFF_VERSION=4.7.0
-ARG TIFF_CHECKSUM="sha256:67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb6ba976"
+ARG TIFF_VERSION=4.7.2
+ARG TIFF_CHECKSUM="sha256:672bd7d10aee4606171afb864f3570b83340f6a33e2c186dc0512f7145ffdf6a"
 ARG TIFF_LICENSE="libtiff"
 ARG TIFF_WEBSITE="https://libtiff.gitlab.io/libtiff/"
 ARG TIFF_DOWNLOAD="https://download.osgeo.org/libtiff/tiff-${TIFF_VERSION}.tar.gz"
@@ -117,9 +117,9 @@ FROM alpine-base AS glib
 
 ARG PREFIX=/usr/local/dims
 ARG NAME=glib-2.0
-ARG GLIB_MAJOR_MINOR_VERSION=2.84
-ARG GLIB_VERSION=2.84.1
-ARG GLIB_CHECKSUM="sha256:2b4bc2ec49611a5fc35f86aca855f2ed0196e69e53092bab6bb73396bf30789a"
+ARG GLIB_MAJOR_MINOR_VERSION=2.86
+ARG GLIB_VERSION=2.86.5
+ARG GLIB_CHECKSUM="sha256:ce85a947bb8b3c0204dbeff79aec39bcb46371c6fafb64ba5b8726c71e038d5f"
 ARG GLIB_LICENSE="LGPL-2.1-or-later"
 ARG GLIB_WEBSITE="https://docs.gtk.org/glib/"
 ARG GLIB_DOWNLOAD="https://download.gnome.org/sources/glib/${GLIB_MAJOR_MINOR_VERSION}/glib-${GLIB_VERSION}.tar.xz"
@@ -151,8 +151,8 @@ FROM alpine-base AS libvips
 
 ARG PREFIX=/usr/local/dims
 ARG NAME=libvips
-ARG VIPS_VERSION=8.16.1
-ARG VIPS_CHECKSUM="sha256:d114d7c132ec5b45f116d654e17bb4af84561e3041183cd4bfd79abfb85cf724"
+ARG VIPS_VERSION=8.18.6
+ARG VIPS_CHECKSUM="sha256:3c41e1d5458081bfa4a5bc54e116c46259c75c6760a18027764555632b9dda3e"
 ARG VIPS_LICENSE="LGPL-2.1-or-later"
 ARG VIPS_WEBSITE="https://www.libvips.org/"
 ARG VIPS_DOWNLOAD="https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz"

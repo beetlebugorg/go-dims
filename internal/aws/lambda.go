@@ -158,6 +158,7 @@ func (r *Request) SendError(err error) error {
 	if err != nil {
 		return err
 	}
+	defer errorImage.Close()
 
 	imageType, imageBlob, err := r.ProcessImage(errorImage, true)
 	if err != nil {

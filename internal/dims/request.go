@@ -70,18 +70,23 @@ func (r *Request) Config() core.Config {
 }
 
 func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
-	image, err := vips.NewImageFromBuffer(sourceImage.Bytes)
-	if err != nil {
-		return nil, err
-	}
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
 	r.shrinkFactor = 1
+
+	// Shrink on load helps only a JPEG that is much larger than the request.
+	// Read the header for that case alone, so every other image loads once.
 	requestedSize, err := r.requestedImageSize()
 	if err == nil && vips.DetermineImageType(sourceImage.Bytes) == vips.ImageTypeJPEG {
-		xs := image.Width() / int(requestedSize.Width)
-		ys := image.Height() / int(requestedSize.Height)
+		header, err := vips.NewImageFromBuffer(sourceImage.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		xs := header.Width() / int(requestedSize.Width)
+		ys := header.Height() / int(requestedSize.Height)
+		header.Close()
 
 		if (xs > 2) || (ys > 2) {
 			importParams.JpegShrinkFactor.Set(4)

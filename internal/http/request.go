@@ -135,6 +135,7 @@ func (r *Request) SendError(err error) error {
 	if err != nil {
 		return err
 	}
+	defer errorImage.Close()
 
 	// Send error headers.
 	maxAge := r.Config().OriginCacheControl.Error

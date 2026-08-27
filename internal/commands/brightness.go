@@ -23,6 +23,7 @@ func BrightnessCommand(image *vips.ImageRef, args string) error {
 	if err != nil {
 		return NewOperationError("brightness", args, err.Error())
 	}
+	defer adjustedImage.Close()
 
 	err = image.Insert(adjustedImage, 0, 0, false, nil)
 	if err != nil {

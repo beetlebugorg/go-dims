@@ -9,16 +9,12 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/aws"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/dims"
-	"github.com/davidbyttow/govips/v2/vips"
 	"log/slog"
 	"os"
 )
 
 func main() {
 	config := core.ReadConfig()
-
-	vips.LoggingSettings(nil, vips.LogLevelError)
-	vips.Startup(nil)
 
 	var opts *slog.HandlerOptions
 	if config.DebugMode {
@@ -29,6 +25,8 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
+
+	core.StartVips(config)
 
 	handler := func(ctx context.Context, event *events.LambdaFunctionURLRequest) (*events.LambdaFunctionURLStreamingResponse, error) {
 		request, err := aws.NewRequest(*event, *config)

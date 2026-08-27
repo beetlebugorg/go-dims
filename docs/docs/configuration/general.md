@@ -176,6 +176,56 @@ A short burst queues and completes. Sustained overload is refused with `503` and
 
 ---
 
+## libvips Settings
+
+These set the libvips operation cache and thread count at startup. The effective values are written to the log at debug level.
+
+### `DIMS_VIPS_CONCURRENCY`
+
+How many threads libvips uses inside one operation.
+
+- **Default:** `1`
+
+`DIMS_MAX_CONCURRENT` sets how many images are processed at once. This sets the thread count within each one.
+
+Set a negative value to keep the libvips default.
+
+```
+DIMS_VIPS_CONCURRENCY=2
+```
+
+### `DIMS_VIPS_MAX_CACHE_MEM`
+
+The largest amount of memory the operation cache holds, in bytes.
+
+- **Default:** `52428800` (50 MB)
+
+```
+DIMS_VIPS_MAX_CACHE_MEM=16777216
+```
+
+### `DIMS_VIPS_MAX_CACHE_SIZE`
+
+How many operations the cache holds.
+
+- **Default:** `100`
+
+```
+DIMS_VIPS_MAX_CACHE_SIZE=50
+```
+
+### `DIMS_VIPS_MAX_CACHE_FILES`
+
+How many open files the cache holds.
+
+- **Default:** `0`
+
+```
+DIMS_VIPS_MAX_CACHE_FILES=100
+```
+
+---
+
 ## Server Timeouts
 
 All values are milliseconds. `0` disables a timeout, which is what the Go standard library does by default and the reason a slow client could previously hold a connection open indefinitely.

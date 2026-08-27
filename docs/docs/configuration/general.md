@@ -80,6 +80,23 @@ DIMS_DOWNLOAD_TIMEOUT=5000
 
 ---
 
+## `DIMS_MAX_SOURCE_BYTES`
+
+Sets the largest source image the service will read, in bytes.
+
+- **Default:** `67108864` (64 MiB)
+
+A larger image is refused with `413`. When the origin declares a `Content-Length` the image is refused before the body is read. When it does not, the read stops one byte past the limit.
+
+Example:
+```
+DIMS_MAX_SOURCE_BYTES=16777216
+```
+
+Set it to `0` to remove the limit. Do that only when the origin is fully under your control, because the whole image is held in memory while it is processed.
+
+---
+
 ## `DIMS_DEFAULT_OUTPUT_FORMAT`
 
 Specifies the default image format to convert to when no format is explicitly requested.

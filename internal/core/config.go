@@ -36,6 +36,12 @@ type OutputFormat struct {
 	Excluded []string `env:"DIMS_EXCLUDED_OUTPUT_FORMATS"`
 }
 
+type Limits struct {
+	// MaxSourceBytes caps the size of a downloaded source image. A larger
+	// image is refused before it is read into memory.
+	MaxSourceBytes int64 `env:"DIMS_MAX_SOURCE_BYTES" envDefault:"67108864"`
+}
+
 type Timeout struct {
 	Download int `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
 }
@@ -97,6 +103,7 @@ type Config struct {
 	EtagAlgorithm   string
 
 	Timeout
+	Limits
 	EdgeControl
 	Signing
 	Error

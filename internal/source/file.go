@@ -6,7 +6,6 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,7 +84,14 @@ func readFileWithTimeout(path string, timeout time.Duration) ([]byte, error) {
 		}
 		defer file.Close()
 
-		data, err := io.ReadAll(file)
+		if info, err := file.Stat(); err == nil {
+			if err := core.TooLarge(info.Size(), core.ReadConfig().MaxSourceBytes); err != nil {
+				errCh <- err
+				return
+			}
+		}
+
+		data, err := core.ReadImageBytes(file, core.ReadConfig().MaxSourceBytes)
 		if err != nil {
 			errCh <- err
 			return

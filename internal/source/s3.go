@@ -9,7 +9,6 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -83,9 +82,16 @@ func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Durat
 		return nil, err
 	}
 
+	maxBytes := core.ReadConfig().MaxSourceBytes
+	if response.ContentLength != nil {
+		if err := core.TooLarge(*response.ContentLength, maxBytes); err != nil {
+			return nil, err
+		}
+	}
+
 	lastModified := response.LastModified.Format(http.TimeFormat)
 	size := int(*response.ContentLength)
-	imageBytes, err := io.ReadAll(response.Body)
+	imageBytes, err := core.ReadImageBytes(response.Body, maxBytes)
 	if err != nil {
 		return nil, err
 	}

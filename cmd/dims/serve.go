@@ -21,9 +21,6 @@ type ServeCmd struct {
 func (s *ServeCmd) Run() error {
 	config := core.ReadConfig()
 
-	vips.LoggingSettings(nil, vips.LogLevelError)
-	vips.Startup(nil)
-
 	var opts *slog.HandlerOptions
 	if config.DebugMode {
 		opts = &slog.HandlerOptions{
@@ -38,6 +35,8 @@ func (s *ServeCmd) Run() error {
 		logger = slog.New(slog.NewTextHandler(os.Stdout, opts))
 	}
 	slog.SetDefault(logger)
+
+	core.StartVips(config)
 
 	if core.LegacyKey(config.SigningKey) {
 		slog.Warn("the sha1 signing key prefix derives an encryption key from 16 hex characters. It exists for mod_dims compatibility. A key without the prefix is stronger.")

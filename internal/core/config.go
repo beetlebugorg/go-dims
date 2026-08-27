@@ -76,6 +76,23 @@ type Limits struct {
 	MaxDownloadConcurrent int `env:"DIMS_MAX_DOWNLOAD_CONCURRENT" envDefault:"0"`
 }
 
+type Vips struct {
+	// ConcurrencyLevel is how many threads libvips uses inside one operation.
+	// Raise it on a host with spare cores. A negative value keeps the libvips
+	// default.
+	ConcurrencyLevel int `env:"DIMS_VIPS_CONCURRENCY" envDefault:"1"`
+
+	// MaxCacheMem is the largest amount of memory the operation cache holds,
+	// in bytes.
+	MaxCacheMem int `env:"DIMS_VIPS_MAX_CACHE_MEM" envDefault:"52428800"`
+
+	// MaxCacheSize is how many operations the cache holds.
+	MaxCacheSize int `env:"DIMS_VIPS_MAX_CACHE_SIZE" envDefault:"100"`
+
+	// MaxCacheFiles is how many open files the cache holds.
+	MaxCacheFiles int `env:"DIMS_VIPS_MAX_CACHE_FILES" envDefault:"0"`
+}
+
 type Network struct {
 	// AllowedHosts limits which hosts an image may be fetched from. An entry
 	// starting with a dot matches any subdomain. An empty list allows any host
@@ -153,6 +170,7 @@ type Config struct {
 
 	Timeout
 	Limits
+	Vips
 	Server
 	Network
 	EdgeControl

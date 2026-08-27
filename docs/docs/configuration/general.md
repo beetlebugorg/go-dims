@@ -120,6 +120,30 @@ Checked once the source header is read. This mainly guards against a small file 
 
 Set either to `0` to disable that check.
 
+### `DIMS_MAX_CONCURRENT`
+
+How many images may be processed at once.
+
+- **Default:** `0`, which derives a value from the CPU count
+
+The pixel limits above bound what one request may ask for. This bounds how many may ask at the same time. Without it, a burst of individually reasonable requests still saturates the machine and every one of them slows down together.
+
+Set a positive number to choose the limit directly, or `-1` to remove it.
+
+```
+DIMS_MAX_CONCURRENT=8
+```
+
+The slot is taken after the source image has been downloaded, since a request waiting on an origin is not competing for CPU.
+
+### `DIMS_MAX_CONCURRENT_WAIT`
+
+How long a request queues for a slot before it is refused, in milliseconds.
+
+- **Default:** `5000`
+
+A short burst queues and completes. Sustained overload is refused with `503` and a `Retry-After` header, which is a better answer than accepting work the service cannot get to in time.
+
 ---
 
 ## Server Timeouts

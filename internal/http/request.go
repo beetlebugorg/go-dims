@@ -198,6 +198,10 @@ func (r *Request) SendError(err error) error {
 	}
 	defer errorImage.Close()
 
+	if status == http.StatusServiceUnavailable {
+		r.httpResponse.Header().Set("Retry-After", "1")
+	}
+
 	// Send error headers.
 	maxAge := r.Config().OriginCacheControl.Error
 	if maxAge > 0 {

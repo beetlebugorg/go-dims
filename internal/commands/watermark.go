@@ -23,7 +23,7 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 	//   - gravity can be: n, ne, nw, s, se, sw, w, e, c
 	opacity, size, gravity, err := parseWatermarkArgs(args)
 	if err != nil {
-		return err
+		return NewOperationError("watermark", args, err.Error())
 	}
 
 	// Download overlay image
@@ -44,12 +44,17 @@ func Watermark(image *vips.ImageRef, args string, data RequestOperation) error {
 		return NewOperationError("watermark", args, err.Error())
 	}
 
-	// Reduce opacity of overlay image
-	// Combine images
-	reduceOpacity(overlayImage, opacity)
-	overlayImage.Gravity(gravity, image.Width(), image.Height())
+	if err := reduceOpacity(overlayImage, opacity); err != nil {
+		return NewOperationError("watermark", args, err.Error())
+	}
 
-	image.Composite(overlayImage, vips.BlendModeOver, 0, 0)
+	if err := overlayImage.Gravity(gravity, image.Width(), image.Height()); err != nil {
+		return NewOperationError("watermark", args, err.Error())
+	}
+
+	if err := image.Composite(overlayImage, vips.BlendModeOver, 0, 0); err != nil {
+		return NewOperationError("watermark", args, err.Error())
+	}
 
 	return nil
 }
@@ -72,7 +77,9 @@ func reduceOpacity(image *vips.ImageRef, opacity float64) error {
 		return err
 	}
 
-	alpha.Linear1(opacity, 0)
+	if err := alpha.Linear1(opacity, 0); err != nil {
+		return err
+	}
 
 	// Add the new alpha channel.
 	if err := image.ExtractBand(0, 3); err != nil {
@@ -174,7 +181,7 @@ func parseWatermarkArgs(input string) (opacity, size float64, gravity vips.Gravi
 	case "c":
 		gravity = vips.GravityCentre
 	default:
-		err = fmt.Errorf("invalid gravity %q; must be one of n, ne, nw, s, se, sw, w, e, c", gravity)
+		err = fmt.Errorf("invalid gravity %q; must be one of n, ne, nw, s, se, sw, w, e, c", gravityStr)
 		return
 	}
 

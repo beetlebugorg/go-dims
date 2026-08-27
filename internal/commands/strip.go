@@ -14,7 +14,7 @@ func StripMetadataCommand(image *vips.ImageRef, args string, ops *ExportOptions)
 	ops.TiffExportParams.StripMetadata = strip
 
 	if strip {
-		image.RemoveMetadata()
+		return image.RemoveMetadata()
 	}
 
 	return nil

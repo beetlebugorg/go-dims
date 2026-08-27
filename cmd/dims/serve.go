@@ -39,6 +39,11 @@ func (s *ServeCmd) Run() error {
 	}
 	slog.SetDefault(logger)
 
+	if err := config.Validate(); err != nil {
+		slog.Error("Invalid configuration.", "error", err)
+		return err
+	}
+
 	if !config.DevelopmentMode && config.SigningKey == "" {
 		slog.Error("Signing key is required in production mode.")
 		return fmt.Errorf("signing key is required in production mode")

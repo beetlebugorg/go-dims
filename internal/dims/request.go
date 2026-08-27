@@ -116,6 +116,14 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 	for _, command := range r.Commands() {
 		region := trace.StartRegion(ctx, command.Name)
 
+		// An unknown name used to fall through all three maps and be ignored,
+		// so a typo silently returned a differently processed image. The error
+		// image is rendered with the same command list, so it is exempt.
+		if !commands.Known(command.Name) && !errorImage {
+			region.End()
+			return "", nil, commands.NewOperationError(command.Name, command.Args, "unknown command")
+		}
+
 		if operation, ok := commands.VipsTransformCommands[command.Name]; ok {
 			if command.Name == "strip" && command.Args != "true" {
 				stripMetadata = false

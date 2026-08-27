@@ -147,3 +147,16 @@ func init() {
 func ReadConfig() *Config {
 	return config
 }
+
+// Validate reports settings that would otherwise fail quietly at request time.
+func (c *Config) Validate() error {
+	if c.OutputFormat.Default == "" {
+		return nil
+	}
+
+	if _, ok := ImageTypes[c.OutputFormat.Default]; !ok {
+		return fmt.Errorf("DIMS_DEFAULT_OUTPUT_FORMAT %q is not a supported format", c.OutputFormat.Default)
+	}
+
+	return nil
+}

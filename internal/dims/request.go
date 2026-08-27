@@ -27,6 +27,7 @@ type Request struct {
 	SourceImage            core.Image  // The source image.
 	config                 core.Config // The global configuration.
 	shrinkFactor           int
+	commands               []commands.Command
 }
 
 func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error) {
@@ -233,18 +234,23 @@ func (r *Request) FetchImage(timeout time.Duration) (*core.Image, error) {
 	return image, nil
 }
 
+// Commands returns the parsed command list. The result is kept, since this is
+// called once while loading the image and again while processing it.
 func (r *Request) Commands() []commands.Command {
+	if r.commands != nil {
+		return r.commands
+	}
+
 	cmds := make([]commands.Command, 0)
 	parsedCommands := strings.Split(strings.Trim(r.RawCommands, "/"), "/")
 	for i := 0; i < len(parsedCommands)-1; i += 2 {
-		command := parsedCommands[i]
-		args := parsedCommands[i+1]
-
 		cmds = append(cmds, commands.Command{
-			Name: command,
-			Args: args,
+			Name: parsedCommands[i],
+			Args: parsedCommands[i+1],
 		})
 	}
+
+	r.commands = cmds
 
 	return cmds
 }

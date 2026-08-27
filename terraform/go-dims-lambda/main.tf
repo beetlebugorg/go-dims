@@ -70,9 +70,9 @@ resource "aws_lambda_function_url" "go-dims" {
   invoke_mode        = "RESPONSE_STREAM"
 
   cors {
-    allow_origins = ["*"]
+    allow_origins = var.allow_origins
     allow_methods = ["GET"]
-    allow_headers = ["*"]
+    allow_headers = var.allow_headers
   }
 
   lifecycle {

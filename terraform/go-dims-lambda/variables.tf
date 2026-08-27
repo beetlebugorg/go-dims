@@ -19,3 +19,15 @@ variable "authorization_type" {
   type        = string
   default     = "AWS_IAM"
 }
+
+variable "allow_origins" {
+  description = "Origins the Lambda function URL answers a cross-origin request from. Name each site to scope it."
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "allow_headers" {
+  description = "Request headers a cross-origin caller may send."
+  type        = list(string)
+  default     = ["*"]
+}

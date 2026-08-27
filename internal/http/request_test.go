@@ -156,3 +156,74 @@ func TestContentDispositionWithoutAFilename(t *testing.T) {
 
 	require.Empty(t, request.ContentDisposition())
 }
+
+func requestWithCondition(t *testing.T, originEtag, ifNoneMatch string) *Request {
+	t.Helper()
+
+	u, err := url.Parse("http://localhost/v5/resize/10x10?url=http://example.com/a.jpg")
+	require.NoError(t, err)
+
+	r := &http.Request{URL: u, Header: make(http.Header)}
+	r.SetPathValue("commands", "resize/10x10")
+	if ifNoneMatch != "" {
+		r.Header.Set("If-None-Match", ifNoneMatch)
+	}
+
+	request, err := NewRequest(r, httptest.NewRecorder(), *core.ReadConfig())
+	require.NoError(t, err)
+	request.SourceImage.Etag = originEtag
+
+	return request
+}
+
+func TestNotModified(t *testing.T) {
+	// Work out the etag this request would answer with.
+	etag := requestWithCondition(t, `"origin"`, "").Etag()
+	require.NotEmpty(t, etag)
+
+	require.True(t, requestWithCondition(t, `"origin"`, etag).NotModified(),
+		"an exact match must be recognised")
+
+	require.True(t, requestWithCondition(t, `"origin"`, "W/"+etag).NotModified(),
+		"a weak validator must compare equal")
+
+	require.True(t, requestWithCondition(t, `"origin"`, `"other", `+etag).NotModified(),
+		"a list must be searched")
+
+	require.True(t, requestWithCondition(t, `"origin"`, "*").NotModified(),
+		"a wildcard always matches")
+
+	require.False(t, requestWithCondition(t, `"origin"`, `"someone-elses"`).NotModified())
+	require.False(t, requestWithCondition(t, `"origin"`, "").NotModified(),
+		"no condition means send the image")
+	require.False(t, requestWithCondition(t, "", "*").NotModified(),
+		"without an origin etag there is nothing to compare")
+}
+
+// A 304 must carry the cache headers and no body.
+func TestSendNotModified(t *testing.T) {
+	u, err := url.Parse("http://localhost/v5/resize/10x10?url=http://example.com/a.jpg")
+	require.NoError(t, err)
+
+	r := &http.Request{URL: u, Header: make(http.Header)}
+	r.SetPathValue("commands", "resize/10x10")
+
+	recorder := httptest.NewRecorder()
+	request, err := NewRequest(r, recorder, *core.ReadConfig())
+	require.NoError(t, err)
+	request.SourceImage.Etag = `"origin"`
+
+	require.NoError(t, request.SendNotModified())
+
+	require.Equal(t, http.StatusNotModified, recorder.Code)
+	require.Empty(t, recorder.Body.Bytes())
+	require.NotEmpty(t, recorder.Header().Get("ETag"))
+	require.Empty(t, recorder.Header().Get("Content-Length"))
+}
+
+func TestSendNotModifiedOnlyCommitsOnce(t *testing.T) {
+	request := requestWithCondition(t, `"origin"`, "*")
+
+	require.NoError(t, request.SendNotModified())
+	require.Error(t, request.SendNotModified())
+}

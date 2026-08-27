@@ -47,16 +47,17 @@ func (v4 *Request) HashId() string {
 }
 
 func (v4 *Request) Validate() bool {
-	expectedSignature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
+	expectedSignature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedQuery, v4.Config().SigningKey)
 
 	if subtle.ConstantTimeCompare([]byte(expectedSignature), []byte(v4.Signature)) == 1 {
 		return true
 	}
 
-	// Legacy mode also accepts a signature that covers only the parameters
-	// named by _keys. Every other parameter is unprotected in that mode.
+	// Legacy mode also accepts the mod_dims signature, which covers only the
+	// parameters named by _keys. Every other parameter is unprotected in that
+	// mode.
 	if v4.Config().Compat == "legacy" {
-		legacy := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.LegacyParams, v4.Config().SigningKey)
+		legacy := v4.signLegacy(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.LegacyParams, v4.Config().SigningKey)
 		if subtle.ConstantTimeCompare([]byte(legacy), []byte(v4.Signature)) == 1 {
 			slog.Warn("accepted a legacy signature", "url", v4.ImageUrl)
 			return true
@@ -70,7 +71,21 @@ func (v4 *Request) Validate() bool {
 	return false
 }
 
-func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams []string, signingKey string) string {
+func (v4 *Request) sign(commands, timestamp, imageUrl string, signedQuery string, signingKey string) string {
+	key := strings.Replace(signingKey, "sha1:", "", 1)
+
+	h := md5.New()
+	h.Write([]byte(timestamp))
+	h.Write([]byte(key))
+	h.Write([]byte(core.SignedMessage(commands, imageUrl, signedQuery)))
+
+	return fmt.Sprintf("%x", h.Sum(nil))[0:7]
+}
+
+// signLegacy reproduces the mod_dims construction: the parameters named by
+// _keys, in _keys order, concatenated with no separator. It is reachable only
+// under DIMS_SIGNING_COMPAT=legacy.
+func (v4 *Request) signLegacy(commands, timestamp, imageUrl string, legacyParams []string, signingKey string) string {
 	key := strings.Replace(signingKey, "sha1:", "", 1)
 
 	h := md5.New()
@@ -79,15 +94,15 @@ func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams []str
 	h.Write([]byte(commands))
 	h.Write([]byte(imageUrl))
 
-	for _, signedParam := range signedParams {
-		h.Write([]byte(signedParam))
+	for _, legacyParam := range legacyParams {
+		h.Write([]byte(legacyParam))
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))[0:7]
 }
 
 func (v4 *Request) SignedUrl() string {
-	signature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
+	signature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedQuery, v4.Config().SigningKey)
 
 	// Rebuild the path from its parts. Substituting the placeholder went
 	// wrong whenever it happened to equal the client id or the timestamp.

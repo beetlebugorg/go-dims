@@ -30,7 +30,7 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 
 // Validate verifies the signature of the image resize is valid.
 func (v5 *Request) Validate() bool {
-	expectedSignature := v5.sign(v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey)
+	expectedSignature := v5.sign(v5.ImageUrl, v5.SignedQuery, v5.RawCommands, v5.Config().SigningKey)
 
 	gotSignature, err := hex.DecodeString(v5.Signature)
 	if err != nil {
@@ -45,7 +45,7 @@ func (v5 *Request) Validate() bool {
 	// Legacy mode also accepts the previous scheme: only the parameters named
 	// by _keys, and a digest truncated to 31 bytes.
 	if v5.Config().Compat == "legacy" {
-		legacy := v5.sign(v5.ImageUrl, v5.LegacyParams, v5.RawCommands, v5.Config().SigningKey)
+		legacy := v5.signLegacy(v5.ImageUrl, v5.LegacyParams, v5.RawCommands, v5.Config().SigningKey)
 		if hmac.Equal(legacy[0:31], gotSignature) {
 			slog.Warn("accepted a legacy signature", "url", v5.ImageUrl)
 			return true
@@ -59,22 +59,34 @@ func (v5 *Request) Validate() bool {
 	return false
 }
 
-func (v5 *Request) sign(imageUrl string, signedParams []string, command string, signingKey string) []byte {
+func (v5 *Request) sign(imageUrl string, signedQuery string, command string, signingKey string) []byte {
+	key := strings.Replace(signingKey, "sha1:", "", 1)
+
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write([]byte(core.SignedMessage(command, imageUrl, signedQuery)))
+
+	return mac.Sum(nil)
+}
+
+// signLegacy reproduces the mod_dims style construction: only the parameters
+// named by _keys, concatenated with no separator. It is reachable only under
+// DIMS_SIGNING_COMPAT=legacy.
+func (v5 *Request) signLegacy(imageUrl string, legacyParams []string, command string, signingKey string) []byte {
 	key := strings.Replace(signingKey, "sha1:", "", 1)
 
 	mac := hmac.New(sha256.New, []byte(key))
 	mac.Write([]byte(command))
 	mac.Write([]byte(imageUrl))
 
-	for _, signedParam := range signedParams {
-		mac.Write([]byte(signedParam))
+	for _, legacyParam := range legacyParams {
+		mac.Write([]byte(legacyParam))
 	}
 
 	return mac.Sum(nil)
 }
 
 func (v5 *Request) SignedUrl() string {
-	signature := hex.EncodeToString(v5.sign(v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey))
+	signature := hex.EncodeToString(v5.sign(v5.ImageUrl, v5.SignedQuery, v5.RawCommands, v5.Config().SigningKey))
 
 	// Copied so signing does not alter the request it was given.
 	signed := *v5.URL

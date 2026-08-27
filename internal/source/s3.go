@@ -14,27 +14,31 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
-
-var client *s3.Client
 
 type s3SourceBackend struct {
 	Config core.S3
 }
+
+// s3Client is built on first use. Loading AWS configuration at startup probes
+// the instance metadata endpoint on a host that has no credentials, which
+// slows every start whether or not the backend is ever used.
+var s3Client = sync.OnceValues(func() (*s3.Client, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return s3.NewFromConfig(cfg), nil
+})
 
 func init() {
 	envConfig := core.S3{}
 	if err := env.Parse(&envConfig); err != nil {
 		fmt.Printf("%+v\n", err)
 	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		slog.Error("failed to load configuration", "error", err)
-	}
-
-	client = s3.NewFromConfig(cfg)
 
 	core.RegisterImageBackend(NewS3SourceBackend(envConfig))
 }
@@ -73,7 +77,16 @@ func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Durat
 		key = strings.TrimPrefix(u.Path, "/")
 	}
 
-	response, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
+	client, err := s3Client()
+	if err != nil {
+		slog.Error("failed to load AWS configuration", "error", err)
+		return nil, core.NewStatusError(500, "s3 backend is not configured")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	response, err := client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
 	})
@@ -82,22 +95,31 @@ func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Durat
 		slog.Debug("s3.GetObject failed", "bucket", bucketName, "key", key)
 		return nil, err
 	}
+	defer response.Body.Close()
 
-	lastModified := response.LastModified.Format(http.TimeFormat)
-	size := int(*response.ContentLength)
 	imageBytes, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	sourceImage := core.Image{
+	return imageFromResponse(response, imageBytes), nil
+}
+
+// imageFromResponse maps an S3 response onto an Image. Every field it reads
+// is optional on GetObjectOutput, so each one goes through a nil check. A
+// response that omits one used to panic the request goroutine.
+func imageFromResponse(response *s3.GetObjectOutput, imageBytes []byte) *core.Image {
+	var lastModified string
+	if response.LastModified != nil {
+		lastModified = response.LastModified.UTC().Format(http.TimeFormat)
+	}
+
+	return &core.Image{
 		Status:       200,
-		Etag:         *response.ETag,
-		Size:         size,
+		Etag:         aws.ToString(response.ETag),
+		Size:         int(aws.ToInt64(response.ContentLength)),
 		Bytes:        imageBytes,
 		Format:       vips.DetermineImageType(imageBytes),
 		LastModified: lastModified,
 	}
-
-	return &sourceImage, nil
 }

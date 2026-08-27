@@ -57,8 +57,19 @@ func (l *limiter) acquire() (func(), error) {
 	}
 }
 
-var defaultLimiter = sync.OnceValue(func() *limiter {
+// processLimiter guards the decode, the transformation, and the encode.
+var processLimiter = sync.OnceValue(func() *limiter {
 	config := core.ReadConfig()
 
 	return newLimiter(config.MaxConcurrent, time.Duration(config.MaxConcurrentWait)*time.Millisecond)
+})
+
+// downloadLimiter guards the source download. It is separate from
+// processLimiter so a slow origin holds a download slot rather than a CPU
+// slot. Each download holds a whole source body, so bounding the count
+// bounds the memory a burst reaches.
+var downloadLimiter = sync.OnceValue(func() *limiter {
+	config := core.ReadConfig()
+
+	return newLimiter(config.MaxDownloadConcurrent, time.Duration(config.MaxConcurrentWait)*time.Millisecond)
 })

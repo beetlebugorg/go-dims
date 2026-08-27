@@ -29,5 +29,19 @@ For the README, `docs/`, comments, PR descriptions, and error messages.
 - Six sentences per paragraph. Lists for sequences and sets.
 - Keep technical names and technical verbs unchanged.
 
+## Documentation
+
+For the README and `docs/`. State what a thing is, what it does, and how to set it.
+
+- No commentary. Do not argue for a setting or rank it against another.
+- No history. Do not describe what the behavior was before.
+- No rhetorical build-up. Do not withhold a term, restate a sentence for
+  emphasis, or open with a question.
+- Do not name a plan file, a review file, or a finding ID. This applies to
+  commit messages, pull request descriptions, and code comments as well.
+
+A setting page gives the name, one sentence on what it does, the default, the
+rules that apply, and an example.
+
 When you add or rename an environment variable, update the matching page in
 `docs/docs/configuration/`. The name must match the code exactly.

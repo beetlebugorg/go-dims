@@ -8,7 +8,6 @@ import (
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -108,7 +107,7 @@ func (backend s3SourceBackend) FetchImage(imageSource string, timeout time.Durat
 	}
 	defer response.Body.Close()
 
-	imageBytes, err := io.ReadAll(response.Body)
+	imageBytes, err := core.ReadSource(response.Body, aws.ToInt64(response.ContentLength))
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +127,6 @@ func imageFromResponse(response *s3.GetObjectOutput, imageBytes []byte) *core.Im
 	return &core.Image{
 		Status:       200,
 		Etag:         aws.ToString(response.ETag),
-		Size:         int(aws.ToInt64(response.ContentLength)),
 		Bytes:        imageBytes,
 		Format:       vips.DetermineImageType(imageBytes),
 		LastModified: lastModified,

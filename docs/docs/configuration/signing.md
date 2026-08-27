@@ -34,3 +34,25 @@ a secure environment variable, secret manager, or encrypted config.
 Use at least 32 characters of high-entropy random data - Generate using your password manager or a secure CLI tool
 
 :::
+
+---
+
+## `DIMS_SIGNING_COMPAT`
+
+Accepts signatures made under the previous rule, where only the parameters named by `_keys` took part.
+
+- **Default:** *(empty)*
+
+Set it to `legacy` while you re-sign existing URLs:
+
+```
+DIMS_SIGNING_COMPAT=legacy
+```
+
+`go-dims` logs a warning for every request that validates this way, so you can watch the count fall to zero. Clear the setting once it does.
+
+:::warning
+
+Legacy mode leaves every parameter outside `_keys` unprotected. That includes `overlay`, so a caller holding one valid signed watermark URL can point the overlay at any address the service can reach. Treat this setting as a migration aid with an end date.
+
+:::

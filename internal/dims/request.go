@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/url"
 	"runtime/trace"
+	"slices"
 	"strings"
 	"time"
 )
@@ -20,7 +21,8 @@ type Request struct {
 	SendContentDisposition bool        // The content disposition of the http.
 	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
 	Signature              string      // The signature of the request.
-	SignedParams           []string    // Values of the signed query parameters, in _keys order.
+	SignedParams           []string    // Values of every signed query parameter, ordered by name.
+	LegacyParams           []string    // Values named by _keys, in _keys order. Legacy mode only.
 	SourceImage            core.Image  // The source image.
 	config                 core.Config // The global configuration.
 	shrinkFactor           int
@@ -39,18 +41,8 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		imageUrl = decryptedUrl
 	}
 
-	// Signed parameters.
-	// The _keys parameter names the query parameters that take part in the
-	// signature. mod_dims concatenates their values in the order _keys lists
-	// them, so the order must be preserved here.
-	var signedParams []string
-	if keys := url.Query().Get("_keys"); keys != "" {
-		for _, key := range strings.Split(keys, ",") {
-			if value := url.Query().Get(key); value != "" {
-				signedParams = append(signedParams, value)
-			}
-		}
-	}
+	signedParams := SignedValues(url)
+	legacyParams := LegacyValues(url)
 
 	var sendContentDisposition = config.IncludeDisposition
 	if url.Query().Get("download") == "1" || url.Query().Get("download") == "true" {
@@ -62,6 +54,7 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		ImageUrl:               imageUrl,
 		RawCommands:            cmds,
 		SignedParams:           signedParams,
+		LegacyParams:           legacyParams,
 		SendContentDisposition: sendContentDisposition,
 		config:                 config,
 	}, nil
@@ -263,4 +256,55 @@ func (r *Request) outputFormat() vips.ImageType {
 	}
 
 	return r.SourceImage.Format
+}
+
+// excludedFromSignature lists the query parameters that never take part in a
+// signature. Every other parameter does.
+var excludedFromSignature = map[string]bool{
+	"sig":      true,
+	"url":      true,
+	"eurl":     true,
+	"_keys":    true,
+	"download": true,
+}
+
+// SignedValues returns the values of every query parameter that takes part in
+// the signature, ordered by parameter name. A parameter carrying several
+// values contributes each of them, in the order the URL gives them.
+func SignedValues(u *url.URL) []string {
+	query := u.Query()
+
+	names := make([]string, 0, len(query))
+	for name := range query {
+		if !excludedFromSignature[name] {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names)
+
+	values := make([]string, 0, len(names))
+	for _, name := range names {
+		values = append(values, query[name]...)
+	}
+
+	return values
+}
+
+// LegacyValues returns the values named by _keys, in the order _keys lists
+// them. This is the mod_dims rule. It covers only the parameters a caller
+// opts in, so every other parameter stays open to tampering.
+func LegacyValues(u *url.URL) []string {
+	keys := u.Query().Get("_keys")
+	if keys == "" {
+		return nil
+	}
+
+	var values []string
+	for _, key := range strings.Split(keys, ",") {
+		if value := u.Query().Get(key); value != "" {
+			values = append(values, value)
+		}
+	}
+
+	return values
 }

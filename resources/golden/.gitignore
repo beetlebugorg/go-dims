@@ -1,0 +1,2 @@
+# Written by the golden test when output does not match. Diagnostic only.
+*.failed.*

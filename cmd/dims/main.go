@@ -3,8 +3,6 @@
 package main
 
 import (
-	"os"
-
 	"github.com/alecthomas/kong"
 )
 
@@ -19,8 +17,5 @@ var CLI struct {
 
 func main() {
 	ctx := kong.Parse(&CLI)
-	err := ctx.Run()
-	if err != nil {
-		os.Exit(1)
-	}
+	ctx.FatalIfErrorf(ctx.Run())
 }

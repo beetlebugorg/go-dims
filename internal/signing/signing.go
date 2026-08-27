@@ -40,7 +40,7 @@ func NewSigner(requestUrl string, config core.Config) (core.Signer, error) {
 
 		return v4Request, nil
 	} else if strings.HasPrefix(u.Path, "/v5/") {
-		cmds := strings.TrimLeft(u.Path, "/v5/")
+		cmds := strings.TrimPrefix(u.Path, "/v5/")
 
 		httpRequest.SetPathValue("commands", cmds)
 

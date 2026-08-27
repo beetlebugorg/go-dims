@@ -76,10 +76,11 @@ func (v5 *Request) sign(imageUrl string, signedParams []string, command string, 
 func (v5 *Request) SignedUrl() string {
 	signature := hex.EncodeToString(v5.sign(v5.ImageUrl, v5.SignedParams, v5.RawCommands, v5.Config().SigningKey))
 
-	u := v5.URL
-	q := u.Query()
-	q.Set("sig", signature)
-	u.RawQuery = q.Encode()
+	// Copied so signing does not alter the request it was given.
+	signed := *v5.URL
+	query := signed.Query()
+	query.Set("sig", signature)
+	signed.RawQuery = query.Encode()
 
-	return u.String()
+	return signed.String()
 }

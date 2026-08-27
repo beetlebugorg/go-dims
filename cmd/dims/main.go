@@ -14,6 +14,7 @@ var CLI struct {
 	Decrypt DecryptionCmd `cmd:"" help:"Decrypt an eurl."`
 	Health  HealthCmd     `cmd:"" help:"Check the health of the DIMS service."`
 	Sign    SignCmd       `cmd:"" help:"Sign an image URL."`
+	Version VersionCmd    `cmd:"" help:"Print the version."`
 }
 
 func main() {

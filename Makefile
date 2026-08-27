@@ -6,8 +6,8 @@ REGISTRY  := ghcr.io/beetlebugorg/go-dims
 BINARY := $(BUILD_DIR)/dims
 LAMBDA_BINARY := $(BUILD_DIR)/bootstrap
 
-LD_FLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/dims/core.Version=${VERSION}'"
-STATIC_LDFLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/dims/core.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lsharpyuv'"
+LD_FLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/core.Version=${VERSION}'"
+STATIC_LDFLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/core.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lsharpyuv'"
 
 # -- Build targets
 

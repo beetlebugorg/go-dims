@@ -60,7 +60,7 @@ COPY --from=go-dims /build/go-dims/build/sbom.cdx.json /sbom.cdx.json
 ENV DIMS_LOG_FORMAT=json
 
 HEALTHCHECK --interval=5s --timeout=2s --start-period=5s --retries=3 \
-    CMD /dims health-check || exit 1
+    CMD /dims health || exit 1
 
 ENTRYPOINT ["/dims"]
 CMD ["serve"]

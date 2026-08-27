@@ -7,8 +7,8 @@ import (
 	"github.com/caarlos0/env/v10"
 	"github.com/davidbyttow/govips/v2/vips"
 	"io"
+	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -46,18 +46,18 @@ func (f fileSourceBackend) CanHandle(imageSource string) bool {
 	return false
 }
 
+// sourcePath turns an image source into a path relative to the base
+// directory. No cleaning is attempted: os.Root refuses anything that leaves
+// the root, including by way of a symlink, and doing it here as well would
+// only give two places for the rule to disagree.
+func sourcePath(imageSource string) string {
+	path := strings.TrimPrefix(imageSource, "file://")
+
+	return strings.TrimPrefix(path, "/")
+}
+
 func (f fileSourceBackend) FetchImage(imageSource string, timeout time.Duration) (*core.Image, error) {
-	var path string
-	if strings.HasPrefix(imageSource, "file://../") {
-		path = strings.TrimPrefix(imageSource, "file://../")
-	} else {
-		path = imageSource
-	}
-
-	path = filepath.Clean(path)
-	path = filepath.Join(f.baseDir, path)
-
-	imageBytes, err := readFileWithTimeout(path, timeout)
+	imageBytes, err := readFileWithTimeout(f.baseDir, sourcePath(imageSource), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -70,17 +70,29 @@ func (f fileSourceBackend) FetchImage(imageSource string, timeout time.Duration)
 	}, nil
 }
 
-func readFileWithTimeout(path string, timeout time.Duration) ([]byte, error) {
+func readFileWithTimeout(baseDir string, name string, timeout time.Duration) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	result := make(chan []byte)
-	errCh := make(chan error)
+	// Buffered so the reader can finish and exit after a timeout. Unbuffered
+	// channels leak the goroutine, because nothing is left to receive.
+	result := make(chan []byte, 1)
+	errCh := make(chan error, 1)
 
 	go func() {
-		file, err := os.Open(path)
+		root, err := os.OpenRoot(baseDir)
 		if err != nil {
 			errCh <- err
+			return
+		}
+		defer root.Close()
+
+		file, err := root.Open(name)
+		if err != nil {
+			// One answer for a missing file and for a path that leaves the
+			// root, so a caller cannot use the difference to map the disk.
+			slog.Debug("refused a file source", "name", name, "error", err)
+			errCh <- core.NewStatusError(404, "image not found")
 			return
 		}
 		defer file.Close()

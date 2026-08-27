@@ -44,6 +44,11 @@ jobs:
       - name: Test
         run: go test -count=1 ./...
 
+      - name: Check the version is injected
+        run: |
+          make VERSION=version-probe
+          test "$(./build/dims version)" = "version-probe"
+
       # Non-blocking until the builder image moves off Go 1.24.
       - name: Scan for vulnerabilities
         continue-on-error: true

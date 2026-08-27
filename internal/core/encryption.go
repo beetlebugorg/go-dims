@@ -33,6 +33,13 @@ func init() {
 	}
 }
 
+// LegacyKey reports whether the signing key uses the mod_dims sha1: prefix.
+// That path derives the AES key from 16 hex characters, so it carries 64 bits
+// of key material spread across 16 bytes.
+func LegacyKey(secretKey string) bool {
+	return strings.HasPrefix(secretKey, "sha1:")
+}
+
 func deriveKey(secretKey string) ([]byte, error) {
 	if strings.HasPrefix(secretKey, "sha1:") {
 		secret := secretKey[5:]
@@ -78,11 +85,30 @@ func DecryptURLKey(secretKey string, url string) (string, error) {
 	return DecryptAES128GCM(key, url)
 }
 
+// decodeEurl accepts the standard alphabet, which is what EncryptAES128GCM
+// produces, and the URL safe alphabet, which a caller may reasonably send
+// instead. Padding is optional in both.
+func decodeEurl(value string) ([]byte, error) {
+	encodings := []*base64.Encoding{
+		base64.StdEncoding,
+		base64.RawStdEncoding,
+		base64.URLEncoding,
+		base64.RawURLEncoding,
+	}
+
+	for _, encoding := range encodings {
+		if decoded, err := encoding.DecodeString(value); err == nil {
+			return decoded, nil
+		}
+	}
+
+	return nil, errors.New("eurl is not valid base64")
+}
+
 // DecryptAES128GCM takes a base64-encoded ciphertext and decrypts it using AES-128-GCM.
 // The input must be encoded as: IV (12 bytes) | Ciphertext | Tag (16 bytes).
 func DecryptAES128GCM(key []byte, base64EncryptedText string) (string, error) {
-	// Decode the base64 input
-	encryptedData, err := base64.StdEncoding.DecodeString(base64EncryptedText)
+	encryptedData, err := decodeEurl(base64EncryptedText)
 	if err != nil {
 		return "", err
 	}
@@ -98,20 +124,14 @@ func DecryptAES128GCM(key []byte, base64EncryptedText string) (string, error) {
 		return "", err
 	}
 
-	if len(encryptedData) < aesgcm.NonceSize()+block.BlockSize() {
+	nonceSize := aesgcm.NonceSize()
+	if len(encryptedData) < nonceSize+aesgcm.Overhead() {
 		return "", errors.New("invalid encrypted data length")
 	}
 
-	// Extract IV, ciphertext, and tag
-	iv := encryptedData[:aesgcm.NonceSize()]
-	tag := encryptedData[len(encryptedData)-block.BlockSize():]
-	ciphertext := encryptedData[aesgcm.NonceSize() : len(encryptedData)-block.BlockSize()]
-
-	// Concatenate ciphertext and tag for Go's AEAD interface
-	ciphertextWithTag := append(ciphertext, tag...)
-
-	// Decrypt
-	plaintext, err := aesgcm.Open(nil, iv, ciphertextWithTag, nil)
+	// Open expects the nonce, then the ciphertext with its tag still attached,
+	// which is exactly the layout after the nonce.
+	plaintext, err := aesgcm.Open(nil, encryptedData[:nonceSize], encryptedData[nonceSize:], nil)
 	if err != nil {
 		return "", err
 	}

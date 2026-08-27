@@ -22,6 +22,7 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 	}
 
 	request.Signature = r.URL.Query().Get("sig")
+	request.EtagAlgorithm = "hmac-sha256"
 
 	return &Request{
 		Request: request,

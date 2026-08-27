@@ -17,18 +17,10 @@ func NewHandler(config core.Config) http.Handler {
 
 	slog.Debug("startup", "config", config)
 
-	// Each endpoint holds its own copy. A handler must not write to a shared
-	// configuration value while other requests read it.
-	v4Config := config
-	v4Config.EtagAlgorithm = "md5"
-
-	v5Config := config
-	v5Config.EtagAlgorithm = "hmac-sha256"
-
 	// v4 endpoint
 	mux.HandleFunc("/dims4/{clientId}/{signature}/{timestamp}/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			request, err := v4.NewRequest(r, w, v4Config)
+			request, err := v4.NewRequest(r, w, config)
 			if err != nil {
 				w.WriteHeader(400)
 				slog.Error("error parsing request", "error", err)
@@ -46,7 +38,7 @@ func NewHandler(config core.Config) http.Handler {
 	// v5 endpoint
 	mux.HandleFunc("/v5/{commands...}",
 		func(w http.ResponseWriter, r *http.Request) {
-			request, err := v5.NewRequest(r, w, v5Config)
+			request, err := v5.NewRequest(r, w, config)
 			if err != nil {
 				w.WriteHeader(400)
 				slog.Error("error parsing request", "error", err)

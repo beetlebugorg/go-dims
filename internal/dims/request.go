@@ -26,7 +26,6 @@ type Request struct {
 	LegacyParams           []string    // Values named by _keys, in _keys order. Legacy mode only.
 	SourceImage            core.Image  // The source image.
 	config                 core.Config // The global configuration.
-	shrinkFactor           int
 	commands               []commands.Command
 }
 
@@ -76,8 +75,6 @@ func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 	importParams := vips.NewImportParams()
 	importParams.AutoRotate.Set(true)
 
-	r.shrinkFactor = 1
-
 	// Shrink on load helps only a JPEG that is much larger than the request.
 	// Read the header for that case alone, so every other image loads once.
 	requestedSize, err := r.requestedImageSize()
@@ -95,7 +92,6 @@ func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 		// size and has to be scaled back up.
 		if shrink := shrinkFactor(min(xs, ys)); shrink > 1 {
 			importParams.JpegShrinkFactor.Set(shrink)
-			r.shrinkFactor = shrink
 		}
 	}
 

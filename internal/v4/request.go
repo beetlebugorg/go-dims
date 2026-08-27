@@ -28,6 +28,7 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 	}
 
 	request.Signature = r.PathValue("signature")
+	request.EtagAlgorithm = "md5"
 
 	return &Request{
 		Request: request,
@@ -35,15 +36,6 @@ func NewRequest(r *http.Request, w http.ResponseWriter, config core.Config) (*Re
 		clientId:  clientId,
 		timestamp: timestamp,
 	}, nil
-}
-
-func (v4 *Request) HashId() string {
-	h := md5.New()
-	h.Write([]byte(v4.clientId))
-	h.Write([]byte(v4.RawCommands))
-	h.Write([]byte(v4.ImageUrl))
-
-	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (v4 *Request) Validate() bool {

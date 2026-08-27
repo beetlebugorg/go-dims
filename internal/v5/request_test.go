@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -161,4 +162,17 @@ func TestValueCannotForgeASeparator(t *testing.T) {
 
 	require.Equal(t, "a=1%26b%3D2", forged.SignedQuery)
 	require.NotEqual(t, signatureOf(forged), signatureOf(real))
+}
+
+// The ETag digest belongs to the endpoint, not to the configuration. v5 uses
+// sha256.
+func TestEtagUsesSha256(t *testing.T) {
+	request := newTestRequest(t, query(""), "")
+	request.SourceImage.Etag = `"origin"`
+
+	digest := sha256.New()
+	digest.Write([]byte(request.HashId()))
+	digest.Write([]byte(`"origin"`))
+
+	require.Equal(t, fmt.Sprintf("%q", fmt.Sprintf("%x", digest.Sum(nil))), request.Etag())
 }

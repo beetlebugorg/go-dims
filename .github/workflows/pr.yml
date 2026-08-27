@@ -10,11 +10,47 @@ on:
       - '*.md'
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write
+  contents: read
+  packages: read
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/beetlebugorg/go-dims:builder
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trust the workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Generate the geometry parser
+        run: go generate ./...
+
+      - name: Check formatting
+        run: |
+          unformatted=$(git ls-files '*.go' | xargs gofmt -l)
+          if [ -n "$unformatted" ]; then
+            echo "$unformatted"
+            exit 1
+          fi
+
+      # The generated parser is excluded. ANTLR emits unreachable code.
+      - name: Vet
+        run: go list ./... | grep -v /internal/geometry/parser | xargs go vet
+
+      - name: Test
+        run: go test -count=1 ./...
+
+      # Non-blocking until the builder image moves off Go 1.24.
+      - name: Scan for vulnerabilities
+        continue-on-error: true
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
   build:
     strategy:
       matrix:

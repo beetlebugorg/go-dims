@@ -3,6 +3,7 @@ package dims
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/commands"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/beetlebugorg/go-dims/internal/geometry"
@@ -95,7 +96,35 @@ func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 		}
 	}
 
-	return vips.LoadImageFromBuffer(sourceImage.Bytes, importParams)
+	image, err := vips.LoadImageFromBuffer(sourceImage.Bytes, importParams)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkPixels(image, r.config.MaxSourcePixels, "source"); err != nil {
+		image.Close()
+		return nil, err
+	}
+
+	return image, nil
+}
+
+// checkPixels refuses an image larger than the configured cap. Width and
+// height are metadata, so this costs nothing and can run before the pixels
+// are produced.
+func checkPixels(image *vips.ImageRef, limit int, what string) error {
+	if limit <= 0 {
+		return nil
+	}
+
+	pixels := image.Width() * image.Height()
+	if pixels > limit {
+		return core.NewStatusError(400, fmt.Sprintf(
+			"%s image is %d by %d, which is %d pixels and above the %d pixel limit",
+			what, image.Width(), image.Height(), pixels, limit))
+	}
+
+	return nil
 }
 
 // shrinkFactor returns the largest power of two the JPEG loader can shrink by
@@ -162,6 +191,16 @@ func (r *Request) ProcessImage(image *vips.ImageRef, errorImage bool) (string, [
 				Config: r.config,
 				URL:    r.URL,
 			}); err != nil {
+				return "", nil, err
+			}
+		}
+
+		// A command can grow the image, so the cap is checked after each one
+		// rather than only at the end. Nothing downstream then has to render
+		// something already known to be too large.
+		if !errorImage {
+			if err := checkPixels(image, r.config.MaxOutputPixels, "output"); err != nil {
+				region.End()
 				return "", nil, err
 			}
 		}

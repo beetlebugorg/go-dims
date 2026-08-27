@@ -197,7 +197,7 @@ RUN cp "vips-${VIPS_VERSION}/LICENSE" "${PREFIX}/libvips/LICENSE" && \
         --website ${VIPS_WEBSITE} > ${PREFIX}/libvips/sbom.cdx.json
 
 # -- Build base
-FROM golang:1.24.2-alpine AS builder
+FROM golang:1.27.0-alpine AS builder
 
 WORKDIR /build
 

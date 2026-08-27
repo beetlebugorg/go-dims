@@ -83,13 +83,30 @@ func (r *Request) LoadImage(sourceImage *core.Image) (*vips.ImageRef, error) {
 		ys := header.Height() / int(requestedSize.Height)
 		header.Close()
 
-		if (xs > 2) || (ys > 2) {
-			importParams.JpegShrinkFactor.Set(4)
-			r.shrinkFactor = 4
+		// Take the smaller ratio, so neither axis ends up below the requested
+		// size and has to be scaled back up.
+		if shrink := shrinkFactor(min(xs, ys)); shrink > 1 {
+			importParams.JpegShrinkFactor.Set(shrink)
+			r.shrinkFactor = shrink
 		}
 	}
 
 	return vips.LoadImageFromBuffer(sourceImage.Bytes, importParams)
+}
+
+// shrinkFactor returns the largest power of two the JPEG loader can shrink by
+// without dropping below the requested size. libvips supports 1, 2, 4, and 8.
+func shrinkFactor(ratio int) int {
+	switch {
+	case ratio >= 8:
+		return 8
+	case ratio >= 4:
+		return 4
+	case ratio >= 2:
+		return 2
+	}
+
+	return 1
 }
 
 // ProcessImage will execute the commands on the image.

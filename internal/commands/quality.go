@@ -12,6 +12,10 @@ func QualityCommand(image *vips.ImageRef, args string, opts *ExportOptions) erro
 		return NewOperationError("quality", args, err.Error())
 	}
 
+	if quality < 0 || quality > 100 {
+		return NewOperationError("quality", args, "quality must be between 0 and 100")
+	}
+
 	opts.JpegExportParams.Quality = quality
 	opts.PngExportParams.Quality = quality
 	opts.WebpExportParams.Quality = quality

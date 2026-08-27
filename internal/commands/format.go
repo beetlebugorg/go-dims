@@ -6,7 +6,12 @@ import (
 )
 
 func FormatCommand(image *vips.ImageRef, args string, opts *ExportOptions) error {
-	opts.ImageType = core.ImageTypes[args]
+	imageType, ok := core.ImageTypes[args]
+	if !ok {
+		return NewOperationError("format", args, "unsupported output format")
+	}
+
+	opts.ImageType = imageType
 
 	return nil
 }

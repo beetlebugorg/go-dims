@@ -65,3 +65,18 @@ var VipsExportCommands = map[string]VipsExportOperation{
 var VipsRequestCommands = map[string]VipsRequestOperation{
 	"watermark": Watermark,
 }
+
+// Known reports whether a command name is one this service implements.
+func Known(name string) bool {
+	if _, ok := VipsTransformCommands[name]; ok {
+		return true
+	}
+
+	if _, ok := VipsExportCommands[name]; ok {
+		return true
+	}
+
+	_, ok := VipsRequestCommands[name]
+
+	return ok
+}

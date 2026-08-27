@@ -49,7 +49,7 @@ func (v5 *Request) Validate() bool {
 	return false
 }
 
-func (v5 *Request) sign(imageUrl string, signedParams map[string]string, command string, signingKey string) []byte {
+func (v5 *Request) sign(imageUrl string, signedParams []string, command string, signingKey string) []byte {
 	key := strings.Replace(signingKey, "sha1:", "", 1)
 
 	mac := hmac.New(sha256.New, []byte(key))

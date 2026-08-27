@@ -129,19 +129,21 @@ The S3 bucket name from which to fetch images.
 
 ### `DIMS_S3_PREFIX`
 
-Optional prefix to apply to all S3 object keys.
+Prefix applied to a bare S3 object key.
 
 - **Default:** *(empty)*
 
-This is useful if you store images in a specific folder or namespace within your bucket.
+Useful when images live in a folder or namespace within the bucket.
 
 Example:
 ```
-DIMS_S3_BUCKET=my-bucket  
+DIMS_S3_BUCKET=my-bucket
 DIMS_S3_PREFIX=images/2024/
 ```
 
-A request for `image.jpg` would resolve to `s3://my-bucket/images/2024/image.jpg`.
+A request for `image.jpg` resolves to `s3://my-bucket/images/2024/image.jpg`.
+
+The prefix applies only to a bare key, which is what arrives when `s3` is the default backend. A full `s3://bucket/path` URL names its own bucket and path, so the prefix is not added to it.
 
 ---
 

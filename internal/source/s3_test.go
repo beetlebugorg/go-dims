@@ -6,6 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/beetlebugorg/go-dims/internal/core"
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/stretchr/testify/require"
 )
@@ -37,4 +38,31 @@ func TestImageFromResponseReadsPresentFields(t *testing.T) {
 	require.Equal(t, `"abc123"`, image.Etag)
 	require.Equal(t, 11, image.Size)
 	require.Equal(t, "Thu, 27 Aug 2026 10:30:00 GMT", image.LastModified)
+}
+
+// DIMS_S3_PREFIX applies to a bare key, which is what arrives when s3 is the
+// default backend. An s3:// URL names its own bucket and path already.
+func TestS3Resolve(t *testing.T) {
+	withPrefix := s3SourceBackend{Config: core.S3{Bucket: "my-bucket", Prefix: "images/2024/"}}
+
+	bucket, key, err := withPrefix.resolve("image.jpg")
+	require.NoError(t, err)
+	require.Equal(t, "my-bucket", bucket)
+	require.Equal(t, "images/2024/image.jpg", key)
+
+	bucket, key, err = withPrefix.resolve("/image.jpg")
+	require.NoError(t, err)
+	require.Equal(t, "images/2024/image.jpg", key)
+
+	// A full URL is taken as given.
+	bucket, key, err = withPrefix.resolve("s3://other-bucket/raw/image.jpg")
+	require.NoError(t, err)
+	require.Equal(t, "other-bucket", bucket)
+	require.Equal(t, "raw/image.jpg", key)
+
+	// No prefix configured.
+	plain := s3SourceBackend{Config: core.S3{Bucket: "my-bucket"}}
+	_, key, err = plain.resolve("image.jpg")
+	require.NoError(t, err)
+	require.Equal(t, "image.jpg", key)
 }

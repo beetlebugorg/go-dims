@@ -36,6 +36,21 @@ type OutputFormat struct {
 	Excluded []string `env:"DIMS_EXCLUDED_OUTPUT_FORMATS"`
 }
 
+type Network struct {
+	// AllowedHosts limits which hosts an image may be fetched from. An entry
+	// starting with a dot matches any subdomain. An empty list allows any host
+	// that passes the address check.
+	AllowedHosts []string `env:"DIMS_ALLOWED_HOSTS"`
+
+	// AllowPrivateNetworks permits connections to loopback, link local,
+	// private, and other non-public addresses. Keep it false unless the origin
+	// sits inside the same network.
+	AllowPrivateNetworks bool `env:"DIMS_ALLOW_PRIVATE_NETWORKS" envDefault:"false"`
+
+	// MaxRedirects caps how many redirects one fetch will follow.
+	MaxRedirects int `env:"DIMS_MAX_REDIRECTS" envDefault:"3"`
+}
+
 type Timeout struct {
 	Download int `env:"DIMS_DOWNLOAD_TIMEOUT" envDefault:"3000"`
 }
@@ -97,6 +112,7 @@ type Config struct {
 	EtagAlgorithm   string
 
 	Timeout
+	Network
 	EdgeControl
 	Signing
 	Error

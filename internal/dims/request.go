@@ -15,14 +15,14 @@ import (
 )
 
 type Request struct {
-	URL                    *url.URL          // The URL of the http.
-	ImageUrl               string            // The image URL that is being manipulated.
-	SendContentDisposition bool              // The content disposition of the http.
-	RawCommands            string            // The commands ('resize/100x100', 'strip/true/format/png', etc).
-	Signature              string            // The signature of the request.
-	SignedParams           map[string]string // The query parameters used to sign the request.
-	SourceImage            core.Image        // The source image.
-	config                 core.Config       // The global configuration.
+	URL                    *url.URL    // The URL of the http.
+	ImageUrl               string      // The image URL that is being manipulated.
+	SendContentDisposition bool        // The content disposition of the http.
+	RawCommands            string      // The commands ('resize/100x100', 'strip/true/format/png', etc).
+	Signature              string      // The signature of the request.
+	SignedParams           []string    // Values of the signed query parameters, in _keys order.
+	SourceImage            core.Image  // The source image.
+	config                 core.Config // The global configuration.
 	shrinkFactor           int
 }
 
@@ -39,14 +39,16 @@ func NewRequest(url *url.URL, cmds string, config core.Config) (*Request, error)
 		imageUrl = decryptedUrl
 	}
 
-	// Signed Parameters
-	// Include all parameters except for the signature, the image URL, and "eurl".
-	var signedParams = make(map[string]string)
-	_keys := url.Query().Get("_keys")
-	for _, key := range strings.Split(_keys, ",") {
-		value := url.Query().Get(key)
-		if value != "" {
-			signedParams[key] = value
+	// Signed parameters.
+	// The _keys parameter names the query parameters that take part in the
+	// signature. mod_dims concatenates their values in the order _keys lists
+	// them, so the order must be preserved here.
+	var signedParams []string
+	if keys := url.Query().Get("_keys"); keys != "" {
+		for _, key := range strings.Split(keys, ",") {
+			if value := url.Query().Get(key); value != "" {
+				signedParams = append(signedParams, value)
+			}
 		}
 	}
 

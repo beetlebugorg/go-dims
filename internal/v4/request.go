@@ -2,6 +2,7 @@ package v4
 
 import (
 	"crypto/md5"
+	"crypto/subtle"
 	"fmt"
 	"github.com/beetlebugorg/go-dims/internal/core"
 	dims "github.com/beetlebugorg/go-dims/internal/http"
@@ -48,7 +49,7 @@ func (v4 *Request) HashId() string {
 func (v4 *Request) Validate() bool {
 	expectedSignature := v4.sign(v4.RawCommands, v4.timestamp, v4.ImageUrl, v4.SignedParams, v4.Config().SigningKey)
 
-	if expectedSignature == v4.Signature {
+	if subtle.ConstantTimeCompare([]byte(expectedSignature), []byte(v4.Signature)) == 1 {
 		return true
 	}
 
@@ -59,7 +60,7 @@ func (v4 *Request) Validate() bool {
 	return false
 }
 
-func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams map[string]string, signingKey string) string {
+func (v4 *Request) sign(commands, timestamp, imageUrl string, signedParams []string, signingKey string) string {
 	key := strings.Replace(signingKey, "sha1:", "", 1)
 
 	h := md5.New()

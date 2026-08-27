@@ -49,6 +49,14 @@ type Server struct {
 	MaxHeaderBytes    int `env:"DIMS_MAX_HEADER_BYTES" envDefault:"65536"`
 }
 
+type Limits struct {
+	// Cost is linear in output pixels, measured at roughly 30 megapixels per
+	// second per thread. These caps bound the work one request can ask for.
+	// Zero disables a check.
+	MaxSourcePixels int `env:"DIMS_MAX_SOURCE_PIXELS" envDefault:"100000000"`
+	MaxOutputPixels int `env:"DIMS_MAX_OUTPUT_PIXELS" envDefault:"50000000"`
+}
+
 type Network struct {
 	// AllowedHosts limits which hosts an image may be fetched from. An entry
 	// starting with a dot matches any subdomain. An empty list allows any host
@@ -125,6 +133,7 @@ type Config struct {
 	EtagAlgorithm   string
 
 	Timeout
+	Limits
 	Server
 	Network
 	EdgeControl

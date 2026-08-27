@@ -84,6 +84,44 @@ DIMS_DOWNLOAD_TIMEOUT=5000
 
 ---
 
+## Request Cost Limits
+
+Processing cost is close to linear in the number of pixels produced. Measured on one thread with libvips 8.18:
+
+| Output | Pixels | Time |
+|---|---|---|
+| 1000x1000 | 1 MP | 35 ms |
+| 4000x4000 | 16 MP | 0.5 s |
+| 7000x7000 | 49 MP | 1.6 s |
+| 10000x10000 | 100 MP | 3.2 s |
+| 14000x14000 | 196 MP | 6.5 s |
+
+That is roughly 30 megapixels per second per thread, so a pixel limit is a direct way to bound how long one request can occupy a worker. A limit on the source *bytes* is not: an upscale from a small image is cheap to download and expensive to produce.
+
+### `DIMS_MAX_OUTPUT_PIXELS`
+
+The largest image the service will produce, in pixels.
+
+- **Default:** `50000000` (50 MP, about 7000x7000, roughly 1.6 seconds)
+
+Checked after every command, since a command can grow the image. A request above the limit returns `400` before any pixels are computed, because width and height are metadata.
+
+```
+DIMS_MAX_OUTPUT_PIXELS=16000000
+```
+
+### `DIMS_MAX_SOURCE_PIXELS`
+
+The largest source image the service will accept, in pixels.
+
+- **Default:** `100000000` (100 MP, about 10000x10000)
+
+Checked once the source header is read. This mainly guards against a small file that declares enormous dimensions, since a large source reduced to a thumbnail is cheap thanks to shrink on load.
+
+Set either to `0` to disable that check.
+
+---
+
 ## Server Timeouts
 
 All values are milliseconds. `0` disables a timeout, which is what the Go standard library does by default and the reason a slow client could previously hold a connection open indefinitely.

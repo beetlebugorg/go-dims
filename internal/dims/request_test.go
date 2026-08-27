@@ -67,3 +67,74 @@ func TestExcludedGifStillBecomesPng(t *testing.T) {
 	require.Equal(t, vips.ImageTypePNG,
 		requestWithFormat(t, vips.ImageTypeGIF, "webp", []string{"gif"}).outputFormat())
 }
+
+func imageOfSize(t *testing.T, width, height int) *vips.ImageRef {
+	t.Helper()
+
+	vips.Startup(nil)
+
+	image, err := vips.Black(width, height)
+	require.NoError(t, err)
+
+	return image
+}
+
+// Width and height are metadata, so the check runs before any pixel is
+// produced. That is what makes it a cheap refusal rather than an expensive one.
+func TestCheckPixels(t *testing.T) {
+	image := imageOfSize(t, 1000, 1000)
+	defer image.Close()
+
+	require.NoError(t, checkPixels(image, 1_000_000, "source"), "exactly at the limit is allowed")
+	require.NoError(t, checkPixels(image, 2_000_000, "source"))
+	require.NoError(t, checkPixels(image, 0, "source"), "zero disables the check")
+	require.NoError(t, checkPixels(image, -1, "source"))
+
+	err := checkPixels(image, 999_999, "output")
+	require.Error(t, err)
+
+	var statusError *core.StatusError
+	require.ErrorAs(t, err, &statusError)
+	require.Equal(t, 400, statusError.StatusCode)
+	require.Contains(t, err.Error(), "output")
+	require.Contains(t, err.Error(), "1000 by 1000")
+}
+
+// An upscale asks for far more work than its source suggests, which is the
+// case a source byte limit cannot see.
+func TestOutputCapRefusesAnUpscale(t *testing.T) {
+	config := *core.ReadConfig()
+	config.MaxOutputPixels = 1_000_000
+
+	u, err := url.Parse("http://localhost/v5/resize/10000x10000?url=http://example.com/a.jpg")
+	require.NoError(t, err)
+
+	request, err := NewRequest(u, "resize/10000x10000", config)
+	require.NoError(t, err)
+
+	image := imageOfSize(t, 512, 512)
+	defer image.Close()
+	require.NoError(t, image.BandJoinConst([]float64{0, 0}))
+
+	_, _, err = request.ProcessImage(image, false)
+	require.Error(t, err, "a 100 megapixel output must be refused under a 1 megapixel cap")
+	require.Contains(t, err.Error(), "output")
+}
+
+func TestOutputCapAllowsOrdinaryWork(t *testing.T) {
+	config := *core.ReadConfig()
+	config.MaxOutputPixels = 50_000_000
+
+	u, err := url.Parse("http://localhost/v5/resize/200x200?url=http://example.com/a.jpg")
+	require.NoError(t, err)
+
+	request, err := NewRequest(u, "resize/200x200", config)
+	require.NoError(t, err)
+
+	image := imageOfSize(t, 2000, 2000)
+	defer image.Close()
+	require.NoError(t, image.BandJoinConst([]float64{0, 0}))
+
+	_, _, err = request.ProcessImage(image, false)
+	require.NoError(t, err)
+}

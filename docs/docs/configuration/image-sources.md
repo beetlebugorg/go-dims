@@ -61,6 +61,60 @@ DIMS_ALLOWED_SOURCE_BACKENDS=http,s3,file
 
 ---
 
+## Network Restrictions
+
+These apply to the `http` backend and to the `overlay` image used by the [watermark](../operations/special/watermark.md) command.
+
+### `DIMS_ALLOW_PRIVATE_NETWORKS`
+
+Permits connections to addresses that are not routable on the public internet.
+
+- **Default:** `false`
+
+When this is `false`, `go-dims` refuses to connect to loopback, link local, private, multicast, carrier grade NAT, and reserved addresses. That includes `169.254.169.254`, the address cloud providers answer instance credentials on.
+
+The check runs after the host name resolves and before the socket opens, once per connection. A name that resolves to a private address is refused whatever it is called, and a redirect is checked the same way as the original request.
+
+Set it to `true` only when the origin sits inside the same network as the service:
+
+```
+DIMS_ALLOW_PRIVATE_NETWORKS=true
+```
+
+:::warning
+
+This setting affects any URL a caller can influence. Turning it on while `DIMS_DEVELOPMENT_MODE` is also on gives an unauthenticated caller a proxy into your private network.
+
+:::
+
+---
+
+### `DIMS_ALLOWED_HOSTS`
+
+Comma-separated list of hosts an image may be fetched from.
+
+- **Default:** *(empty, meaning any host)*
+
+An entry beginning with a dot matches the domain and every subdomain of it.
+
+```
+DIMS_ALLOWED_HOSTS=images.example.com,.cdn.example.net
+```
+
+That accepts `images.example.com`, `cdn.example.net`, and `a.cdn.example.net`. It refuses everything else, including `images.example.com.evil.test`.
+
+The list is applied to the original URL and again at every redirect.
+
+---
+
+### `DIMS_MAX_REDIRECTS`
+
+The number of redirects one fetch will follow.
+
+- **Default:** `3`
+
+---
+
 ## S3 Source Configuration
 
 Enable fetching images from Amazon S3 by configuring the following variables:

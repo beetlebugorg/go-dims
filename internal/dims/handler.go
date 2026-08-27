@@ -49,6 +49,14 @@ func Handler(request RequestContext) error {
 		return request.SendNotModified()
 	}
 
+	// Take a processing slot. The download above is waiting on an origin and
+	// does not need one; everything below this competes for CPU.
+	release, err := defaultLimiter().acquire()
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	// Convert image to vips image.
 	vipsImage, err := request.LoadImage(sourceImage)
 	if err != nil {

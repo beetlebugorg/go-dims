@@ -55,6 +55,14 @@ type Limits struct {
 	// Zero disables a check.
 	MaxSourcePixels int `env:"DIMS_MAX_SOURCE_PIXELS" envDefault:"100000000"`
 	MaxOutputPixels int `env:"DIMS_MAX_OUTPUT_PIXELS" envDefault:"50000000"`
+
+	// MaxConcurrent caps how many images are processed at once. Zero derives
+	// a value from the CPU count. A negative value removes the limit.
+	MaxConcurrent int `env:"DIMS_MAX_CONCURRENT" envDefault:"0"`
+
+	// MaxConcurrentWait is how long a request queues for a slot before it is
+	// refused, in milliseconds.
+	MaxConcurrentWait int `env:"DIMS_MAX_CONCURRENT_WAIT" envDefault:"5000"`
 }
 
 type Network struct {

@@ -10,8 +10,17 @@ on:
     tags:
       - v*
 
+  # Run by hand to rebuild the published artifacts against a new builder
+  # image, without cutting a version.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Moving tag to publish. latest is reserved for tagged releases.'
+        required: true
+        default: edge
+
 env:
-  TRACKING_TAG: ${{ github.ref == 'refs/heads/main' && 'edge' || 'latest' }}
+  TRACKING_TAG: ${{ inputs.tag || 'latest' }}
 
 permissions:
   contents: read
@@ -112,10 +121,10 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             # Remove leading 'v' if present
             TAG="${GITHUB_REF_NAME#v}"
-            echo "release_tag=${TAG}" >> $GITHUB_OUTPUT
+            echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
           else
             SHORT_SHA=$(git rev-parse --short=8 HEAD)
-            echo "release_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "release_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Login to GitHub Container Registry

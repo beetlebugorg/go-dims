@@ -43,6 +43,17 @@ Then, open this URL in your browser to test image processing:
 http://127.0.0.1:8080/v5/resize/100x100/?url=https://images.pexels.com/photos/1539116/pexels-photo-1539116.jpeg
 ```
 
+### Image tags
+
+| Tag | Contents |
+|---|---|
+| `latest` | The most recent tagged release. Only a release moves it. |
+| `<version>` | A specific release, for example `0.4.1`. Never moves. |
+| `edge` | The most recent rebuild from `main`, published by hand. |
+| `<short sha>` | The exact commit a rebuild was made from. Never moves. |
+
+Pin a version in production. `latest` follows releases, and `edge` follows `main`, so both change under you.
+
 ## ☁️ AWS Lambda
 
 go-dims can be deployed as a compact, production-ready AWS Lambda function — ideal for real-time

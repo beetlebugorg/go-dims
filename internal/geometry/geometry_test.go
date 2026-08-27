@@ -1,9 +1,6 @@
 package geometry
 
 import (
-	"fmt"
-	"os"
-	"runtime/pprof"
 	"testing"
 )
 
@@ -68,8 +65,6 @@ func FuzzParseGeometry(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, geometry string) {
-		fmt.Println(geometry)
-		// Call the function with the fuzzed input
 		ParseGeometry(geometry)
 	})
 }
@@ -83,18 +78,6 @@ func BenchmarkParseGeometry(b *testing.B) {
 		"-50x50+10+10", "50x-50+10+10", "50x50+10-", "50%x50%!<>", "010192309120391092301923x10293012390123-13",
 		"100x200x300",
 	}
-
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	// Start CPU profiling
-	if err := pprof.StartCPUProfile(f); err != nil {
-		panic(err)
-	}
-	defer pprof.StopCPUProfile() // Stop profiling when done
 
 	for _, geometry := range geometries {
 		b.Run(geometry, func(b *testing.B) {

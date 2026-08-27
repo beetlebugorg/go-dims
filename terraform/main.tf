@@ -2,6 +2,7 @@ module "go-dims-lambda" {
   source             = "./go-dims-lambda"
   aws_region         = var.aws_region
   authorization_type = var.authorization_type
+  platform           = var.platform
 
   environment = merge(
     {

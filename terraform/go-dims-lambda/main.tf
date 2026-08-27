@@ -38,6 +38,13 @@ resource "aws_iam_role_policy_attachment" "go-dims" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+locals {
+  // The build names its artifact with the Go architecture. AWS names the
+  // same architecture x86_64.
+  lambda_package      = "../build/lambda-linux-${var.platform}.zip"
+  lambda_architecture = var.platform == "amd64" ? "x86_64" : var.platform
+}
+
 resource "aws_lambda_function" "go-dims" {
   function_name = "go-dims"
   role          = aws_iam_role.go-dims.arn
@@ -47,10 +54,10 @@ resource "aws_lambda_function" "go-dims" {
   package_type  = "Zip"
   runtime       = "provided.al2023"
   handler       = "bootstrap"
-  architectures = [var.platform]
+  architectures = [local.lambda_architecture]
 
-  filename         = "../build/lambda-${var.platform}.zip"
-  source_code_hash = filebase64sha256("../build/lambda-${var.platform}.zip")
+  filename         = local.lambda_package
+  source_code_hash = filebase64sha256(local.lambda_package)
 
   environment {
     variables = var.environment

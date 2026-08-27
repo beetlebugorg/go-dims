@@ -39,6 +39,17 @@ variable "authorization_type" {
   }
 }
 
+variable "platform" {
+  description = "Architecture to deploy. The build writes build/lambda-linux-<platform>.zip."
+  type        = string
+  default     = "arm64"
+
+  validation {
+    condition     = contains(["arm64", "amd64"], var.platform)
+    error_message = "The platform must be arm64 or amd64."
+  }
+}
+
 variable "extra_environment" {
   description = "Additional environment variables for the Lambda function."
   type        = map(string)

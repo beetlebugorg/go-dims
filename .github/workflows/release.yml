@@ -15,12 +15,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Moving tag to publish. latest is reserved for tagged releases.'
+        description: 'Moving tag to publish. latest and next are reserved for tagged releases.'
         required: true
         default: edge
 
 env:
-  TRACKING_TAG: ${{ inputs.tag || 'latest' }}
+  # The moving tag this run publishes alongside the version. A tag carrying a
+  # suffix, such as v1.0.0-rc1, is a candidate and takes next. Only a plain
+  # version tag takes latest, so a pull of the bare image name stays on the
+  # newest finished release.
+  TRACKING_TAG: ${{ inputs.tag || (contains(github.ref_name, '-') && 'next' || 'latest') }}
 
 permissions:
   contents: read

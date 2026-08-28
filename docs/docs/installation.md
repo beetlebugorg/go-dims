@@ -77,7 +77,7 @@ $ dims serve
 $ dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=cat.jpg"
 ```
 
-The formula carries a release candidate only once it becomes a release. A tag such as `v1.0.0-rc1` leaves the tap unchanged.
+The formula tracks the newest tag, a release candidate such as `v1.0.0-rc1` included. Run `dims version` to see which one you have.
 
 Every release also attaches the binary directly. Download `dims-<platform>-<arch>.zip` from the [releases page](https://github.com/beetlebugorg/go-dims/releases), unzip it, and run `dims`. The Linux build is static and needs nothing at run time. The macOS build links libvips, which Homebrew installs for you.
 

@@ -295,9 +295,10 @@ jobs:
   homebrew:
     name: Update the Homebrew tap
     needs: [release]
-    # A candidate tag such as v1.0.0-rc1 leaves the tap alone. Cut one to
-    # prove the matrix, then tag the version the tap should carry.
-    if: ${{ startsWith(github.ref_name, 'v') && !contains(github.ref_name, '-') }}
+    # Every version tag updates the tap, a candidate included. A candidate
+    # that skipped this job would leave the tap update unproven until the
+    # release itself ran it.
+    if: ${{ startsWith(github.ref_name, 'v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

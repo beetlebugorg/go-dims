@@ -4,8 +4,6 @@ go 1.25.0
 
 toolchain go1.27.0
 
-replace github.com/davidbyttow/govips/v2 => github.com/beetlebugorg/govips/v2 v2.0.0-20250510142832-df15c6e39039
-
 require (
 	github.com/alecthomas/kong v1.10.0
 	github.com/antlr4-go/antlr/v4 v4.13.1
@@ -14,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.40
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.108.0
 	github.com/caarlos0/env/v10 v10.0.0
-	github.com/davidbyttow/govips/v2 v2.16.0
+	github.com/davidbyttow/govips/v2 v2.18.0
 	github.com/stretchr/testify v1.7.2
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 )

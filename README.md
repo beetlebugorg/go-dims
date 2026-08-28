@@ -47,6 +47,20 @@ renditions.
 - Docker: Launch anywhere in seconds.
 - AWS Lambda: Compile and deploy as a fast, small Lambda function.
 
+## 🍺 Install the CLI
+
+```bash
+brew install beetlebugorg/tap/go-dims
+```
+
+That installs the `dims` command on macOS and on Linux. Use it to sign URLs and
+to run the server:
+
+```bash
+dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=cat.jpg"
+dims serve
+```
+
 ## 🚀 Getting Started
 
 Run locally in development mode (no signature required):
@@ -142,7 +156,7 @@ Use the built-in CLI to generate secure, signed URLs:
 ❯ cat signing-key.txt
 0123456789abcdef0123456789abcdef
 
-❯ ./build/dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg"
+❯ dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=pexels-photo-1539116.jpeg"
 
 http://localhost:8080/v5/resize/200x200/?sig=95abae1df702bcb894cbcc2625f5b044e9b7af316b02e92483efa7f330968dce&url=pexels-photo-1539116.jpeg
 ```

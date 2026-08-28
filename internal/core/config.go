@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/caarlos0/env/v10"
+	"github.com/caarlos0/env/v11"
 )
 
 type OriginCacheControl struct {

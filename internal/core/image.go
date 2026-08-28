@@ -1,9 +1,10 @@
 package core
 
 import (
+	"slices"
+
 	"github.com/beetlebugorg/go-dims/internal/gox/imagex/colorx"
-	"github.com/caarlos0/env/v10"
-	"golang.org/x/exp/slices"
+	"github.com/caarlos0/env/v11"
 	"log/slog"
 	"time"
 

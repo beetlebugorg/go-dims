@@ -1,4 +1,4 @@
-VERSION ?= $(shell git rev-parse --short=8 HEAD)
+VERSION ?= $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo unknown)
 BUILD_DIR := build
 BOOTSTRAP := $(BUILD_DIR)/bootstrap
 REGISTRY  := ghcr.io/beetlebugorg/go-dims
@@ -9,17 +9,28 @@ LAMBDA_BINARY := $(BUILD_DIR)/bootstrap
 LD_FLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/core.Version=${VERSION}'"
 STATIC_LDFLAGS = "-X 'github.com/beetlebugorg/go-dims/internal/core.Version=${VERSION}' -linkmode 'external' -extldflags '-fno-PIC -static -Wl,-z,stack-size=8388608 -lpng -lz -ltiff -lwebp -lwebpmux -lwebpdemux -ljpeg -lbz2 -lexpat -llcms2 -lgomp -lsharpyuv'"
 
+# verify-version reads the linker flags back out of a built binary and fails
+# when VERSION did not reach it. Dockerfile.lambda and Dockerfile.binaries once
+# took a VERSION build arg they never declared, so every released artifact
+# carried the commit hash instead of the release tag and nothing reported it.
+# The lambda binary cannot be run to ask for its version, so this reads the
+# recorded build settings instead.
+verify-version = @go version -m $(1) | grep -qF "core.Version=$(VERSION)" \
+	|| { echo "VERSION=$(VERSION) did not reach $(1)"; exit 1; }
+
 # -- Build targets
 
 # Builds the shared library version of dims
 all:
 	go generate ./...
 	go build -o $(BINARY) -ldflags $(LD_FLAGS) ./cmd/dims
+	$(call verify-version,$(BINARY))
 
 # Builds a static binary version of dims
 static:
 	go generate ./...
 	go build -o $(BINARY) -ldflags $(STATIC_LDFLAGS) ./cmd/dims
+	$(call verify-version,$(BINARY))
 
 binary-amd64:
 	docker buildx build \
@@ -40,6 +51,7 @@ binary-arm64:
 lambda:
 	go generate ./...
 	go build -o $(LAMBDA_BINARY) -tags "lambda.norpc lambda" -ldflags $(STATIC_LDFLAGS) ./cmd/dims
+	$(call verify-version,$(LAMBDA_BINARY))
 	cd $(BUILD_DIR) && zip lambda.zip bootstrap
 
 lambda-amd64:

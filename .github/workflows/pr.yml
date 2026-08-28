@@ -49,6 +49,18 @@ jobs:
           make VERSION=version-probe
           test "$(./build/dims version)" = "version-probe"
 
+      # A build arg only reaches make when the Dockerfile declares it. Both
+      # image builds once took VERSION without declaring it, so every released
+      # artifact carried the commit hash instead of the tag.
+      - name: Check every image build declares VERSION
+        run: |
+          for file in Dockerfile Dockerfile.lambda Dockerfile.binaries; do
+            grep -qE '^ARG VERSION' "$file" || {
+              echo "$file takes a VERSION build arg but never declares it"
+              exit 1
+            }
+          done
+
       - name: Scan for vulnerabilities
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -86,7 +98,19 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: go-dims:pr
+          build-args: VERSION=pr-${{ github.event.pull_request.number }}
           platforms: ${{ matrix.platform }}
+
+      - name: Check the version reaches the container
+        run: |
+          expected="pr-${{ github.event.pull_request.number }}"
+          actual="$(docker run --rm go-dims:pr version)"
+          test "$actual" = "$expected" || {
+            echo "want $expected, got $actual"
+            exit 1
+          }
 
       - name: Build Lambda Function
         uses: docker/build-push-action@v5

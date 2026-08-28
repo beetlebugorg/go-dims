@@ -98,6 +98,17 @@ jobs:
           platforms: ${{ matrix.platform }}
           outputs: type=local,dest=build
 
+      # The runner matches the target architecture, so the released binary
+      # answers for itself.
+      - name: Check the version reaches the binary
+        run: |
+          unzip -o -q build/dims-linux-${{ matrix.targetarch }}.zip -d /tmp/dims-release
+          actual="$(/tmp/dims-release/dims version)"
+          test "$actual" = "${{ env.TRACKING_TAG }}" || {
+            echo "want ${{ env.TRACKING_TAG }}, got $actual"
+            exit 1
+          }
+
       - name: Upload Standalone Binary
         uses: actions/upload-artifact@v4
         with:

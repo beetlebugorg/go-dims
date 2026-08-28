@@ -49,10 +49,37 @@ http://127.0.0.1:8080/v5/resize/100x100/?url=https://images.pexels.com/photos/15
 |---|---|
 | `latest` | The most recent tagged release. Only a release moves it. |
 | `<version>` | A specific release, for example `0.4.1`. Never moves. |
+| `next` | The most recent release candidate, a tag such as `v1.0.0-rc1`. |
 | `edge` | The most recent rebuild from `main`, published by hand. |
 | `<short sha>` | The exact commit a rebuild was made from. Never moves. |
 
-Pin a version in production. `latest` follows releases, and `edge` follows `main`, so both change under you.
+Pin a version in production. `latest`, `next`, and `edge` all move, so each one changes under you.
+
+## 📦 Standalone Binary
+
+Install the `dims` command with Homebrew, on macOS or on Linux:
+
+```shell
+$ brew install beetlebugorg/tap/go-dims
+```
+
+Confirm the install:
+
+```shell
+❯ dims version
+1.0.0
+```
+
+The command runs the server and signs URLs:
+
+```shell
+$ dims serve
+$ dims sign --key-file=signing-key.txt "http://localhost:8080/v5/resize/200x200/?url=cat.jpg"
+```
+
+The formula carries a release candidate only once it becomes a release. A tag such as `v1.0.0-rc1` leaves the tap unchanged.
+
+Every release also attaches the binary directly. Download `dims-<platform>-<arch>.zip` from the [releases page](https://github.com/beetlebugorg/go-dims/releases), unzip it, and run `dims`. The Linux build is static and needs nothing at run time. The macOS build links libvips, which Homebrew installs for you.
 
 ## ☁️ AWS Lambda
 

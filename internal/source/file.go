@@ -3,7 +3,7 @@ package source
 import (
 	"context"
 	"github.com/beetlebugorg/go-dims/internal/core"
-	"github.com/caarlos0/env/v10"
+	"github.com/caarlos0/env/v11"
 	"github.com/davidbyttow/govips/v2/vips"
 	"log/slog"
 	"os"
